@@ -1,3 +1,5 @@
 *.DS_Store
 *.log
 *.vscode
+res/data/*
+*__pycache__
