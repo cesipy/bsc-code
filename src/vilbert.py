@@ -21,8 +21,8 @@ from transformers import (
 
 from PIL import Image
 
+from config import *
 
-DIM = 768
 
 class Attention_Block(nn.Module):
     # Some inspiration from the deep learning assignment 3, 
@@ -107,6 +107,10 @@ class CrossAttentionBlock(nn.Module):
         
     def forward(self, text_tensor, vision_tensor): 
         
+        # store the inputs for later residuals
+        text_residual = text_tensor
+        vision_residual = vision_tensor
+        
         text_tensor = self.norm1(text_tensor)
         vision_tensor = self.norm2(vision_tensor)
         
@@ -131,22 +135,97 @@ class CrossAttentionBlock(nn.Module):
         # text query, vision key and value
         text_qk_scaled = torch.matmul(text_q, vision_k.transpose(-1, -2)) * self.dk ** -0.5
         text_attention_qk = self.softmax(text_qk_scaled)
+        
+        # TODO: add attention dropout
+        # vision_attention_qk = self.dropout(vision_attention_qk)
+        # text_attention_qk = self.dropout(text_attention_qk)
+        
         attention_1 = torch.matmul(text_attention_qk, vision_v)
         attention_1 = rearrange(attention_1, 'b h n d -> b n (h d)')
         
         # vision query, text key and value
         vision_qk_scaled = torch.matmul(vision_q, text_k.transpose(-1, -2)) * self.dk ** -0.5
         vision_attention_qk = self.softmax(vision_qk_scaled)
+        
+        # TODO: add attention dropout
+        # vision_attention_qk = self.dropout(vision_attention_qk)
+
+        
         attention_2 = torch.matmul(vision_attention_qk, text_v)
         attention_2 = rearrange(attention_2, 'b h n d -> b n (h d)')
         
-        text_out = self.to_out_proj1(attention_1)
-        vision_out = self.to_out_proj2(attention_2)
+        return attention_1, attention_2, text_residual, vision_residual
+        
+        # text_out = self.to_out_proj1(attention_1)
+        # vision_out = self.to_out_proj2(attention_2)
         
         #residuals missing?
-        return text_out, vision_out
+        # return text_out, vision_out
+        
+class CrossAttentionOutput(nn.Module): 
+    # here the residuals are handled
+    def __init__(self, dim): 
+        super(CrossAttentionOutput, self).__init__()
+        # TODO: add layernorma like in vilbert implementation 
+        # https://github.com/facebookresearch/vilbert-multi-task/blob/f22b84a9918a9aea2106e14ac1f6b32ad71492e3/vilbert/vilbert.py#L831
+        self.dim = dim
+        self.projection_text = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.Dropout(DROPOUT_PROB)
+        )
+        
+        self.projection_vision = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.Dropout(DROPOUT_PROB)
+
+        )
+        
+        self.norm_text = nn.LayerNorm(dim)
+        self.norm_vision = nn.LayerNorm(dim)
+        
+    def forward(self, text_attn, vision_attn, text_input,  vision_input):
+        # text_embedded: [bs, seq_len, embedding_dim]
+        # text_input: [bs, seq_len, embedding_dim]
+        # vision_embedded: [bs, num_patches, embedding_dim]
+        # vision_input: [bs, num_patches, embedding_dim]
+        
+        current_text = self.projection_text(text_attn)
+        current_vision = self.projection_vision(vision_attn)
+        
+        # residual conns: 
+        current_text = current_text + text_input
+        current_vision = current_vision + vision_input
         
         
+        # TODO: normalization
+        current_text = self.norm_text(current_text)
+        current_vision = self.norm_vision(current_vision)
+        
+        return current_text, current_vision
+
+class CrossAttention(nn.Module): 
+    def __init__(self, dim, heads=8, dropout=0.): 
+        super(CrossAttention, self).__init__()
+        self.dim = dim
+        self.heads = heads
+        
+        self.cross_attention = CrossAttentionBlock(dim=dim, heads=heads, dropout=dropout)
+        self.output = CrossAttentionOutput(dim)
+        
+    def forward(self, text_tensor, vision_tensor): 
+        
+        text_attn, vision_attn, text_residual, vision_residual = self.cross_attention(
+            text_tensor=text_tensor, 
+            vision_tensor=vision_tensor
+        )
+        text_output, vision_output = self.output(
+            text_attn=text_attn, 
+            vision_attn=vision_attn, 
+            text_input=text_residual, 
+            vision_input=vision_residual
+        )
+        
+        return text_output, vision_output
 
 
 class ViLBERT(nn.Module): 
@@ -158,9 +237,10 @@ class ViLBERT(nn.Module):
         self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
         self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
         
-        self.attention_layer = Attention_Block(dim=DIM, heads=1, dropout=0.1)
+        self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         
-        self.coattention_layer = CrossAttentionBlock(dim=DIM, heads=1, dropout=0.1)
+        # self.coattention_layer = CrossAttentionBlock(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
+        self.coattention_layer = CrossAttention(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         # cross_attention_layers = []
         # for i in range(config.num_hidden_layers): 
         #     cross_attention_layers.append(CrossAttentionLayer())

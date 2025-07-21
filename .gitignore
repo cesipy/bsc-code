@@ -1,3 +1,5 @@
 *.DS_Store
 *.log
 *.vscode
+venv*
+*__pycache__
