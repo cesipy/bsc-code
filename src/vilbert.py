@@ -21,7 +21,7 @@ from transformers import (
 
 from PIL import Image
 
-from attention import Attention_Block, CrossAttention, CrossAttentionBlock
+from attention import Attention_Block, CrossAttention, CrossAttentionBlock, FeedForward_Block
 
 import utils
 from config import *
@@ -43,10 +43,20 @@ class ViLBERT(nn.Module):
         
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         
-        self.cross_attention = CrossAttentionBlock(
-            dim=EMBEDDING_DIM,
-            heads=1,
-        )
+        # self.cross_attention = CrossAttentionBlock(
+        #     dim=EMBEDDING_DIM,
+        #     heads=1,
+        # )
+        
+        self.cross_attention = []
+
+        self.depth = 5
+        for i in range(self.depth): 
+            self.cross_attention.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB))
+
+        self.cross_attention = nn.ModuleList(self.cross_attention)
+
+        
         self.fc = nn.Sequential(
             nn.Linear(2*EMBEDDING_DIM, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
@@ -121,9 +131,21 @@ class ViLBERT(nn.Module):
         # shape text: [bs, seq_len, embedding_dim
         # shape image: [bs, num_patches, embedding_dim]
 
-        text_embedding, vision_embedding = self.cross_attention(text_tensor, image_tensor)
+        # text_embedding, vision_embedding = self.cross_attention(text_tensor, image_tensor)
+        # TODO: fix naming conflict - fix input param name
+        text_embedding = text_tensor
+        vision_embedding = image_tensor
+        
+        for i in range(len(self.cross_attention)):
+            text_embedding, vision_embedding = self.cross_attention[i](
+                text_tensor=text_embedding, 
+                vision_tensor=vision_embedding
+            )
+
+            
         
         #extract the cls token. 
+        # TODO: implement also gap pooling for comparison
         text_embedding = text_embedding[:, 0, :]  
         vision_embedding = vision_embedding[:, 0, :] 
         return text_embedding, vision_embedding

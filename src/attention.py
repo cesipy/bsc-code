@@ -192,8 +192,12 @@ class CrossAttentionBlock(nn.Module):
         self.cross_attention = CrossAttention(dim=dim, heads=heads, dropout=dropout)
         self.output = CrossAttentionOutput(dim)
         
-    def forward(self, text_tensor, vision_tensor): 
+        self.ff_text = FeedForward_Block(dim=dim, mlp_factor=4, dropout=dropout)
+        self.ff_vision = FeedForward_Block(dim=dim, mlp_factor=4, dropout=dropout)
         
+        
+    def forward(self, text_tensor, vision_tensor): 
+
         text_attn, vision_attn, text_residual, vision_residual = self.cross_attention(
             text_tensor=text_tensor, 
             vision_tensor=vision_tensor
@@ -205,4 +209,31 @@ class CrossAttentionBlock(nn.Module):
             vision_input=vision_residual
         )
         
+        text_ff_output = self.ff_text(text_output)
+        vision_ff_output = self.ff_vision(vision_output)
+        
+        text_output = text_output + text_ff_output
+        vision_output = vision_output + vision_ff_output
+    
+        
         return text_output, vision_output
+
+
+class FeedForward_Block(nn.Module):
+  def __init__(self, dim, mlp_factor=4, dropout=0.):
+        super(FeedForward_Block, self).__init__()
+
+        hidden_dim = int(dim * mlp_factor)
+        self.norm = nn.LayerNorm(dim)
+        self.net = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, dim),
+            nn.Dropout(dropout)
+        )
+
+  def forward(self, x):
+    x = self.norm(x)
+    x = self.net(x)
+    return x

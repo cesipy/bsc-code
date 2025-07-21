@@ -3,6 +3,8 @@ import math
 import torch
 from torch import nn
 
+
+
 class GeLU(nn.Module):
     def __init__(self): 
         super(GeLU, self).__init__()
@@ -23,4 +25,18 @@ class GeLU(nn.Module):
 def freeze_all_layers(model: nn.Module): 
     for param in model.parameters(): 
         param.requires_grad = False
+        
+def params_summary(model):
+    total_params = 0
+    trainable_params = 0
+    for p in model.parameters(): 
+        total_params += p.numel()
+        
+        if p.requires_grad: 
+            trainable_params += p.numel()
+            
+    print(f"trainable params: {trainable_params}/{total_params}")
+        
+        
+    
 

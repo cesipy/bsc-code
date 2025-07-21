@@ -57,6 +57,7 @@ class Trainer():
             data_dict = batch
             
             label = data_dict["label"].to(self.device)
+            # itsnot possible to send dicts to device, so do it for every value in dict. 
             text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
             image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
         
@@ -99,6 +100,7 @@ def main():
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     
+    utils.params_summary()
     train_data_list = datasets.generate_data_list(path)
     
     #TODO: remove this, only temp
