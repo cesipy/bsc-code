@@ -140,7 +140,7 @@ def generate_data_list(path: str):
         
         # if not exists
         if not os.path.exists(os.path.join(dir_name, image_path)):
-            print(f"Image {image_path} does not exist in {dir_name}. Skipping.")
+            # print(f"Image {image_path} does not exist in {dir_name}. Skipping.")
             continue
         
         dp = (os.path.join(dir_name, image_path), label, text)

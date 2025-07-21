@@ -100,7 +100,7 @@ def main():
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     
-    utils.params_summary()
+    utils.params_summary(model=model)
     train_data_list = datasets.generate_data_list(path)
     
     #TODO: remove this, only temp

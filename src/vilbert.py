@@ -52,7 +52,7 @@ class ViLBERT(nn.Module):
 
         self.depth = 5
         for i in range(self.depth): 
-            self.cross_attention.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB))
+            self.cross_attention.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=8, dropout=DROPOUT_PROB))
 
         self.cross_attention = nn.ModuleList(self.cross_attention)
 
