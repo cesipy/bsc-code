@@ -29,7 +29,7 @@ from config import *
 FC_HIDDEN_DIM = 1024
 
 class ViLBERT(nn.Module): 
-    def __init__(self, config: BertConfig): 
+    def __init__(self,): 
         super(ViLBERT, self).__init__()
         
         # loads pretrained transformers, no head for task. with transformers.BertFor.... I 
@@ -85,8 +85,10 @@ class ViLBERT(nn.Module):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
         )
-        
+        # print(f"shape of text_embedding: {text_embedding.shape}")
+        # print(f"shape of image_embedding: {image_embedding.shape}")
         concatted_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+        # print(f"shape of concatted_embedding: {concatted_embedding.shape}")
         out = self.fc(concatted_embedding)
         return out
     
@@ -120,6 +122,10 @@ class ViLBERT(nn.Module):
         # shape image: [bs, num_patches, embedding_dim]
 
         text_embedding, vision_embedding = self.cross_attention(text_tensor, image_tensor)
+        
+        #extract the cls token. 
+        text_embedding = text_embedding[:, 0, :]  
+        vision_embedding = vision_embedding[:, 0, :] 
         return text_embedding, vision_embedding
 
     def forward_concat(

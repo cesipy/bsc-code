@@ -40,7 +40,15 @@ def get_image_embedding(path:str, image_processor: BaseImageProcessor):
     return image
 
 def get_text_embedding(text:str, tokenizer: PreTrainedTokenizerFast): 
-    return tokenizer(text, return_tensors="pt")
+    # it is necessary to pad and trucate all to 128
+    # https://huggingface.co/docs/transformers/en/pad_truncation
+    return tokenizer(
+        text, 
+        return_tensors="pt", 
+        padding="max_length",  
+        truncation=True, 
+        max_length=128
+    )
     
 
 
