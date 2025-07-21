@@ -23,6 +23,7 @@ from PIL import Image
 
 from attention import Attention_Block, CrossAttention, CrossAttentionBlock
 
+import utils
 from config import *
 
 
@@ -35,6 +36,10 @@ class ViLBERT(nn.Module):
         # could download pretrained transformers for specific tasks
         self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
         self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
+        
+        utils.freeze_all_layers(self.bert)
+        utils.freeze_all_layers(self.vit)
+        
         
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         

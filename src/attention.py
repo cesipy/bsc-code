@@ -158,7 +158,6 @@ class CrossAttentionOutput(nn.Module):
         self.projection_vision = nn.Sequential(
             nn.Linear(dim, dim),
             nn.Dropout(DROPOUT_PROB)
-
         )
         
         self.norm_text = nn.LayerNorm(dim)

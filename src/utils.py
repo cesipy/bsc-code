@@ -20,3 +20,7 @@ class GeLU(nn.Module):
     
     
     
+def freeze_all_layers(model: nn.Module): 
+    for param in model.parameters(): 
+        param.requires_grad = False
+

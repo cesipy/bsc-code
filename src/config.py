@@ -11,3 +11,27 @@ PREPROCESSED_PATH = "res/preprocessed.pkl"      # not yet used, used to store pr
 TRAIN_TEST_RATIO = 0.8
 
 BATCH_SIZE = 32
+
+
+
+
+class Config: 
+    def __init__(self, 
+                 embedding_dim=EMBEDDING_DIM, 
+                 vocab_size=VOCAB_SIZE, 
+                 num_hidden_layers=NUM_HIDDEN_LAYERS, 
+                 num_attention_heads=NUM_ATTENTION_HEADS, 
+                 dropout_prob=DROPOUT_PROB,
+                 img_size=IMG_SIZE,
+                 preprocessed_path=PREPROCESSED_PATH,
+                 train_test_ratio=TRAIN_TEST_RATIO,
+                 batch_size=BATCH_SIZE):
+        self.embedding_dim = embedding_dim
+        self.vocab_size = vocab_size
+        self.num_hidden_layers = num_hidden_layers
+        self.num_attention_heads = num_attention_heads
+        self.dropout_prob = dropout_prob
+        self.img_size = img_size
+        self.preprocessed_path = preprocessed_path
+        self.train_test_ratio = train_test_ratio
+        self.batch_size = batch_size
