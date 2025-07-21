@@ -2,4 +2,5 @@
 *.log
 *.vscode
 venv*
+res/data/*
 *__pycache__

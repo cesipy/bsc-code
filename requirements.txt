@@ -5,3 +5,5 @@ einops
 torchinfo
 torchmetrics
 tqdm
+opencv-contrib-python
+numpy
