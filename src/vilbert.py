@@ -26,7 +26,7 @@ from attention import Attention_Block, CrossAttention, CrossAttentionBlock
 import utils
 from config import *
 
-
+FC_HIDDEN_DIM = 1024
 
 class ViLBERT(nn.Module): 
     def __init__(self, config: BertConfig): 
@@ -43,13 +43,52 @@ class ViLBERT(nn.Module):
         
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         
+        self.cross_attention = CrossAttentionBlock(
+            dim=EMBEDDING_DIM,
+            heads=1,
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(2*EMBEDDING_DIM, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(DROPOUT_PROB),
+            nn.Linear(FC_HIDDEN_DIM, FC_HIDDEN_DIM//2), 
+            nn.ReLU(inplace=True),
+            nn.Dropout(DROPOUT_PROB),
+            nn.Linear(FC_HIDDEN_DIM//2, 1), 
+        )
     
-        cross_attention_layers = []
-        print(f"num_hidden_layers: {config.num_hidden_layers}")
-        for i in range(config.num_hidden_layers): 
-            cross_attention_layers.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB))
+        # cross_attention_layers = []
+        # print(f"num_hidden_layers: {config.num_hidden_layers}")
+        # for i in range(config.num_hidden_layers): 
+        #     cross_attention_layers.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB))
             
-        self.cross_attention = nn.ModuleList(cross_attention_layers)
+        # self.cross_attention = nn.ModuleList(cross_attention_layers)
+        
+        
+    def forward(
+        self,
+        text_input_ids,
+        text_attention_mask=None,
+        text_token_type_ids=None,
+        image_pixel_values=None,
+        image_attention_mask=None,
+        output_attentions=False,
+        output_hidden_states=False,
+    ):
+        
+        text_embedding, image_embedding = self.forward_coattention(
+            text_input_ids=text_input_ids,
+            text_attention_mask=text_attention_mask,
+            text_token_type_ids=text_token_type_ids,
+            image_pixel_values=image_pixel_values,
+            image_attention_mask=image_attention_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+        )
+        
+        concatted_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+        out = self.fc(concatted_embedding)
+        return out
     
     def forward_coattention(
         self, 
@@ -80,8 +119,8 @@ class ViLBERT(nn.Module):
         # shape text: [bs, seq_len, embedding_dim
         # shape image: [bs, num_patches, embedding_dim]
 
-        text_embeding, vision_embedding = self.cross_attention[-1](text_tensor, image_tensor)
-        return text_embeding, vision_embedding
+        text_embedding, vision_embedding = self.cross_attention(text_tensor, image_tensor)
+        return text_embedding, vision_embedding
 
     def forward_concat(
         self, 
