@@ -12,6 +12,8 @@ TRAIN_TEST_RATIO = 0.8
 
 BATCH_SIZE = 64
 
+EPOCHS = 10
+
 
 
 
