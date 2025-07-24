@@ -105,6 +105,59 @@ class Trainer():
                 
                 
                     
-                
+class PretrainingTrainer:
+    def __init__(
+        self, 
+        model: ViLBERT, 
+        config: Config,
+    ): 
+        
+        self.optimizer = torch.optim.AdamW(
+            model.parameters(), 
+            lr=config.learning_rate, 
+            weight_decay=0.01
+        )
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = model.to(self.device)
+        
+        self.loss_fn_alignment = nn.BCEWithLogitsLoss()
+        self.loss_fn_mlm = nn.CrossEntropyLoss()
+        
+        
+    def train_epoch_prediction(self, data_loader: DataLoader): 
+        self.model.train()
+        
+        total_loss  = 0
+        num_batches = 0
+        tasks = ["alignment_prediction"]
+        
+        for batch in data_loader:
+            self.optimizer.zero_grad()
+            num_batches += 1
+            
+            # handle data here
+            
+            text = ...
+            image = ...
+
+            prediciton_logits = self.model.forward_pretrain(
+                text_input_ids=text["input_ids"].to(self.device),
+                text_attention_mask=text["attention_mask"].to(self.device),
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"].to(self.device),
+                image_attention_mask=image.get("attention_mask", None),
+                tasks=tasks
+            )
+            
+            # handle labels here
+            label = ...
+            label = label.to(self.device).float()
+            loss = self.loss_fn_alignment(prediciton_logits, label)
+            
+            loss.backward()
+            self.optimizer.step()
+            total_loss += loss.item()
+            
+        return total_loss / num_batches
                 
         

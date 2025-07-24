@@ -2,7 +2,8 @@ import csv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
-TIMEOUT = 0.6
+TIMEOUT = 1
+WORKERS = 100
 
 def read_file(path:str): 
     data_list = []
@@ -56,12 +57,15 @@ def save_file(downloaded_data):
         writer.writerow(["text", "filepath"])  # Header
         writer.writerows(downloaded_data)
 
-data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
+# data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
+data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
+data_list = data_list[:200000]
+
 
 error_counter = 0
 downloaded_data = []
 
-with ThreadPoolExecutor(max_workers=30) as executor:
+with ThreadPoolExecutor(max_workers=WORKERS) as executor:
     futures = {executor.submit(download_single, dp): dp for dp in data_list}
     
     for future in tqdm(as_completed(futures), total=len(data_list), desc="downloading images"):
@@ -71,7 +75,7 @@ with ThreadPoolExecutor(max_workers=30) as executor:
         else:
             downloaded_data.append((text, filepath))
 
-# Save all results at the end
+
 save_file(downloaded_data)
 
 print(f"Failed to download {error_counter} images out of {len(data_list)} total images.")

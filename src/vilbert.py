@@ -40,7 +40,6 @@ class ViLBERT(nn.Module):
         utils.freeze_all_layers(self.bert)
         utils.freeze_all_layers(self.vit)
         
-        
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         
         # self.cross_attention = CrossAttentionBlock(
@@ -56,7 +55,13 @@ class ViLBERT(nn.Module):
 
         self.cross_attention = nn.ModuleList(self.cross_attention)
 
+        # pretrain heads
+        self.alignment_fc = nn.Linear(2*EMBEDDING_DIM, 2)
+        self.mlm = nn.Linear(EMBEDDING_DIM, self.bert.config.vocab_size)
+        # TODO: implement, skip for now. i still need an object detector doing it
+        # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
         
+        # for hateful memes classifiction
         self.fc = nn.Sequential(
             nn.Linear(2*EMBEDDING_DIM, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
@@ -66,13 +71,7 @@ class ViLBERT(nn.Module):
             nn.Dropout(DROPOUT_PROB),
             nn.Linear(FC_HIDDEN_DIM//2, 1), 
         )
-    
-        # cross_attention_layers = []
-        # print(f"num_hidden_layers: {config.num_hidden_layers}")
-        # for i in range(config.num_hidden_layers): 
-        #     cross_attention_layers.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB))
-            
-        # self.cross_attention = nn.ModuleList(cross_attention_layers)
+
         
         
     def forward(
@@ -111,6 +110,7 @@ class ViLBERT(nn.Module):
         image_attention_mask=None, 
         output_attentions=False,
         output_hidden_states=False,
+        extract_cls=True            # used for pretraining. should the cls token be extracted?
     ): 
         text_output = self.bert(
             input_ids=text_input_ids,
@@ -142,6 +142,9 @@ class ViLBERT(nn.Module):
                 vision_tensor=vision_embedding
             )
 
+
+        if not extract_cls: 
+            return text_embedding, vision_embedding
             
         
         #extract the cls token. 
@@ -210,6 +213,61 @@ class ViLBERT(nn.Module):
         
         return text_output.last_hidden_state, image_output.last_hidden_state
 
+    def forward_pretrain(
+        self, 
+        text_input_ids,
+        text_attention_mask=None,
+        text_token_type_ids=None,
+        image_pixel_values=None,
+        image_attention_mask=None, 
+        output_attentions=False,
+        output_hidden_states=False,
+        tasks:list[str]= None,      #TODO: make tasks an enunm
+    ): 
+
+        
+        
+        if "mlm" in tasks:
+            # text_embedding_tensor = self.__forward_masked_text(
+            #     ...
+            # )
+            text_seqs, vision_seqs = self.forward_coattention(
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                extract_cls=False,  # do not extract cls token for pretraining
+            )
+            mlm_logits = self.mlm(text_seqs)
+            
+            
+        # TODO: later, needs an object regonition model to learn the output
+        # distribution from  - minimize kl div for this task
+        # if 'task_masked_image' in tasks:
+        #     image_embedding_tensor = self.__forward_masked_image(
+        #         ...
+        #     )
+        
+        if "alignment_prediction" in tasks: 
+            text_embedding, image_embedding = self.forward_coattention(
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                extract_cls=True, # only cls needed. nothing else
+            )
+            shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+            alignment_logits = self.alignment_fc(shared_embedding)
+            
+            
+        
+        
 
 def main(): 
     config = BertConfig()
@@ -219,6 +277,7 @@ def main():
     
     text = "hello, what is you name?"
     text_tokens = tokenizer(text, return_tensors="pt")
+    
     # can be simply passed to the model without further processing
     #print(type(text_tokens))        
     # transformers.tokenization_utils_base.BatchEncoding, simple dictionary
