@@ -3,6 +3,14 @@ import math
 import torch
 from torch import nn
 
+from enum import Enum
+
+
+class Task(Enum): 
+    ALIGNMEN_PREDICTION = 1
+    MASKED_LM = 2
+    MASKED_IM = 3
+
 
 
 class GeLU(nn.Module):

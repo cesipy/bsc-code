@@ -53,13 +53,13 @@ def download_single(dp):
 
 def save_file(downloaded_data):
     with open("res/data/conceptual-captions/downloaded_data.csv", "w", newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(["text", "filepath"])  # Header
         writer.writerows(downloaded_data)
 
-# data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
-data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
-data_list = data_list[:200000]
+data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
+# data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
+# data_list = data_list[:200000]
 
 
 error_counter = 0

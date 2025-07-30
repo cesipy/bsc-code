@@ -42,13 +42,7 @@ class ViLBERT(nn.Module):
         
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         
-        # self.cross_attention = CrossAttentionBlock(
-        #     dim=EMBEDDING_DIM,
-        #     heads=1,
-        # )
-        
         self.cross_attention = []
-
         self.depth = 5
         for i in range(self.depth): 
             self.cross_attention.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=8, dropout=DROPOUT_PROB))
@@ -58,7 +52,7 @@ class ViLBERT(nn.Module):
         # pretrain heads
         self.alignment_fc = nn.Linear(2*EMBEDDING_DIM, 2)
         self.mlm = nn.Linear(EMBEDDING_DIM, self.bert.config.vocab_size)
-        # TODO: implement, skip for now. i still need an object detector doing it
+        # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
         # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
         
         # for hateful memes classifiction

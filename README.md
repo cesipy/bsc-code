@@ -6,7 +6,9 @@
 - [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
 - [ ] torch compile
 - [ ] add dropout in attention
-
+- [ ] pretrain dataset fix: filter out images that are not working
+- [ ] pretrain dataset mlm task
+- [ ] pretrain dataset image task
 
 ## ViLBERT
 original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
