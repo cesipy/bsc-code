@@ -40,11 +40,11 @@ def get_image_embedding(path:str, image_processor: BaseImageProcessor):
         image = Image.open(path).convert("RGB")
         image = image_processor(images=image, return_tensors="pt")
         return image
-    except UnidentifiedImageError:
-        print(f"Error: Unidentified image at {path}. Skipping.")
-        return None
     except ValueError: 
         print(f"Error: Value error with image at {path}. Skipping.")
+        return None
+    except Exception: 
+        # print(f"Error: Unidentified image at {path}. Skipping.")
         return None
     
 

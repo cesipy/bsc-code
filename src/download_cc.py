@@ -1,8 +1,13 @@
 import csv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+from io import BytesIO
 
-TIMEOUT = 1
+import requests
+from pathlib import Path
+from PIL import Image, UnidentifiedImageError
+
+TIMEOUT = 3
 WORKERS = 100
 
 def read_file(path:str): 
@@ -18,19 +23,37 @@ def read_file(path:str):
     
     return data_list
 
+def is_image_openable(content):
+    try:  
+        image = Image.open(BytesIO(content)).convert("RGB")
+        return True
+    except Exception: 
+        return False
+    
+def get_filename(content): 
+    image = Image.open(BytesIO(content))
+    format_lower = image.format.lower() if image.format else 'jpg'
+    
+    base_filename = url.split("/")[-1].split('?')[0]  # remove query params
+    if '.' in base_filename:
+        base_filename = base_filename.rsplit('.', 1)[0]  # remove existing extension
+    
+    filename = f"{base_filename}.{format_lower}"
+    
+
 def download_image(url: str, verbose=False): 
-    import requests
-    from pathlib import Path
+
     try: 
         response = requests.get(url, timeout=TIMEOUT)
         if response.status_code == 200:
-            filename = url.split("/")[-1]
             
-            #TODO fix this. i think it rejects some online images
-            if not filename.endswith(('.jpg', '.jpeg', '.png')):
+            if not is_image_openable(response.content):
                 if verbose:
-                    print(f"Skipping {url}: Not a valid image file.")
+                    print(f"Skipping {url}: Image cannot be opened.")
                 return None
+            
+            filename = get_filename(response.content)
+            
             filepath = Path("res/data/conceptual-captions/images") / filename
             filepath.parent.mkdir(parents=True, exist_ok=True)
             
