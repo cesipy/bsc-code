@@ -7,3 +7,4 @@ torchmetrics
 tqdm
 opencv-contrib-python
 numpy
+tqdm

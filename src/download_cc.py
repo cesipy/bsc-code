@@ -7,8 +7,8 @@ import requests
 from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
-TIMEOUT = 3
-WORKERS = 100
+TIMEOUT = 1.5
+WORKERS = 200
 
 def read_file(path:str): 
     data_list = []
@@ -39,6 +39,7 @@ def get_filename(content):
         base_filename = base_filename.rsplit('.', 1)[0]  # remove existing extension
     
     filename = f"{base_filename}.{format_lower}"
+    return filename
     
 
 def download_image(url: str, verbose=False): 
@@ -80,9 +81,9 @@ def save_file(downloaded_data):
         writer.writerow(["text", "filepath"])  # Header
         writer.writerows(downloaded_data)
 
-data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
-# data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
-# data_list = data_list[:200000]
+# data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
+data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
+data_list = data_list[:200000]
 
 
 error_counter = 0

@@ -139,12 +139,13 @@ class PretrainDataset(Dataset):
         self.transform = None
         self.tokenizer = tokenizer
         self.image_processor = image_processor
+        self.invalid_image_counter = 0
         
         self.data = self.__generate_pretrain_dataset(dataset_path)
         #TODO
-        self.data = self.exclude_invald_photos(self.data)
+        # self.data = self.exclude_invald_photos(self.data)
         
-        # memory overload
+        # memory overload, load per element
         # self.data = self.__preprocess_data(self.data)
         
     def __preprocess_data(self, data:typing.List[typing.Tuple[Task, str, str, int]]): 
@@ -213,20 +214,34 @@ class PretrainDataset(Dataset):
     #         img_tensor = self.transform(data["img"])
             
     #     return data
+    
+    def handle_fallback(self, ): 
+        self.invalid_image_counter += 1
+        if self.invalid_image_counter > 10:
+            raise ValueError("Too many invalid images encountered. Stopping.")
+        idx = random.randint(0, len(self.data) - 1)
+        
+        return self.__getitem__(idx)
      
     def __getitem__(self, index):
+        # it is not possible to preprocess the data because the memory cannot hold all images simultanously. 
+        # with the num_workers flag true and other optimizations it should work with loading it 
+        # on demand.
         dp = self.data[index]
         task, text, img_path, label = dp
         img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
         
         if img_embeddings is None or text_embeddings is None:
-            raise ValueError(f"Image or text embeddings are None for index {index}. Check the data.")
+            return self.handle_fallback()
+            # TODO: handle this error
+            # raise ValueError(f"Image or text embeddings are None for index {index}. Check the data.")
         
+        self.invalid_image_counter = 0
         label_tensor = torch.tensor(label, dtype=torch.long)
         
         return {
-            "task": task,
+            "task": task.value,     # torch cannot handle custom classes
             "img": img_embeddings,
             "label": label_tensor,
             "text": text_embeddings,
@@ -328,43 +343,60 @@ def main():
     )
     
     print(f"Dataset length: {len(dataset)}")
-    for i in dataset: 
-        # Decode the text to see what it actually says
-        text_decoded = tokenizer.decode(i["text"]["input_ids"][0], skip_special_tokens=True)
+    # for i in dataset: 
+    #     # Decode the text to see what it actually says
+    #     text_decoded = tokenizer.decode(i["text"]["input_ids"][0], skip_special_tokens=True)
+        
+    #     print(f"Task: {i['task']}")
+    #     print(f"Text: '{text_decoded}'")
+    #     print(f"Image shape: {i['img']['pixel_values'].shape}")
+    #     print(f"Label: {i['label'].item()}")
+    #     print("-" * 30)
+
+
+    '''
+    Dataset length: 478
+    Task.ALIGNMEN_PREDICTION {'input_ids': tensor([[  101, 10658,  2160,  2013,  1037, 16641,   102,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+                0,     0,     0,     0,     0,     0,     0,     0]]), 'token_type_ids': tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0]]), 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0]])} torch.Size([1, 3, 224, 224]) tensor(1)
+    '''
+    dataloader = DataLoader(
+        dataset, 
+        batch_size=1, 
+        shuffle=True,
+        num_workers=10, 
+        pin_memory=True,
+        persistent_workers=True
+    )
+    
+    for i in dataloader: 
+        text_decoded = tokenizer.decode(i["text"]["input_ids"][0][0], skip_special_tokens=True)
         
         print(f"Task: {i['task']}")
         print(f"Text: '{text_decoded}'")
         print(f"Image shape: {i['img']['pixel_values'].shape}")
         print(f"Label: {i['label'].item()}")
-        break
-
-
-'''
-Dataset length: 478
-Task.ALIGNMEN_PREDICTION {'input_ids': tensor([[  101, 10658,  2160,  2013,  1037, 16641,   102,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-             0,     0,     0,     0,     0,     0,     0,     0]]), 'token_type_ids': tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0]]), 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-         0, 0, 0, 0, 0, 0, 0, 0]])} torch.Size([1, 3, 224, 224]) tensor(1)
-'''
+        print("-" * 30)
     
     
 if __name__ == "__main__":
