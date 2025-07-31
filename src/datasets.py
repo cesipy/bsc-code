@@ -132,7 +132,7 @@ class CustomDataset(Dataset):
 class PretrainDataset(Dataset): 
     def __init__(
         self,
-        dataset_path: str, 
+        data: typing.List[typing.Tuple[str, str]], # path, text/caption
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor
         ): 
@@ -141,7 +141,7 @@ class PretrainDataset(Dataset):
         self.image_processor = image_processor
         self.invalid_image_counter = 0
         
-        self.data = self.__generate_pretrain_dataset(dataset_path)
+        self.data = self.__generate_pretrain_dataset(data)
         #TODO
         # self.data = self.exclude_invald_photos(self.data)
         
@@ -176,27 +176,18 @@ class PretrainDataset(Dataset):
         return data_tensor
         
         
-    def __generate_pretrain_dataset(self, path: str): 
-        data_list = []
-        with open(path) as fd: 
-            rd = csv.reader(fd, quotechar='"')
-            next(rd)
-            
-            for row in rd:
-                text = row[0]
-                path = row[1]
-                
-                if not os.path.exists(path):
-                    # print(f"Image {path} does not exist. Skipping.")
-                    continue
-                
-                data_list.append((text, path))
-                
+    def __generate_pretrain_dataset(
+        self, 
+        data: typing.List[typing.Tuple[str, str]],  # path, text/caption
+    ): 
+        data_list = data
+        
         random.shuffle(data_list)
         idx = 0.5 * len(data_list) + random.randint(0, int(0.05*len(data_list)))
         idx = int(idx)
         
         # labelled 1, as they are aligned. alignment = True
+        # shape: task, path, text, label
         true_alignment = [(Task.ALIGNMEN_PREDICTION, dp[0], dp[1], 1)  
                           for dp in data_list[:idx]]
         false_alignment = [(Task.ALIGNMEN_PREDICTION, dp[0], dp[1], 0)
@@ -228,15 +219,13 @@ class PretrainDataset(Dataset):
         # with the num_workers flag true and other optimizations it should work with loading it 
         # on demand.
         dp = self.data[index]
-        task, text, img_path, label = dp
+        task, img_path, text, label = dp
         img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
         
         if img_embeddings is None or text_embeddings is None:
             return self.handle_fallback()
-            # TODO: handle this error
-            # raise ValueError(f"Image or text embeddings are None for index {index}. Check the data.")
-        
+
         self.invalid_image_counter = 0
         label_tensor = torch.tensor(label, dtype=torch.long)
         
@@ -286,6 +275,24 @@ def generate_data_list(path: str):
     
     return data_list
     
+    
+def generate_data_list_pretrain(path: str): 
+    data_list = []
+    with open(path) as fd: 
+        rd = csv.reader(fd, quotechar='"')
+        next(rd)
+        
+        for row in rd:
+            text = row[0]
+            path = row[1]
+            
+            if not os.path.exists(path):
+                # print(f"Image {path} does not exist. Skipping.")
+                continue
+            
+            data_list.append((path, text))
+            
+    return data_list
 
         
         
@@ -333,11 +340,13 @@ def generate_data_list(path: str):
 def main(): 
     path = "res/data/conceptual-captions/validation.csv"
     
+    dl = generate_data_list_pretrain(path)
+    
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     
     dataset = PretrainDataset(
-        dataset_path=path, 
+        data=dl, 
         tokenizer=tokenizer,
         image_processor=image_processor
     )
