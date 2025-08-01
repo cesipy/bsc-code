@@ -41,9 +41,11 @@ def get_image_embedding(path:str, image_processor: BaseImageProcessor):
         image = image_processor(images=image, return_tensors="pt")
         return image
     except ValueError: 
-        print(f"Error: Value error with image at {path}. Skipping.")
+        print(path)
+        # print(f"Error: Value error with image at {path}. Skipping.")
         return None
     except Exception: 
+        print(path)
         # print(f"Error: Unidentified image at {path}. Skipping.")
         return None
     
@@ -224,6 +226,7 @@ class PretrainDataset(Dataset):
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
         
         if img_embeddings is None or text_embeddings is None:
+            # this should not happen anymore, as downloading conc.capt. checks for faulty imgs
             return self.handle_fallback()
 
         self.invalid_image_counter = 0
@@ -352,16 +355,6 @@ def main():
     )
     
     print(f"Dataset length: {len(dataset)}")
-    # for i in dataset: 
-    #     # Decode the text to see what it actually says
-    #     text_decoded = tokenizer.decode(i["text"]["input_ids"][0], skip_special_tokens=True)
-        
-    #     print(f"Task: {i['task']}")
-    #     print(f"Text: '{text_decoded}'")
-    #     print(f"Image shape: {i['img']['pixel_values'].shape}")
-    #     print(f"Label: {i['label'].item()}")
-    #     print("-" * 30)
-
 
     '''
     Dataset length: 478

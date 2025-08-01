@@ -3,11 +3,58 @@ from transformers import (
 )
 
 import utils
-import datasets; from datasets import CustomDataset
+import datasets; from datasets import CustomDataset, PretrainDataset
 from config import *
 from vilbert import ViLBERT
-from trainer import Trainer
+from trainer import Trainer, PretrainingTrainer
 from torch.utils.data import DataLoader, Dataset
+
+def pretain(): 
+    path = "res/data/conceptual-captions/validation.csv"
+    data_list = datasets.generate_data_list_pretrain(path=path)
+    train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
+    train_data = data_list[:train_idx]
+    val_data   = data_list[train_idx:]
+    
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+    
+    train_dataset = PretrainDataset(train_data, tokenizer=tokenizer, image_processor=image_processor)
+    val_dataset   = PretrainDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
+    
+    train_loader = DataLoader(
+        dataset=train_dataset, 
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=10, 
+        pin_memory=True, 
+        persistent_workers=True,
+        prefetch_factor=4
+    )
+    val_loader = DataLoader(
+        dataset=val_dataset, 
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=10, 
+        pin_memory=True, 
+        persistent_workers=True,
+        prefetch_factor=4
+    )
+    
+    trainer = PretrainingTrainer(
+        model=ViLBERT(), 
+        config=Config()
+    )
+    
+    trainer.train(
+        train_dataloader=train_loader, 
+        test_dataloader=val_loader, 
+        epochs=10
+    )
+    
+    
+    
+    
 
 
 def main(): 
@@ -49,4 +96,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    pretain()

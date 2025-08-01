@@ -27,6 +27,7 @@ import utils
 from config import *
 
 FC_HIDDEN_DIM = 1024
+DEPTH = 2
 
 class ViLBERT(nn.Module): 
     def __init__(self,): 
@@ -43,14 +44,14 @@ class ViLBERT(nn.Module):
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         
         self.cross_attention = []
-        self.depth = 5
+        self.depth = DEPTH
         for i in range(self.depth): 
             self.cross_attention.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=8, dropout=DROPOUT_PROB))
 
         self.cross_attention = nn.ModuleList(self.cross_attention)
 
         # pretrain heads
-        self.alignment_fc = nn.Linear(2*EMBEDDING_DIM, 2)
+        self.alignment_fc = nn.Linear(2*EMBEDDING_DIM, 1)
         self.mlm = nn.Linear(EMBEDDING_DIM, self.bert.config.vocab_size)
         # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
         # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
@@ -258,7 +259,7 @@ class ViLBERT(nn.Module):
             )
             shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
             alignment_logits = self.alignment_fc(shared_embedding)
-            
+            return alignment_logits
             
         
         

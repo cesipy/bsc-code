@@ -120,10 +120,15 @@ class PretrainingTrainer:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = model.to(self.device)
         
+        self.model = torch.compile(self.model)  
+        
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
         
+    def evaluate(self, dataloader: DataLoader):
+        return int(-1)  # TODO: implement evaluation for pretraining
         
+    # TODO: handle other pretraining tasks
     def train_epoch_prediction(self, data_loader: DataLoader): 
         self.model.train()
         
@@ -136,22 +141,25 @@ class PretrainingTrainer:
             num_batches += 1
             
             # handle data here
-            
-            text = ...
-            image = ...
+            task = batch["task"]
+            text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+            image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+            label = batch["label"].to(self.device).float()
 
+            #TODO fix tasks management. now is hardcoded
             prediciton_logits = self.model.forward_pretrain(
-                text_input_ids=text["input_ids"].to(self.device),
-                text_attention_mask=text["attention_mask"].to(self.device),
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
-                image_pixel_values=image["pixel_values"].to(self.device),
+                image_pixel_values=image["pixel_values"],
                 image_attention_mask=image.get("attention_mask", None),
                 tasks=tasks
             )
-            
-            # handle labels here
-            label = ...
-            label = label.to(self.device).float()
+            label = label.unsqueeze(1)
+
+            # print(prediciton_logits.shape, label.shape)
+            # both have shape [batch_size, 1]
+
             loss = self.loss_fn_alignment(prediciton_logits, label)
             
             loss.backward()
@@ -160,4 +168,13 @@ class PretrainingTrainer:
             
         return total_loss / num_batches
                 
-        
+    def train(
+        self, 
+        train_dataloader: DataLoader,
+        test_dataloader: DataLoader,
+        epochs: int
+    ): 
+        for epoch in range(epochs):
+            train_loss = self.train_epoch_prediction(train_dataloader)
+            test_loss = self.evaluate(test_dataloader)
+            print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")

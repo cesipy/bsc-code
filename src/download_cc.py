@@ -7,8 +7,17 @@ import requests
 from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
+
+from transformers import (
+     # ViT stuff
+    BaseImageProcessor,
+    ViTImageProcessor,
+)
+
 TIMEOUT = 1.5
-WORKERS = 200
+WORKERS = 50
+
+image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
 def read_file(path:str): 
     data_list = []
@@ -23,14 +32,15 @@ def read_file(path:str):
     
     return data_list
 
-def is_image_openable(content):
+def is_image_openable(content, image_processor: BaseImageProcessor):
     try:  
         image = Image.open(BytesIO(content)).convert("RGB")
+        image = image_processor(images=image, return_tensors="pt")
         return True
     except Exception: 
         return False
     
-def get_filename(content): 
+def get_filename(content, url): 
     image = Image.open(BytesIO(content))
     format_lower = image.format.lower() if image.format else 'jpg'
     
@@ -48,12 +58,12 @@ def download_image(url: str, verbose=False):
         response = requests.get(url, timeout=TIMEOUT)
         if response.status_code == 200:
             
-            if not is_image_openable(response.content):
+            if not is_image_openable(response.content, image_processor=image_processor):
                 if verbose:
                     print(f"Skipping {url}: Image cannot be opened.")
                 return None
             
-            filename = get_filename(response.content)
+            filename = get_filename(content=response.content, url=url)
             
             filepath = Path("res/data/conceptual-captions/images") / filename
             filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -81,26 +91,31 @@ def save_file(downloaded_data):
         writer.writerow(["text", "filepath"])  # Header
         writer.writerows(downloaded_data)
 
-# data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
-data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
-data_list = data_list[:200000]
+def main():
+        
+    # data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
+    data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
+    data_list = data_list[:200000]
 
 
-error_counter = 0
-downloaded_data = []
+    error_counter = 0
+    downloaded_data = []
 
-with ThreadPoolExecutor(max_workers=WORKERS) as executor:
-    futures = {executor.submit(download_single, dp): dp for dp in data_list}
-    
-    for future in tqdm(as_completed(futures), total=len(data_list), desc="downloading images"):
-        text, url, filepath = future.result()
-        if filepath is None:
-            error_counter += 1
-        else:
-            downloaded_data.append((text, filepath))
+    with ThreadPoolExecutor(max_workers=WORKERS) as executor:
+        futures = {executor.submit(download_single, dp): dp for dp in data_list}
+        
+        for future in tqdm(as_completed(futures), total=len(data_list), desc="downloading images"):
+            text, url, filepath = future.result()
+            if filepath is None:
+                error_counter += 1
+            else:
+                downloaded_data.append((text, filepath))
 
 
-save_file(downloaded_data)
+    save_file(downloaded_data)
 
-print(f"Failed to download {error_counter} images out of {len(data_list)} total images.")
-print(f"Saved {len(downloaded_data)} downloaded images to CSV")
+    print(f"Failed to download {error_counter} images out of {len(data_list)} total images.")
+    print(f"Saved {len(downloaded_data)} downloaded images to CSV")
+
+if __name__ == "__main__":
+    main()
