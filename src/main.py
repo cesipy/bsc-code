@@ -10,8 +10,10 @@ from trainer import Trainer, PretrainingTrainer
 from torch.utils.data import DataLoader, Dataset
 
 def pretain(): 
-    path = "res/data/conceptual-captions/validation.csv"
+    # path = "res/data/conceptual-captions/validation.csv"
+    path = "res/data/conceptual-captions/train.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
+    data_list = data_list[:100_000]
     train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     train_data = data_list[:train_idx]
     val_data   = data_list[train_idx:]
@@ -41,8 +43,11 @@ def pretain():
         prefetch_factor=4
     )
     
+    model = ViLBERT()
+    utils.params_summary(model=model)
+    
     trainer = PretrainingTrainer(
-        model=ViLBERT(), 
+        model=model, 
         config=Config()
     )
     
@@ -53,9 +58,6 @@ def pretain():
     )
     
     
-    
-    
-
 
 def main(): 
     path = "res/data/hateful_memes_data/train.jsonl"

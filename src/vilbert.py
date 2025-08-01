@@ -27,7 +27,19 @@ import utils
 from config import *
 
 FC_HIDDEN_DIM = 1024
-DEPTH = 2
+DEPTH = 4
+
+# various speedups for models, adapted from karpathy's gpt2 video
+# https://www.youtube.com/watch?v=l8pRSuU81PU
+# also adapted other methods like torch.compile and autocast (mixed precision)
+# have minimal tradeoffs.
+# in combination, leads to 2.5x speedup!!
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.deterministic = False 
+torch.backends.cudnn.enabled = True
+
 
 class ViLBERT(nn.Module): 
     def __init__(self,): 
@@ -37,6 +49,13 @@ class ViLBERT(nn.Module):
         # could download pretrained transformers for specific tasks
         self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
         self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
+        
+        self.bert = torch.compile(self.bert)  
+        self.vit = torch.compile(self.vit)
+        
+        self.bert.gradient_checkpointing_enable()
+        self.vit.gradient_checkpointing_enable()
+    
         
         utils.freeze_all_layers(self.bert)
         utils.freeze_all_layers(self.vit)
