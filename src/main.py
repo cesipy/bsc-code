@@ -13,16 +13,25 @@ def pretain():
     # path = "res/data/conceptual-captions/validation.csv"
     path = "res/data/conceptual-captions/train.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
-    data_list = data_list[:100_000]
     train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     train_data = data_list[:train_idx]
     val_data   = data_list[train_idx:]
     
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-    
-    train_dataset = PretrainDataset(train_data, tokenizer=tokenizer, image_processor=image_processor)
-    val_dataset   = PretrainDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
+    preprocessing_prediction_alignment = False
+    train_dataset = PretrainDataset(
+        train_data, 
+        tokenizer=tokenizer, 
+        image_processor=image_processor, 
+        preprocessing_prediction_alignment=preprocessing_prediction_alignment
+    )
+    val_dataset   = PretrainDataset(
+        val_data, 
+        tokenizer=tokenizer, 
+        image_processor=image_processor,
+        preprocessing_prediction_alignment=preprocessing_prediction_alignment
+    )
     
     train_loader = DataLoader(
         dataset=train_dataset, 

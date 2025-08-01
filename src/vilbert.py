@@ -19,6 +19,8 @@ from transformers import (
     PreTrainedTokenizerFast,
 )
 
+import timm
+
 from PIL import Image
 
 from attention import Attention_Block, CrossAttention, CrossAttentionBlock, FeedForward_Block
@@ -48,13 +50,15 @@ class ViLBERT(nn.Module):
         # loads pretrained transformers, no head for task. with transformers.BertFor.... I 
         # could download pretrained transformers for specific tasks
         self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
+        
+        # apparently transformers vit implementatins is flawed. 
         self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
+        # self.vit = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=0)  # num_classes=0 removes head
         
         self.bert = torch.compile(self.bert)  
         self.vit = torch.compile(self.vit)
         
         self.bert.gradient_checkpointing_enable()
-        self.vit.gradient_checkpointing_enable()
     
         
         utils.freeze_all_layers(self.bert)
@@ -86,8 +90,6 @@ class ViLBERT(nn.Module):
             nn.Linear(FC_HIDDEN_DIM//2, 1), 
         )
 
-        
-        
     def forward(
         self,
         text_input_ids,

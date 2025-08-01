@@ -25,6 +25,14 @@ from PIL import Image, UnidentifiedImageError
 from utils import Task
 from config import * 
 
+import warnings
+
+# disable PIL's decompression bomb warning, bc i get the following: 
+# DecompressionBombWarning: Image size (93950400 pixels) exceeds limit of 89478485 pixels, could be decompression bomb DOS attack.
+warnings.filterwarnings("ignore", ".*DecompressionBombWarning.*", category=Image.DecompressionBombWarning)
+warnings.filterwarnings("ignore", ".*Palette images with Transparency.*", category=UserWarning)
+Image.MAX_IMAGE_PIXELS = None
+
 def process_single_image(path:str) -> torch.Tensor: 
     img = cv2.imread(path)
     img = cv2.resize(img, IMG_SIZE)
@@ -35,18 +43,28 @@ def process_single_image(path:str) -> torch.Tensor:
     
     return img_tensor
 
-def get_image_embedding(path:str, image_processor: BaseImageProcessor):
-    try:  
-        image = Image.open(path).convert("RGB")
-        image = image_processor(images=image, return_tensors="pt")
-        return image
-    except ValueError: 
-        print(path)
-        # print(f"Error: Value error with image at {path}. Skipping.")
-        return None
-    except Exception: 
-        print(path)
-        # print(f"Error: Unidentified image at {path}. Skipping.")
+def get_image_embedding(path: str, image_processor: BaseImageProcessor):
+    try:
+        with Image.open(path) as image:
+            # Resize if too large, some images in cc are too large 
+            # i need to resize them to mitigate warnings
+            # vit sizes them down anyways
+            width, height = image.size
+            max_size = 4096  # Max dimension
+            if width > max_size or height > max_size:
+                if width > height:
+                    new_width = max_size
+                    new_height = int(height * max_size / width)
+                else:
+                    new_height = max_size  
+                    new_width = int(width * max_size / height)
+                image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            image = image.convert("RGB")
+            image = image_processor(images=image, return_tensors="pt")
+            return image
+    except Exception:
+        # print(f"Error processing image {path}. Skipping.")
         return None
     
 
@@ -136,12 +154,15 @@ class PretrainDataset(Dataset):
         self,
         data: typing.List[typing.Tuple[str, str]], # path, text/caption
         tokenizer: PreTrainedTokenizerFast,
-        image_processor: BaseImageProcessor
+        image_processor: BaseImageProcessor, 
+        preprocessing_prediction_alignment: bool,    # whether to generate the dataset at first, or at runtime
         ): 
         self.transform = None
         self.tokenizer = tokenizer
         self.image_processor = image_processor
         self.invalid_image_counter = 0
+        
+        self.preprocessing_prediction_alignment = preprocessing_prediction_alignment
         
         self.data = self.__generate_pretrain_dataset(data)
         #TODO
@@ -183,22 +204,29 @@ class PretrainDataset(Dataset):
         data: typing.List[typing.Tuple[str, str]],  # path, text/caption
     ): 
         data_list = data
+        true_alignment = [(Task.ALIGNMEN_PREDICTION, dp[0], dp[1], 1)
+                          for dp in data_list]
         
-        random.shuffle(data_list)
-        idx = 0.5 * len(data_list) + random.randint(0, int(0.05*len(data_list)))
-        idx = int(idx)
-        
-        # labelled 1, as they are aligned. alignment = True
-        # shape: task, path, text, label
-        true_alignment = [(Task.ALIGNMEN_PREDICTION, dp[0], dp[1], 1)  
-                          for dp in data_list[:idx]]
-        false_alignment = [(Task.ALIGNMEN_PREDICTION, dp[0], dp[1], 0)
-                           for dp in data_list[idx:]]
-        
-        data_list = true_alignment + false_alignment
-        random.shuffle(data_list)
-        
-        return data_list
+        if self.preprocessing_prediction_alignment: 
+                
+            false_alignment = []
+            dataset_length = len(true_alignment)
+            for i in range(dataset_length):
+                random_idx = i
+                while random_idx == i:
+                    random_idx = random.randint(0, dataset_length - 1)
+                
+                dp_path = data_list[i][0]
+                text = data_list[random_idx][1]
+                # shape: task, path, text, label
+                false_alignment.append((Task.ALIGNMEN_PREDICTION, dp_path, text, 0 ))
+                
+            data_list = true_alignment + false_alignment
+            random.shuffle(data_list)
+            
+            return data_list
+        else: 
+            return true_alignment
     
     # def __getitem__(self, index):
     #     data = self.data[index]
@@ -219,9 +247,22 @@ class PretrainDataset(Dataset):
     def __getitem__(self, index):
         # it is not possible to preprocess the data because the memory cannot hold all images simultanously. 
         # with the num_workers flag true and other optimizations it should work with loading it 
-        # on demand.
+        # on demand.+
+            
+            
         dp = self.data[index]
         task, img_path, text, label = dp
+        if not self.preprocessing_prediction_alignment: 
+            if random.random() < 0.5: 
+
+                # swap out text with some other caption
+                random_idx = index
+                while random_idx == index:
+                    random_idx = random.randint(0, len(self.data) - 1)
+                
+                text = self.data[random_idx][2]  # get text from random index
+                label = 0    
+            
         img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
         

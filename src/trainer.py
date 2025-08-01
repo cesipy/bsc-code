@@ -222,3 +222,7 @@ class PretrainingTrainer:
             train_loss = self.train_epoch_prediction(train_dataloader)
             test_loss = self.evaluate(test_dataloader)
             print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
+            import math
+            approx_test_acc = math.exp(-test_loss)
+            approx_train_acc = math.exp(-train_loss)
+            print(f"Approx train acc: {approx_train_acc:.4f}, approx test acc: {approx_test_acc:.4f}")
