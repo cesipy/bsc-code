@@ -261,9 +261,13 @@ class PretrainDataset(Dataset):
     
     def mask_tokens(self, token_ids, tokenizer: PreTrainedTokenizerFast, mask_prob=0.15): 
         masked_tokens = token_ids.clone()
-        output_labels = []
+        #-100 for loss function to ignore it.
+        output_labels = torch.full_like(token_ids, -100, dtype=torch.long)
         
-        for i, token in enumerate(token_ids[0]): 
+        for i, token in enumerate(token_ids[0]):
+            if token == tokenizer.pad_token_id:
+                continue 
+            
             prob1 = random.random()
             
             if prob1 < mask_prob:
@@ -276,19 +280,19 @@ class PretrainDataset(Dataset):
                     
                 # 10 % are replaced with random token
                 elif prob2 < 0.9 and prob2 >= 0.8:
-                    random_token_id = random.randint(0, tokenizer.vocab_size - 1)
+                    random_token_id = random.randint(1, tokenizer.vocab_size - 1)
                     masked_tokens[0, i] = random_token_id
                 else: 
                     # 10 % are left unchanged
                     masked_tokens[0, i] = token_ids[0, i]
                     
-                output_labels.append(token.item())     # these will be predicted
+                output_labels[0, i] = token.item()     # these will be predicted
             else:
                 # will be ignored by loss funciton
                 # https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html - is default ignore_index
-                output_labels.append(-100)    
+                pass 
                 
-        return masked_tokens, torch.tensor(output_labels, dtype=torch.long)
+        return masked_tokens, output_labels
         
 
     
@@ -308,7 +312,6 @@ class PretrainDataset(Dataset):
         dp = self.data[index]
         task, img_path, text, label = dp
     
-        
         if not self.preprocessing_prediction_alignment and task == Task.ALIGNMEN_PREDICTION: 
             if random.random() < 0.5: 
 
@@ -332,6 +335,7 @@ class PretrainDataset(Dataset):
         if task == Task.MASKED_LM:
             input_ids = text_embeddings["input_ids"].clone()
             masked_input_ids, mlm_label = self.mask_tokens(input_ids, tokenizer=self.tokenizer)
+            assert masked_input_ids.shape == mlm_label.shape
             
             text_embeddings["input_ids"] = masked_input_ids
             

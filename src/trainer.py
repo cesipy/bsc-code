@@ -240,25 +240,27 @@ class PretrainingTrainer:
             label = batch["label"].to(self.device) 
             label = label      # [bs,  TOKENIZER_MAX_LEN]
             
-
-            mlm_logits = self.model.forward_pretrain(
-                text_input_ids=text["input_ids"],
-                text_attention_mask=text["attention_mask"],
-                text_token_type_ids=text.get("token_type_ids", None),
-                image_pixel_values=image["pixel_values"],
-                image_attention_mask=image.get("attention_mask", None),
-                tasks=task
-            )
+            with torch.amp.autocast(device_type=self.device):
+                mlm_logits = self.model.forward_pretrain(
+                    text_input_ids=text["input_ids"],
+                    text_attention_mask=text["attention_mask"],
+                    text_token_type_ids=text.get("token_type_ids", None),
+                    image_pixel_values=image["pixel_values"],
+                    image_attention_mask=image.get("attention_mask", None),
+                    tasks=task
+                )
                         
-            preds = mlm_logits                      #[bs, seq_len, vocab_size]
-            preds = preds.view(-1, preds.size(-1))  # [bs*seq_len, vocab_size]
-            label = label.view(-1)                  # [bs*seq_len]
-            loss = self.loss_fn_mlm(preds, label)
+                preds = mlm_logits                      #[bs, seq_len, vocab_size]
+                preds = preds.view(-1, preds.size(-1))  # [bs*seq_len, vocab_size]
+                label = label.view(-1)                  # [bs*seq_len]
+                loss = self.loss_fn_mlm(preds, label)
             
             total_loss += loss.item()
             num_batches += 1
-            loss.backward()
-            self.optimizer.step()
+            scaled_loss = self.scaler.scale(loss)
+            scaled_loss.backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             
         return total_loss / num_batches
                 
