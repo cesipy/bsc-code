@@ -148,8 +148,8 @@ class CustomDataset(Dataset):
         
         return data
     
-    
-class PretrainDataset(Dataset): 
+
+class PretrainDatasetAP(Dataset): 
     def __init__(
         self,
         data: typing.List[typing.Tuple[str, str]], # path, text/caption
@@ -203,25 +203,15 @@ class PretrainDataset(Dataset):
         data: typing.List[typing.Tuple[str, str]],
     ): 
         
-        # data_alignment_prediction = self.__generate_pretrain_dataset_alignment_prediction(data)
-        data_mlm = self.__generate_pretrain_dataset_mlm(data)
+        data_alignment_prediction = self.__generate_pretrain_dataset_alignment_prediction(data)
+        # data_mlm = self.__generate_pretrain_dataset_mlm(data)
         
         # data_list = data_alignment_prediction + data_mlm
-        data_list = data_mlm
+        data_list = data_alignment_prediction
         
         random.shuffle(data_list)  # shuffle the dataset to mix tasks
         return data_list
-        
-    def __generate_pretrain_dataset_mlm(
-        self, 
-        data: typing.List[typing.Tuple[str, str]],      # path, text
-    ): 
-        # only simply generation, real masking is happening in __getitem__
-        # task, path, text, placeholder label
-        return [ (Task.MASKED_LM, dp[0], dp[1], 3) for dp in data ]
-        
-        
-        
+            
     def __generate_pretrain_dataset_alignment_prediction(
         self, 
         data: typing.List[typing.Tuple[str, str]],  # path, text/caption
@@ -251,13 +241,163 @@ class PretrainDataset(Dataset):
         else: 
             return true_alignment
     
-    # def __getitem__(self, index):
-    #     data = self.data[index]
         
-    #     if self.transform:
-    #         img_tensor = self.transform(data["img"])
+    def mask_tokens(self, token_ids, tokenizer: PreTrainedTokenizerFast, mask_prob=0.15): 
+        masked_tokens = token_ids.clone()
+        #-100 for loss function to ignore it.
+        output_labels = torch.full_like(token_ids, -100, dtype=torch.long)
+        
+        for i, token in enumerate(token_ids[0]):
+            if token == tokenizer.pad_token_id:
+                continue 
             
-    #     return data
+            prob1 = random.random()
+            
+            if prob1 < mask_prob:
+                prob2 = random.random()
+
+                # 80 % are replaced with [MASK]
+                mask_token_id = tokenizer.mask_token_id
+                if prob2 < 0.8:
+                    masked_tokens[0,i] = mask_token_id
+                    
+                # 10 % are replaced with random token
+                elif prob2 < 0.9 and prob2 >= 0.8:
+                    random_token_id = random.randint(1, tokenizer.vocab_size - 1)
+                    masked_tokens[0, i] = random_token_id
+                else: 
+                    # 10 % are left unchanged
+                    masked_tokens[0, i] = token_ids[0, i]
+                    
+                output_labels[0, i] = token.item()     # these will be predicted
+            else:
+                # will be ignored by loss funciton
+                # https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html - is default ignore_index
+                pass 
+                
+        return masked_tokens, output_labels
+        
+
+    
+    def handle_fallback(self, ): 
+        self.invalid_image_counter += 1
+        if self.invalid_image_counter > 10:
+            raise ValueError("Too many invalid images encountered. Stopping.")
+        idx = random.randint(0, len(self.data) - 1)
+        
+        return self.__getitem__(idx)
+     
+    def __getitem__(self, index):
+        # it is not possible to preprocess the data because the memory cannot hold all images simultanously. 
+        # with the num_workers flag true and other optimizations it should work with loading it 
+        # on demand.
+        
+        dp = self.data[index]
+        task, img_path, text, label = dp
+        
+        assert task == Task.ALIGNMEN_PREDICTION, "something is completely wrong in the data processing step"
+    
+        if not self.preprocessing_prediction_alignment: 
+            if random.random() < 0.5: 
+
+                # swap out text with some other caption
+                random_idx = index
+                while random_idx == index:
+                    random_idx = random.randint(0, len(self.data) - 1)
+                
+                text = self.data[random_idx][2]  # get text from random index
+                label = 0    
+            
+        img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
+        text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
+        
+        if img_embeddings is None or text_embeddings is None:
+            # this should not happen anymore, as downloading conc.capt. checks for faulty imgs
+            return self.handle_fallback()
+
+        self.invalid_image_counter = 0
+        label_tensor = torch.tensor(label, dtype=torch.long)
+        
+        return {
+            "task": task.value,     # torch cannot handle custom classes
+            "img": img_embeddings,
+            "label": label_tensor,
+            "text": text_embeddings,
+        }
+    
+    def __len__(self,):
+        return len(self.data)
+    
+    
+class PretrainDatasetMLM(Dataset): 
+    def __init__(
+        self,
+        data: typing.List[typing.Tuple[str, str]], # path, text/caption
+        tokenizer: PreTrainedTokenizerFast,
+        image_processor: BaseImageProcessor, 
+
+        ): 
+        self.transform = None
+        self.tokenizer = tokenizer
+        self.image_processor = image_processor
+        self.invalid_image_counter = 0
+        
+
+        self.data = self.__generate_pretrain_dataset(data)
+        #TODO
+        # self.data = self.exclude_invald_photos(self.data)
+        
+        # memory overload, load per element
+        # self.data = self.__preprocess_data(self.data)
+        
+    def __preprocess_data(self, data:typing.List[typing.Tuple[Task, str, str, int]]): 
+        # TODO: only temp!
+        data = data[:500]
+        data_tensor = []
+        for i, dp in enumerate(data):
+            if i % 500 == 0: 
+                print(f"Processing {i}/{len(data)} images")
+            task, text, img_path, label = dp
+            
+            img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
+            text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
+            
+            if img_embeddings is None or text_embeddings is None:
+                continue
+            
+            label_tensor = torch.tensor(label, dtype=torch.long)
+            
+            dict_entry = {
+                "task": task,
+                "img": img_embeddings,
+                "label": label_tensor,
+                "text": text_embeddings,
+            }
+            data_tensor.append(dict_entry)
+            
+        return data_tensor
+    
+    def __generate_pretrain_dataset(
+        self, 
+        data: typing.List[typing.Tuple[str, str]],
+    ): 
+        # data_alignment_prediction = self.__generate_pretrain_dataset_alignment_prediction(data)
+        data_mlm = self.__generate_pretrain_dataset_mlm(data)
+        
+        data_list = data_mlm
+        
+        random.shuffle(data_list)  # shuffle the dataset to mix tasks
+        return data_list
+        
+    def __generate_pretrain_dataset_mlm(
+        self, 
+        data: typing.List[typing.Tuple[str, str]],      # path, text
+    ): 
+        # only simply generation, real masking is happening in __getitem__
+        # task, path, text, placeholder label
+        return [ (Task.MASKED_LM, dp[0], dp[1], 3) for dp in data ]
+        
+
     
     def mask_tokens(self, token_ids, tokenizer: PreTrainedTokenizerFast, mask_prob=0.15): 
         masked_tokens = token_ids.clone()
@@ -312,17 +452,6 @@ class PretrainDataset(Dataset):
         dp = self.data[index]
         task, img_path, text, label = dp
     
-        if not self.preprocessing_prediction_alignment and task == Task.ALIGNMEN_PREDICTION: 
-            if random.random() < 0.5: 
-
-                # swap out text with some other caption
-                random_idx = index
-                while random_idx == index:
-                    random_idx = random.randint(0, len(self.data) - 1)
-                
-                text = self.data[random_idx][2]  # get text from random index
-                label = 0    
-            
         img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
         
@@ -332,30 +461,21 @@ class PretrainDataset(Dataset):
 
         self.invalid_image_counter = 0
         
-        if task == Task.MASKED_LM:
-            input_ids = text_embeddings["input_ids"].clone()
-            masked_input_ids, mlm_label = self.mask_tokens(input_ids, tokenizer=self.tokenizer)
-            assert masked_input_ids.shape == mlm_label.shape
-            
-            text_embeddings["input_ids"] = masked_input_ids
-            
-            return {
-                "task": task.value,     # torch cannot handle custom classes
-                "img": img_embeddings,
-                "label": mlm_label,     # label is the masked tokens
-                "text": text_embeddings,
-            }
-            
-            
-            
-        label_tensor = torch.tensor(label, dtype=torch.long)
+        assert task == Task.MASKED_LM, "something is completely wrong in the data processing step"
+
+        input_ids = text_embeddings["input_ids"].clone()
+        masked_input_ids, mlm_label = self.mask_tokens(input_ids, tokenizer=self.tokenizer)
+        assert masked_input_ids.shape == mlm_label.shape
+        
+        text_embeddings["input_ids"] = masked_input_ids
         
         return {
             "task": task.value,     # torch cannot handle custom classes
             "img": img_embeddings,
-            "label": label_tensor,
+            "label": mlm_label,     # label is the masked tokens
             "text": text_embeddings,
         }
+        
     
     def __len__(self,):
         return len(self.data)

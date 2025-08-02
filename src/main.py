@@ -3,7 +3,7 @@ from transformers import (
 )
 
 import utils
-import datasets; from datasets import CustomDataset, PretrainDataset
+import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM
 from config import *
 from vilbert import ViLBERT
 from trainer import Trainer, PretrainingTrainer
@@ -21,21 +21,34 @@ def pretain():
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     preprocessing_prediction_alignment = False
-    train_dataset = PretrainDataset(
+    train_dataset_ap = PretrainDatasetAP(
         train_data, 
         tokenizer=tokenizer, 
         image_processor=image_processor, 
         preprocessing_prediction_alignment=preprocessing_prediction_alignment
     )
-    val_dataset   = PretrainDataset(
+    val_dataset_ap   = PretrainDatasetAP(
         val_data, 
         tokenizer=tokenizer, 
         image_processor=image_processor,
         preprocessing_prediction_alignment=preprocessing_prediction_alignment
     )
     
-    train_loader = DataLoader(
-        dataset=train_dataset, 
+    train_dataset_mlm = PretrainDatasetMLM(
+        train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+    
+    val_dataset_mlm   = PretrainDatasetMLM(
+        val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+    
+    
+    train_loader_ap = DataLoader(
+        dataset=train_dataset_ap, 
         batch_size=BATCH_SIZE,
         shuffle=True,
         num_workers=10, 
@@ -43,8 +56,8 @@ def pretain():
         persistent_workers=True,
         prefetch_factor=4
     )
-    val_loader = DataLoader(
-        dataset=val_dataset, 
+    val_loader_ap = DataLoader(
+        dataset=val_dataset_ap, 
         batch_size=BATCH_SIZE,
         shuffle=False,
         num_workers=10, 
@@ -52,6 +65,27 @@ def pretain():
         persistent_workers=True,
         prefetch_factor=4
     )
+    
+    train_loader_mlm = DataLoader(
+        dataset=train_dataset_mlm,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=10,
+        pin_memory=True,
+        persistent_workers=True,
+        prefetch_factor=4
+    )
+    val_loader_mlm = DataLoader(
+        dataset=val_dataset_mlm,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=10,
+        pin_memory=True,
+        persistent_workers=True,
+        prefetch_factor=4
+    )
+    
+    
     
     model = ViLBERT()
     utils.params_summary(model=model)
@@ -62,8 +96,10 @@ def pretain():
     )
     
     trainer.train(
-        train_dataloader=train_loader, 
-        test_dataloader=val_loader, 
+        train_dataloaderAP=train_loader_ap,
+        test_dataloaderAP=val_loader_ap,
+        train_dataloaderMLM=train_loader_mlm,
+        test_dataloaderMLM=val_loader_mlm,
         epochs=10
     )
     

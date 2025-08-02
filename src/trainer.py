@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from vilbert import ViLBERT
 from config import * 
-
+from utils import Task
 
 class Trainer(): 
     def __init__(self, model: ViLBERT, config: Config): 
@@ -144,7 +144,7 @@ class PretrainingTrainer:
                 label = batch["label"].to(self.device)
 
                 # Handle different task types
-                if current_task == 2:  # MLM task (Task.MASKED_LM.value = 2)
+                if current_task == Task.MASKED_LM.value:
                     mlm_logits = self.model.forward_pretrain(
                         text_input_ids=text["input_ids"],
                         text_attention_mask=text["attention_mask"],
@@ -157,7 +157,7 @@ class PretrainingTrainer:
                     label_flat = label.view(-1)
                     loss = self.loss_fn_mlm(preds, label_flat)
                     
-                else:  # Alignment prediction task
+                elif current_task == Task.ALIGNMENT_PREDICTION.value:
                     prediction_logits = self.model.forward_pretrain(
                         text_input_ids=text["input_ids"],
                         text_attention_mask=text["attention_mask"],
@@ -188,7 +188,7 @@ class PretrainingTrainer:
             num_batches += 1
             
             # handle data here
-            task = batch["task"]
+            current_task = batch["task"]
             text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
             image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
             label = batch["label"].to(self.device).float()
@@ -266,16 +266,24 @@ class PretrainingTrainer:
                 
     def train(
         self, 
-        train_dataloader: DataLoader,
-        test_dataloader: DataLoader,
+        train_dataloaderAP: DataLoader,     #alignment prediction
+        test_dataloaderAP: DataLoader,      #alignment prediction
+        train_dataloaderMLM: DataLoader,    #masked language modeling
+        test_dataloaderMLM: DataLoader,     #masked language modeling
         epochs: int
     ): 
         for epoch in range(epochs):
-            # train_loss = self.train_epoch_prediction(train_dataloader)
-            train_loss = self.train_epoch_mlm(data_loader=train_dataloader)
-            test_loss = self.evaluate(test_dataloader)
-            print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
+            train_loss_ap = self.train_epoch_prediction(train_dataloaderAP)
+            train_loss_mlm = self.train_epoch_mlm(data_loader=train_dataloaderMLM)
+            test_loss_ap = self.evaluate(test_dataloaderAP)
+            test_loss_mlm = self.evaluate(test_dataloaderMLM)
+            # print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
+            print(f"Epoch {epoch+1}/{epochs}, "
+                  f"train loss AP: {train_loss_ap:.4f}, "
+                  f"train loss MLM: {train_loss_mlm:.4f}, "
+                  f"test loss AP: {test_loss_ap:.4f}, "
+            )
             import math
-            approx_test_acc = math.exp(-test_loss)
-            approx_train_acc = math.exp(-train_loss)
+            approx_test_acc = math.exp(-test_loss_ap)
+            approx_train_acc = math.exp(-train_loss_ap)
             print(f"Approx train acc: {approx_train_acc:.4f}, approx test acc: {approx_test_acc:.4f}")
