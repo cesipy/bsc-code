@@ -157,7 +157,7 @@ class PretrainingTrainer:
                     label_flat = label.view(-1)
                     loss = self.loss_fn_mlm(preds, label_flat)
                     
-                elif current_task == Task.ALIGNMENT_PREDICTION.value:
+                elif current_task == Task.ALIGNMEN_PREDICTION.value:
                     prediction_logits = self.model.forward_pretrain(
                         text_input_ids=text["input_ids"],
                         text_attention_mask=text["attention_mask"],
@@ -174,95 +174,109 @@ class PretrainingTrainer:
         return total_loss / num_batches
     
     
-    # TODO: handle other pretraining tasks
-    def train_epoch_prediction(self, data_loader: DataLoader): 
-        self.model.train()
+    def train_epoch_prediction(self, batch): 
+        """trains only one batch"""
         
-        total_loss  = 0
-        num_batches = 0
         tasks = ["alignment_prediction"]
+
+        self.optimizer.zero_grad()
         
-        for batch in tqdm(data_loader):
-            
-            self.optimizer.zero_grad()
-            num_batches += 1
-            
-            # handle data here
-            current_task = batch["task"]
-            text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
-            image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
-            label = batch["label"].to(self.device).float()
-            label = label.unsqueeze(1)
+        # handle data here
+        current_task = batch["task"]
+        text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+        image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+        label = batch["label"].to(self.device).float()
+        label = label.unsqueeze(1)
 
-            with torch.amp.autocast(device_type=self.device):
-                #TODO fix tasks management. now is hardcoded
-                prediciton_logits = self.model.forward_pretrain(
-                    text_input_ids=text["input_ids"],
-                    text_attention_mask=text["attention_mask"],
-                    text_token_type_ids=text.get("token_type_ids", None),
-                    image_pixel_values=image["pixel_values"],
-                    image_attention_mask=image.get("attention_mask", None),
-                    tasks=tasks
-                )
+        with torch.amp.autocast(device_type=self.device):
+            #TODO fix tasks management. now is hardcoded
+            prediciton_logits = self.model.forward_pretrain(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                tasks=tasks
+            )
 
-                # print(prediciton_logits.shape, label.shape)
-                # both have shape [batch_size, 1]
+            # print(prediciton_logits.shape, label.shape)
+            # both have shape [batch_size, 1]
 
-                loss = self.loss_fn_alignment(prediciton_logits, label)
-                
-            # loss.backward()
-            # self.optimizer.step()
-            total_loss += loss.item()
-            
-            # from karpathy video, 
-            # https://www.youtube.com/watch?v=l8pRSuU81PU
-            scaled_loss = self.scaler.scale(loss)
-            scaled_loss.backward()
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-            
-
-        return total_loss / num_batches
+            loss = self.loss_fn_alignment(prediciton_logits, label)
     
-    def train_epoch_mlm(self, data_loader: DataLoader): 
-        self.model.train()
         
-        total_loss = 0
-        num_batches = 0
+        # from karpathy video, 
+        # https://www.youtube.com/watch?v=l8pRSuU81PU
+        scaled_loss = self.scaler.scale(loss)
+        scaled_loss.backward()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
+        
+        return loss.item()
+    
+    def train_epoch_mlm(self, batch): 
+        """trains only one batch"""
+
         task = ["mlm"]
         
-        for batch in tqdm(data_loader): 
-            self.optimizer.zero_grad()
+        self.optimizer.zero_grad()
+        
+        current_task = batch["task"]            # [bs]
+        text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()} # text['input_ids'] shape: torch.Size([128, 192]
+        image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+        label = batch["label"].to(self.device) 
+        label = label      # [bs,  TOKENIZER_MAX_LEN]
+        
+        with torch.amp.autocast(device_type=self.device):
+            mlm_logits = self.model.forward_pretrain(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                tasks=task
+            )
+                    
+            preds = mlm_logits                      # [bs, seq_len, vocab_size]
+            preds = preds.view(-1, preds.size(-1))  # [bs*seq_len, vocab_size]
+            label = label.view(-1)                  # [bs*seq_len]
+            loss = self.loss_fn_mlm(preds, label)
+        
+
+        scaled_loss = self.scaler.scale(loss)
+        scaled_loss.backward()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
+        
+        return loss.item()
+    
+    def train_epoch(
+        self, 
+        dataloader_ap: DataLoader,
+        dataloader_mlm: DataLoader,
+    ):
+        assert len(dataloader_ap) == len(dataloader_mlm), "something is wrong, are the same dataset!"
+        self.model.train()
+        total_loss_ap = 0
+        total_loss_mlm = 0
+        num_batches = 0
+        
+        total_batches = len(dataloader_ap)
+        
+        for batch_ap, batch_mlm in tqdm(zip(dataloader_ap, dataloader_mlm), total=total_batches):
+            # alignment prediction
+            loss_ap = self.train_epoch_prediction(batch_ap)
             
-            current_task = batch["task"]            # [bs]
-            text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()} # text['input_ids'] shape: torch.Size([128, 192]
-            image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
-            label = batch["label"].to(self.device) 
-            label = label      # [bs,  TOKENIZER_MAX_LEN]
-            
-            with torch.amp.autocast(device_type=self.device):
-                mlm_logits = self.model.forward_pretrain(
-                    text_input_ids=text["input_ids"],
-                    text_attention_mask=text["attention_mask"],
-                    text_token_type_ids=text.get("token_type_ids", None),
-                    image_pixel_values=image["pixel_values"],
-                    image_attention_mask=image.get("attention_mask", None),
-                    tasks=task
-                )
-                        
-                preds = mlm_logits                      #[bs, seq_len, vocab_size]
-                preds = preds.view(-1, preds.size(-1))  # [bs*seq_len, vocab_size]
-                label = label.view(-1)                  # [bs*seq_len]
-                loss = self.loss_fn_mlm(preds, label)
-            
-            total_loss += loss.item()
+            # masked language modeling
+            loss_mlm = self.train_epoch_mlm(batch_mlm)
+
+            total_loss_ap += loss_ap
+            total_loss_mlm += loss_mlm
             num_batches += 1
-            scaled_loss = self.scaler.scale(loss)
-            scaled_loss.backward()
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
             
-        return total_loss / num_batches
+        avg_loss_ap = total_loss_ap / num_batches
+        avg_loss_mlm = total_loss_mlm / num_batches
+        return avg_loss_ap, avg_loss_mlm
                 
     def train(
         self, 
@@ -270,20 +284,25 @@ class PretrainingTrainer:
         test_dataloaderAP: DataLoader,      #alignment prediction
         train_dataloaderMLM: DataLoader,    #masked language modeling
         test_dataloaderMLM: DataLoader,     #masked language modeling
-        epochs: int
+        epochs: int, 
+        train_only_ap=False
     ): 
         for epoch in range(epochs):
-            train_loss_ap = self.train_epoch_prediction(train_dataloaderAP)
-            train_loss_mlm = self.train_epoch_mlm(data_loader=train_dataloaderMLM)
-            test_loss_ap = self.evaluate(test_dataloaderAP)
-            test_loss_mlm = self.evaluate(test_dataloaderMLM)
+            t_loss_ap, t_loss_mlm = self.train_epoch(
+                dataloader_ap=train_dataloaderAP,
+                dataloader_mlm=train_dataloaderMLM
+            )
+            
+            v_loss_ap = self.evaluate(test_dataloaderAP)
+            v_loss_mlm = self.evaluate(test_dataloaderMLM)
             # print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
             print(f"Epoch {epoch+1}/{epochs}, "
-                  f"train loss AP: {train_loss_ap:.4f}, "
-                  f"train loss MLM: {train_loss_mlm:.4f}, "
-                  f"test loss AP: {test_loss_ap:.4f}, "
+                  f"train loss AP: {t_loss_ap:.4f}, "
+                  f"train loss MLM: {t_loss_mlm:.4f}, "
+                  f"test loss AP: {v_loss_ap:.4f}, "
+                  f"test loss MLM: {v_loss_mlm:.4f}"
             )
             import math
-            approx_test_acc = math.exp(-test_loss_ap)
-            approx_train_acc = math.exp(-train_loss_ap)
+            approx_test_acc = math.exp(-v_loss_ap)
+            approx_train_acc = math.exp(-t_loss_ap)
             print(f"Approx train acc: {approx_train_acc:.4f}, approx test acc: {approx_test_acc:.4f}")

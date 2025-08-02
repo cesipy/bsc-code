@@ -10,8 +10,8 @@ from trainer import Trainer, PretrainingTrainer
 from torch.utils.data import DataLoader, Dataset
 
 def pretain(): 
-    # path = "res/data/conceptual-captions/validation.csv"
-    path = "res/data/conceptual-captions/train.csv"
+    path = "res/data/conceptual-captions/validation.csv"
+    # path = "res/data/conceptual-captions/train.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     # data_list = data_list[:1000]
     train_idx = int(len(data_list) * TRAIN_TEST_RATIO)

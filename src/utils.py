@@ -39,7 +39,7 @@ def params_summary(model):
     trainable_params = 0
     for p in model.parameters(): 
         total_params += p.numel()
-        
+    
         if p.requires_grad: 
             trainable_params += p.numel()
             
