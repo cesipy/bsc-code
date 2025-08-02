@@ -133,32 +133,44 @@ class PretrainingTrainer:
         
         total_loss = 0
         num_batches = 0
-        tasks = ["alignment_prediction"]
         
         with torch.no_grad():
             for batch in dataloader:
                 num_batches += 1
                 
-                # Handle data here
-                task = batch["task"]
+                current_task = batch["task"][0].item()  # Get task type
                 text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
                 image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
-                label = batch["label"].to(self.device).float()
+                label = batch["label"].to(self.device)
 
-                # Forward pass
-                prediciton_logits = self.model.forward_pretrain(
-                    text_input_ids=text["input_ids"],
-                    text_attention_mask=text["attention_mask"],
-                    text_token_type_ids=text.get("token_type_ids", None),
-                    image_pixel_values=image["pixel_values"],
-                    image_attention_mask=image.get("attention_mask", None),
-                    tasks=tasks
-                )
-                label = label.unsqueeze(1)
+                # Handle different task types
+                if current_task == 2:  # MLM task (Task.MASKED_LM.value = 2)
+                    mlm_logits = self.model.forward_pretrain(
+                        text_input_ids=text["input_ids"],
+                        text_attention_mask=text["attention_mask"],
+                        text_token_type_ids=text.get("token_type_ids", None),
+                        image_pixel_values=image["pixel_values"],
+                        image_attention_mask=image.get("attention_mask", None),
+                        tasks=["mlm"]
+                    )
+                    preds = mlm_logits.view(-1, mlm_logits.size(-1))
+                    label_flat = label.view(-1)
+                    loss = self.loss_fn_mlm(preds, label_flat)
+                    
+                else:  # Alignment prediction task
+                    prediction_logits = self.model.forward_pretrain(
+                        text_input_ids=text["input_ids"],
+                        text_attention_mask=text["attention_mask"],
+                        text_token_type_ids=text.get("token_type_ids", None),
+                        image_pixel_values=image["pixel_values"],
+                        image_attention_mask=image.get("attention_mask", None),
+                        tasks=["alignment_prediction"]
+                    )
+                    label = label.float().unsqueeze(1)
+                    loss = self.loss_fn_alignment(prediction_logits, label)
 
-                loss = self.loss_fn_alignment(prediciton_logits, label)
                 total_loss += loss.item()
-                
+                    
         return total_loss / num_batches
     
     
@@ -211,6 +223,44 @@ class PretrainingTrainer:
             
 
         return total_loss / num_batches
+    
+    def train_epoch_mlm(self, data_loader: DataLoader): 
+        self.model.train()
+        
+        total_loss = 0
+        num_batches = 0
+        task = ["mlm"]
+        
+        for batch in tqdm(data_loader): 
+            self.optimizer.zero_grad()
+            
+            current_task = batch["task"]            # [bs]
+            text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()} # text['input_ids'] shape: torch.Size([128, 192]
+            image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+            label = batch["label"].to(self.device) 
+            label = label      # [bs,  TOKENIZER_MAX_LEN]
+            
+
+            mlm_logits = self.model.forward_pretrain(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                tasks=task
+            )
+                        
+            preds = mlm_logits                      #[bs, seq_len, vocab_size]
+            preds = preds.view(-1, preds.size(-1))  # [bs*seq_len, vocab_size]
+            label = label.view(-1)                  # [bs*seq_len]
+            loss = self.loss_fn_mlm(preds, label)
+            
+            total_loss += loss.item()
+            num_batches += 1
+            loss.backward()
+            self.optimizer.step()
+            
+        return total_loss / num_batches
                 
     def train(
         self, 
@@ -219,7 +269,8 @@ class PretrainingTrainer:
         epochs: int
     ): 
         for epoch in range(epochs):
-            train_loss = self.train_epoch_prediction(train_dataloader)
+            # train_loss = self.train_epoch_prediction(train_dataloader)
+            train_loss = self.train_epoch_mlm(data_loader=train_dataloader)
             test_loss = self.evaluate(test_dataloader)
             print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
             import math

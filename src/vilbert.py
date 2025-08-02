@@ -75,7 +75,7 @@ class ViLBERT(nn.Module):
 
         # pretrain heads
         self.alignment_fc = nn.Linear(2*EMBEDDING_DIM, 1)
-        self.mlm = nn.Linear(EMBEDDING_DIM, self.bert.config.vocab_size)
+        self.mlm = nn.Linear(EMBEDDING_DIM, self.bert.config.vocab_size)    #30522
         # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
         # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
         
@@ -257,7 +257,11 @@ class ViLBERT(nn.Module):
                 output_hidden_states=output_hidden_states,
                 extract_cls=False,  # do not extract cls token for pretraining
             )
+            # for i, token in enumerate(text_input_ids):
+            #     if token != -1: 
             mlm_logits = self.mlm(text_seqs)
+            return mlm_logits
+            
             
             
         # TODO: later, needs an object regonition model to learn the output
