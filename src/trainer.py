@@ -173,8 +173,34 @@ class PretrainingTrainer:
                     
         return total_loss / num_batches
     
+    def train_epoch_prediction(self, dataloader: DataLoader):
+        self.model.train()
+        total_loss = 0
+        num_batches = 0
+        
+        for batch in dataloader:
+            num_batches += 1
+            
+            loss = self.train_epoch_prediction_batch(batch)
+            total_loss += loss
+            
+        return total_loss / num_batches
     
-    def train_epoch_prediction(self, batch): 
+    def train_epoch_mlm(self, dataloader: DataLoader):
+        self.model.train()
+        total_loss = 0
+        num_batches = 0
+        
+        for batch in dataloader:
+            num_batches += 1
+            
+            loss = self.train_epoch_mlm_batch(batch)
+            total_loss += loss
+            
+        return total_loss / num_batches
+    
+    
+    def train_epoch_prediction_batch(self, batch): 
         """trains only one batch"""
         
         tasks = ["alignment_prediction"]
@@ -214,7 +240,7 @@ class PretrainingTrainer:
         
         return loss.item()
     
-    def train_epoch_mlm(self, batch): 
+    def train_epoch_mlm_batch(self, batch): 
         """trains only one batch"""
 
         task = ["mlm"]
@@ -265,10 +291,10 @@ class PretrainingTrainer:
         
         for batch_ap, batch_mlm in tqdm(zip(dataloader_ap, dataloader_mlm), total=total_batches):
             # alignment prediction
-            loss_ap = self.train_epoch_prediction(batch_ap)
+            loss_ap = self.train_epoch_prediction_batch(batch_ap)
             
             # masked language modeling
-            loss_mlm = self.train_epoch_mlm(batch_mlm)
+            loss_mlm = self.train_epoch_mlm_batch(batch_mlm)
 
             total_loss_ap += loss_ap
             total_loss_mlm += loss_mlm
@@ -288,6 +314,12 @@ class PretrainingTrainer:
         train_only_ap=False
     ): 
         for epoch in range(epochs):
+            if train_only_ap: 
+                t_loss_ap = self.train_epoch_prediction(train_dataloaderAP)
+                v_loss_ap = self.evaluate(test_dataloaderAP)
+                print(f"Epoch {epoch+1}/{epochs}, train loss AP: {t_loss_ap:.4f}, test loss AP: {v_loss_ap:.4f}")
+                continue
+            
             t_loss_ap, t_loss_mlm = self.train_epoch(
                 dataloader_ap=train_dataloaderAP,
                 dataloader_mlm=train_dataloaderMLM

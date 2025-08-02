@@ -92,7 +92,7 @@ def pretain():
     
     trainer = PretrainingTrainer(
         model=model, 
-        config=Config()
+        config=Config(), 
     )
     
     trainer.train(
@@ -100,7 +100,8 @@ def pretain():
         test_dataloaderAP=val_loader_ap,
         train_dataloaderMLM=train_loader_mlm,
         test_dataloaderMLM=val_loader_mlm,
-        epochs=10
+        epochs=20, 
+        train_only_ap=True
     )
     
     
