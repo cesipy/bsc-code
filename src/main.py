@@ -21,7 +21,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.utils.checkpoint")
 warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modules.module")
 
-
+@utils.memory_cleanup
 def pretain(): 
     
     epochs = 3
@@ -31,7 +31,7 @@ def pretain():
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:80_000]
+    # data_list = data_list[:80]
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
@@ -177,21 +177,4 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
 
 
 if __name__ == "__main__":
-
-    # pretain()
-    train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_3.pt")
-    try: 
-        torch.cuda.empty_cache()
-    except Exception as e:
-        print(f"Error while emptying cache: {e}")
-        
-    try: 
-        pretain()
-        utils.force_memory_cleanup()
-        train_and_eval_on_downstream_task("res/checkpoints/pretrained_3.pt")
-    except Exception as e:
-        print(f"Error during pretraining or training on downstream task: {e}")
-        
-        # if soemthing fails, clear cache
-        torch.cuda.empty_cache()
-        gc.collect()
+    pretain()

@@ -80,6 +80,10 @@ class Trainer():
         
         total_loss = 0
         num_batches = 0
+        
+        total_preds = 0
+        correct_preds = 0
+        
         with torch.no_grad(): 
             for batch in dataloader: 
                 data_dict = batch
@@ -102,6 +106,7 @@ class Trainer():
                 loss = self.loss_fn(preds, label)
                 total_loss += loss.item()
                 num_batches += 1
+                
                 
         return total_loss / num_batches
                 
@@ -131,7 +136,8 @@ class PretrainingTrainer:
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
         self.config = config
         
-    def evaluate(self, dataloader: DataLoader):
+        
+    def evaluate_mlm(self, dataloader: DataLoader):
         self.model.eval()
         
         total_loss = 0
@@ -146,35 +152,66 @@ class PretrainingTrainer:
                 image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
                 label = batch["label"].to(self.device)
 
-                # Handle different task types
-                if current_task == Task.MASKED_LM.value:
-                    mlm_logits = self.model.forward_pretrain(
-                        text_input_ids=text["input_ids"],
-                        text_attention_mask=text["attention_mask"],
-                        text_token_type_ids=text.get("token_type_ids", None),
-                        image_pixel_values=image["pixel_values"],
-                        image_attention_mask=image.get("attention_mask", None),
-                        tasks=["mlm"]
-                    )
-                    preds = mlm_logits.view(-1, mlm_logits.size(-1))
-                    label_flat = label.view(-1)
-                    loss = self.loss_fn_mlm(preds, label_flat)
-                    
-                elif current_task == Task.ALIGNMEN_PREDICTION.value:
-                    prediction_logits = self.model.forward_pretrain(
-                        text_input_ids=text["input_ids"],
-                        text_attention_mask=text["attention_mask"],
-                        text_token_type_ids=text.get("token_type_ids", None),
-                        image_pixel_values=image["pixel_values"],
-                        image_attention_mask=image.get("attention_mask", None),
-                        tasks=["alignment_prediction"]
-                    )
-                    label = label.float().unsqueeze(1)
-                    loss = self.loss_fn_alignment(prediction_logits, label)
+                mlm_logits = self.model.forward_pretrain(
+                    text_input_ids=text["input_ids"],
+                    text_attention_mask=text["attention_mask"],
+                    text_token_type_ids=text.get("token_type_ids", None),
+                    image_pixel_values=image["pixel_values"],
+                    image_attention_mask=image.get("attention_mask", None),
+                    tasks=["mlm"]
+                )
+                preds = mlm_logits.view(-1, mlm_logits.size(-1))
+                label_flat = label.view(-1)
+                loss = self.loss_fn_mlm(preds, label_flat)
+                
+
 
                 total_loss += loss.item()
                     
         return total_loss / num_batches
+    
+    def evaluate_ap(self, dataloader: DataLoader):
+        self.model.eval()
+        
+        total_loss = 0
+        num_batches = 0
+        total_preds = 0
+        correct_preds = 0
+        
+        with torch.no_grad():
+            for batch in dataloader:
+                num_batches += 1
+                
+                current_task = batch["task"][0].item()  # Get task type
+                text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+                image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+                label = batch["label"].to(self.device)
+
+        
+                
+                prediction_logits = self.model.forward_pretrain(
+                    text_input_ids=text["input_ids"],
+                    text_attention_mask=text["attention_mask"],
+                    text_token_type_ids=text.get("token_type_ids", None),
+                    image_pixel_values=image["pixel_values"],
+                    image_attention_mask=image.get("attention_mask", None),
+                    tasks=["alignment_prediction"]
+                )
+                label = label.float().unsqueeze(1)
+                loss = self.loss_fn_alignment(prediction_logits, label)
+                
+                preds = torch.sigmoid(prediction_logits)
+                preds = (preds > 0.5).float()  # Convert to binary
+                correct_preds += (preds == label).sum().item()
+                total_preds   += label.size(0)
+                total_loss += loss.item()
+                
+        if total_preds == 0: 
+            acc = 0
+        else: 
+            acc = correct_preds / total_preds
+                    
+        return total_loss / num_batches, acc
     
     def train_epoch_prediction(self, dataloader: DataLoader):
         self.model.train()
@@ -319,7 +356,7 @@ class PretrainingTrainer:
         for epoch in range(epochs):
             if train_only_ap: 
                 t_loss_ap = self.train_epoch_prediction(train_dataloaderAP)
-                v_loss_ap = self.evaluate(test_dataloaderAP)
+                v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
                 print(f"Epoch {epoch+1}/{epochs}, train loss AP: {t_loss_ap:.4f}, test loss AP: {v_loss_ap:.4f}")
                 continue
             
@@ -328,19 +365,16 @@ class PretrainingTrainer:
                 dataloader_mlm=train_dataloaderMLM
             )
             
-            v_loss_ap = self.evaluate(test_dataloaderAP)
-            v_loss_mlm = self.evaluate(test_dataloaderMLM)
+            v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
+            v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
             # print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
             print(f"Epoch {epoch+1}/{epochs}, "
-                  f"train loss AP: {t_loss_ap:.4f}, "
-                  f"train loss MLM: {t_loss_mlm:.4f}, "
-                  f"test loss AP: {v_loss_ap:.4f}, "
-                  f"test loss MLM: {v_loss_mlm:.4f}"
+                  f"\n\ttrain loss AP: {t_loss_ap:.4f}, "
+                  f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "
+                  f"\n\ttest loss AP: {v_loss_ap:.4f}, "
+                  f"\n\ttest loss MLM: {v_loss_mlm:.4f}, "
+                  f"\n\taccuracy AP: {acc:.4f}"
             )
-            import math
-            approx_test_acc = math.exp(-v_loss_ap)
-            approx_train_acc = math.exp(-t_loss_ap)
-            print(f"Approx train acc: {approx_train_acc:.4f}, approx test acc: {approx_test_acc:.4f}")
             
             self.__save_checkpoint(
                 filepath=f"res/checkpoints/pretrained_{epoch+1}.pt", 

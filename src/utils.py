@@ -3,6 +3,7 @@ import math
 import torch
 from torch import nn
 import gc; import time
+from functools import wraps
 
 from enum import Enum
 
@@ -11,6 +12,36 @@ class Task(Enum):
     ALIGNMEN_PREDICTION = 1
     MASKED_LM = 2
     MASKED_IM = 3
+    
+
+def memory_cleanup(func): 
+    @wraps(func)
+    def wrapper_func(*args, **kwargs):
+        try: 
+            result = func(*args, **kwargs)
+        
+            # repeatedly collect garbabe
+            for i in range(3): 
+                gc.collect()
+                
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+                
+            gc.collect()
+            
+            return result
+        except Exception as e: 
+            print(f"Error in {func.__name__}: {e}")
+            for _ in range(5):
+                gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+            
+            raise e
+    return wrapper_func
+    
 
 
 
