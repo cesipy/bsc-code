@@ -31,6 +31,8 @@ import warnings
 # DecompressionBombWarning: Image size (93950400 pixels) exceeds limit of 89478485 pixels, could be decompression bomb DOS attack.
 warnings.filterwarnings("ignore", ".*DecompressionBombWarning.*", category=Image.DecompressionBombWarning)
 warnings.filterwarnings("ignore", ".*Palette images with Transparency.*", category=UserWarning)
+
+
 Image.MAX_IMAGE_PIXELS = None
 
 def process_single_image(path:str) -> torch.Tensor: 
@@ -586,7 +588,7 @@ def main():
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     
-    dataset = PretrainDataset(
+    dataset = PretrainDatasetAP(
         data=dl, 
         tokenizer=tokenizer,
         image_processor=image_processor, 

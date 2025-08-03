@@ -1,3 +1,10 @@
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+
+import gc
+import torch
+
 from transformers import (
     BertTokenizerFast, PreTrainedTokenizerFast, ViTImageProcessor
 )
@@ -9,14 +16,27 @@ from vilbert import ViLBERT
 from trainer import Trainer, PretrainingTrainer
 from torch.utils.data import DataLoader, Dataset
 
+import warnings
+# Suppress specific PyTorch warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="torch.utils.checkpoint")
+warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modules.module")
+
+
 def pretain(): 
-    path = "res/data/conceptual-captions/validation.csv"
-    # path = "res/data/conceptual-captions/train.csv"
+    
+    epochs = 3
+    num_workers = 10
+    prefetch= 4
+    path = "res/data/conceptual-captions/train.csv"
+    val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
-    # data_list = data_list[:1000]
-    train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
-    train_data = data_list[:train_idx]
-    val_data   = data_list[train_idx:]
+    validation_list = datasets.generate_data_list_pretrain(path=val_path)
+    data_list = data_list[:80_000]
+    # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
+    # train_data = data_list[:train_idx]
+    # val_data   = data_list[train_idx:]
+    train_data = data_list
+    val_data   = validation_list
     
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
@@ -51,41 +71,39 @@ def pretain():
         dataset=train_dataset_ap, 
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=10, 
+        num_workers=num_workers, 
         pin_memory=True, 
         persistent_workers=True,
-        prefetch_factor=4
+        prefetch_factor=prefetch
     )
     val_loader_ap = DataLoader(
         dataset=val_dataset_ap, 
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=10, 
+        num_workers=num_workers, 
         pin_memory=True, 
         persistent_workers=True,
-        prefetch_factor=4
+        prefetch_factor=prefetch
     )
     
     train_loader_mlm = DataLoader(
         dataset=train_dataset_mlm,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=10,
+        num_workers=num_workers,
         pin_memory=True,
         persistent_workers=True,
-        prefetch_factor=4
+        prefetch_factor=prefetch
     )
     val_loader_mlm = DataLoader(
         dataset=val_dataset_mlm,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        num_workers=10,
+        num_workers=num_workers,
         pin_memory=True,
         persistent_workers=True,
-        prefetch_factor=4
+        prefetch_factor=prefetch
     )
-    
-    
     
     model = ViLBERT()
     utils.params_summary(model=model)
@@ -100,36 +118,43 @@ def pretain():
         test_dataloaderAP=val_loader_ap,
         train_dataloaderMLM=train_loader_mlm,
         test_dataloaderMLM=val_loader_mlm,
-        epochs=20, 
-        train_only_ap=True
+        epochs=epochs, 
+        train_only_ap=False
     )
     
+    del model, trainer, train_dataset_ap, val_dataset_ap, train_dataset_mlm, val_dataset_mlm
+    del train_loader_ap, val_loader_ap, train_loader_mlm, val_loader_mlm
+    torch.cuda.empty_cache()
+    gc.collect()
     
+def train_and_eval_on_downstream_task(pretrained_model_path:str):
+    if pretrained_model_path==None or not os.path.exists(pretrained_model_path) : 
+        # use fresh vilbert 
+        print(f"Pretrained model path {pretrained_model_path} does not exist, using fresh model.")
+        config = Config()
+        model = ViLBERT()
+    
+    else:    
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model, cp = ViLBERT.from_pretrained_checkpoint(checkpoint_path=pretrained_model_path, device=device)
 
-def main(): 
     path = "res/data/hateful_memes_data/train.jsonl"
-    config = Config()
-    model = ViLBERT()
-    
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+    config = Config()
     
+    #TODO: also freeze co-attention layers here
     utils.params_summary(model=model)
     train_data_list = datasets.generate_data_list(path)
-    
-    #TODO: remove this, only temp
-    # train_data_list = train_data_list[:100]  
+    # train_data_list = train_data_list[:5000] 
     
     train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
     train_data = train_data_list[:train_idx]
     val_data   = train_data_list[train_idx:] 
     
-    train_data = train_data[:100] 
+    train_data = train_data 
     train_dataset = CustomDataset(train_data, tokenizer=tokenizer, image_processor=image_processor)
     val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
-    
-    # print(f"train dataset- length: {len(train_dataset)}, head: {train_dataset.data[:5]}")
-    # print(f"val dataset- length: {len(val_dataset)}, head: {val_dataset.data[:5]}")
     
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
@@ -138,10 +163,35 @@ def main():
     trainer.train(
         train_dataloader=train_loader, 
         test_dataloader=val_loader, 
-        epochs=10
+        epochs=4
     )
+    
+    del model, trainer, train_dataset, val_dataset, train_loader, val_loader
+    torch.cuda.empty_cache()
+    gc.collect()
+    
+    
+    
+
+
 
 
 if __name__ == "__main__":
-    # main()
-    pretain()
+
+    # pretain()
+    train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_3.pt")
+    try: 
+        torch.cuda.empty_cache()
+    except Exception as e:
+        print(f"Error while emptying cache: {e}")
+        
+    try: 
+        pretain()
+        utils.force_memory_cleanup()
+        train_and_eval_on_downstream_task("res/checkpoints/pretrained_3.pt")
+    except Exception as e:
+        print(f"Error during pretraining or training on downstream task: {e}")
+        
+        # if soemthing fails, clear cache
+        torch.cuda.empty_cache()
+        gc.collect()

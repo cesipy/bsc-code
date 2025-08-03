@@ -2,6 +2,7 @@ import math
 
 import torch
 from torch import nn
+import gc; import time
 
 from enum import Enum
 
@@ -46,5 +47,20 @@ def params_summary(model):
     print(f"trainable params: {trainable_params}/{total_params}")
         
         
+def force_memory_cleanup():    
+    # Force garbage collection multiple times
+    for _ in range(3):
+        gc.collect()
     
-
+    # Clear all GPU memory
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        
+    time.sleep(1)
+        
+    # Force another garbage collection
+    gc.collect()
+    
+    
+    print(f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**3:.2f}GB / {torch.cuda.max_memory_allocated()/1024**3:.2f}GB")
