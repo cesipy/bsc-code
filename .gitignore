@@ -5,3 +5,4 @@ venv*
 res/data/*
 *__pycache__
 .python-version
+res/checkpoints/*.pt

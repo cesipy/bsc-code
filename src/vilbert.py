@@ -55,12 +55,11 @@ class ViLBERT(nn.Module):
         self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
         # self.vit = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=0)  # num_classes=0 removes head
         
-        self.bert = torch.compile(self.bert)  
-        self.vit = torch.compile(self.vit)
+        # self.bert = torch.compile(self.bert)  
+        # self.vit = torch.compile(self.vit)
         
         self.bert.gradient_checkpointing_enable()
     
-        
         utils.freeze_all_layers(self.bert)
         utils.freeze_all_layers(self.vit)
         
@@ -286,7 +285,18 @@ class ViLBERT(nn.Module):
             alignment_logits = self.alignment_fc(shared_embedding)
             return alignment_logits
             
+    @classmethod
+    def from_pretrained_checkpoint(cls, checkpoint_path, device='cuda'):
+        """Load a pretrained ViLBERT model from checkpoint
+        from genAI"""
+        checkpoint = torch.load(checkpoint_path, map_location=device)
         
+        model = cls()  # Initialize with default config
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model = model.to(device)
+        
+        print(f"Model loaded from {checkpoint_path}, epoch {checkpoint.get('epoch', 'unknown')}")
+        return model, checkpoint
         
 
 def main(): 
