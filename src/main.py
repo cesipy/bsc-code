@@ -32,6 +32,8 @@ def pretain():
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
     # data_list = data_list[:80]
+    validation_list = validation_list[:1_000]
+    
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
@@ -178,3 +180,4 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
 
 if __name__ == "__main__":
     pretain()
+    train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_3.pt")

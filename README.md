@@ -16,7 +16,7 @@ I'm currently working on it, so it is not yet complete.
 - [ ] logging to keep track of my development
 - [ ] visualization of pretraining tasks - like acc, loss, etc
     - [ ] implement accuracy for pretraining - handle specific tasks
-- [ ] fix problem with compile and saving
+- [x] fix problem with compile and saving
 
 
 ## ViLBERT
