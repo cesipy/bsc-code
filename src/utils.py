@@ -4,6 +4,7 @@ import torch
 from torch import nn
 import gc; import time
 from functools import wraps
+import matplotlib.pyplot as plt
 
 from enum import Enum
 
@@ -95,3 +96,38 @@ def force_memory_cleanup():
     
     
     print(f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**3:.2f}GB / {torch.cuda.max_memory_allocated()/1024**3:.2f}GB")
+
+
+
+def plot_losses(
+    train_losses_ap, 
+    validation_losses_ap, 
+    train_losses_mlm, 
+    validation_losses_mlm
+):
+    epochs = range(1, len(train_losses_ap) + 1)
+    
+    assert len(train_losses_ap) == len(validation_losses_ap) == len(train_losses_mlm) == len(validation_losses_mlm)
+    plt.figure(figsize=(12, 4))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, train_losses_ap, 'b-', label='Train AP')
+    plt.plot(epochs, validation_losses_ap, 'r-', label='Val AP')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Alignment Prediction Loss')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, train_losses_mlm, 'g-', label='Train MLM')
+    plt.plot(epochs, validation_losses_mlm, 'orange', label='Val MLM')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Masked Language Modeling Loss')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig('res/training_losses.png', dpi=150, bbox_inches='tight')
+    # plt.show()

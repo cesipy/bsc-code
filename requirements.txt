@@ -8,3 +8,4 @@ tqdm
 opencv-contrib-python
 numpy
 tqdm
+matplotlib

@@ -7,3 +7,4 @@ res/data/*
 .python-version
 res/checkpoints/*.pt
 logs
+res/training_losses.png

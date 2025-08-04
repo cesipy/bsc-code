@@ -28,15 +28,15 @@ logger = Logger()
 @utils.memory_cleanup
 def pretain(): 
     logger.info("starting pretraining")
-    epochs = 3
+    epochs = 4
     num_workers = 10
     prefetch= 4
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:80]
-    validation_list = validation_list[:1_000]
+    # data_list = data_list[:80]
+    # validation_list = validation_list[:1_000]
     
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
@@ -158,7 +158,6 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     #TODO: also freeze co-attention layers here
     utils.params_summary(model=model)
     train_data_list = datasets.generate_data_list(path)
-    # train_data_list = train_data_list[:5000] 
     
     train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
     train_data = train_data_list[:train_idx]
@@ -181,15 +180,10 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     del model, trainer, train_dataset, val_dataset, train_loader, val_loader
     torch.cuda.empty_cache()
     gc.collect()
-    
     logger.info("Training and evaluation on downstream task finished, cleaning up memory")
     
     
-    
-
-
-
-
 if __name__ == "__main__":
     pretain()
-    train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_3.pt")
+    # train_and_eval_on_downstream_task(pretrained_model_path=None)
+    # train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_4.pt")
