@@ -27,6 +27,8 @@ from config import *
 
 import warnings
 
+from logger import Logger
+
 # disable PIL's decompression bomb warning, bc i get the following: 
 # DecompressionBombWarning: Image size (93950400 pixels) exceeds limit of 89478485 pixels, could be decompression bomb DOS attack.
 warnings.filterwarnings("ignore", ".*DecompressionBombWarning.*", category=Image.DecompressionBombWarning)
@@ -90,6 +92,7 @@ class CustomDataset(Dataset):
         image_processor: BaseImageProcessor,
         
     ):
+        self.logger = Logger()
         self.transform = None
         self.tokenizer = tokenizer
         self.image_processor = image_processor
@@ -107,7 +110,9 @@ class CustomDataset(Dataset):
         data_dicts = []
         for i, dp in enumerate(data):
             if i % 500 == 0: 
-                print(f"Processing {i}/{len(data)} images")
+                info_str = f"Processing {i}/{len(data)} images"
+                print(info_str)
+                self.logger.info(info_str)
             img_path, label, text = dp
             
             img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
@@ -179,7 +184,9 @@ class PretrainDatasetAP(Dataset):
         data_tensor = []
         for i, dp in enumerate(data):
             if i % 500 == 0: 
-                print(f"Processing {i}/{len(data)} images")
+                info_str = f"Processing {i}/{len(data)} images"
+                print(info_str)
+                self.logger.info(info_str)
             task, text, img_path, label = dp
             
             img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
@@ -339,6 +346,7 @@ class PretrainDatasetMLM(Dataset):
         image_processor: BaseImageProcessor, 
 
         ): 
+        self.logger = Logger()
         self.transform = None
         self.tokenizer = tokenizer
         self.image_processor = image_processor

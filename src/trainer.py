@@ -6,14 +6,18 @@ from tqdm import tqdm
 from vilbert import ViLBERT
 from config import * 
 from utils import Task
+from logger import Logger
 
-from datetime import datetime
+
+
+
 
 class Trainer(): 
     def __init__(self, model: ViLBERT, config: Config): 
         self.lr = config.learning_rate
         self.model = model
         self.config = config
+        self.logger = Logger()
         
         self.optimizer = torch.optim.AdamW(
             self.model.parameters(), 
@@ -72,8 +76,10 @@ class Trainer():
     ): 
         for epoch in range(epochs):
             train_loss = self.train_epoch(train_dataloader)
-            test_loss  = self.evaluate(test_dataloader)
-            print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
+            test_loss, acc  = self.evaluate(test_dataloader)
+            info_str = f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f},  accuracy: {acc:.4f}"
+            print(info_str)
+            self.logger.info(info_str)
         
     def evaluate(self, dataloader: DataLoader): 
         self.model.eval()
@@ -107,8 +113,16 @@ class Trainer():
                 total_loss += loss.item()
                 num_batches += 1
                 
-                
-        return total_loss / num_batches
+                preds = torch.sigmoid(preds)
+                preds = (preds > 0.5).float()  # Convert to binary
+                correct_preds += (preds == label).sum().item()
+                total_preds   += label.size(0)
+        if total_preds == 0:
+            acc = 0
+        else:
+            acc = correct_preds / total_preds
+                          
+        return total_loss / num_batches, acc
                 
                 
                     
@@ -118,7 +132,6 @@ class PretrainingTrainer:
         model: ViLBERT, 
         config: Config,
     ): 
-        
         self.optimizer = torch.optim.AdamW(
             model.parameters(), 
             lr=config.learning_rate, 
@@ -135,6 +148,7 @@ class PretrainingTrainer:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
         self.config = config
+        self.logger = Logger()
         
         
     def evaluate_mlm(self, dataloader: DataLoader):
@@ -355,7 +369,9 @@ class PretrainingTrainer:
             if train_only_ap: 
                 t_loss_ap = self.train_epoch_prediction(train_dataloaderAP)
                 v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
-                print(f"Epoch {epoch+1}/{epochs}, train loss AP: {t_loss_ap:.4f}, test loss AP: {v_loss_ap:.4f}")
+                info_str = f"Epoch {epoch+1}/{epochs}, train loss AP: {t_loss_ap:.4f}, test loss AP: {v_loss_ap:.4f}"
+                print(info_str)
+                self.logger.info(info_str)
                 continue
             
             t_loss_ap, t_loss_mlm = self.train_epoch(
@@ -366,13 +382,16 @@ class PretrainingTrainer:
             v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
             v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
             # print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
-            print(f"Epoch {epoch+1}/{epochs}, "
-                  f"\n\ttrain loss AP: {t_loss_ap:.4f}, "
-                  f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "
-                  f"\n\ttest loss AP: {v_loss_ap:.4f}, "
-                  f"\n\ttest loss MLM: {v_loss_mlm:.4f}, "
-                  f"\n\taccuracy AP: {acc:.4f}"
+            info_str = (
+                f"Epoch {epoch+1}/{epochs}, "
+                f"\n\ttrain loss AP: {t_loss_ap:.4f}, "
+                f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "
+                f"\n\ttest loss AP: {v_loss_ap:.4f}, "
+                f"\n\ttest loss MLM: {v_loss_mlm:.4f}, "
+                f"\n\taccuracy AP: {acc:.4f}"
             )
+            print(info_str)
+            self.logger.info(info_str)
             
             self.__save_checkpoint(
                 filepath=f"res/checkpoints/pretrained_{epoch+1}.pt", 
@@ -400,4 +419,6 @@ class PretrainingTrainer:
         }
         torch.save(checkpoint, filepath)
         print(f"Checkpoint saved to {filepath}")
+        self.logger.info(f"Checkpoint saved to {filepath}")
+        
         

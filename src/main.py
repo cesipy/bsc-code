@@ -1,9 +1,11 @@
 import os
+# problem when running training on loaded models after pretraining. 
+# occurs because of parallelism in data loaders
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 import gc
-import torch
+import torch; from torch.utils.data import DataLoader, Dataset
 
 from transformers import (
     BertTokenizerFast, PreTrainedTokenizerFast, ViTImageProcessor
@@ -14,16 +16,18 @@ import datasets; from datasets import CustomDataset, PretrainDatasetAP, Pretrain
 from config import *
 from vilbert import ViLBERT
 from trainer import Trainer, PretrainingTrainer
-from torch.utils.data import DataLoader, Dataset
+from logger import Logger
 
 import warnings
 # Suppress specific PyTorch warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.utils.checkpoint")
 warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modules.module")
 
+logger = Logger()
+
 @utils.memory_cleanup
 def pretain(): 
-    
+    logger.info("starting pretraining")
     epochs = 3
     num_workers = 10
     prefetch= 4
@@ -31,7 +35,7 @@ def pretain():
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    # data_list = data_list[:80]
+    data_list = data_list[:80]
     validation_list = validation_list[:1_000]
     
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -127,12 +131,17 @@ def pretain():
     del model, trainer, train_dataset_ap, val_dataset_ap, train_dataset_mlm, val_dataset_mlm
     del train_loader_ap, val_loader_ap, train_loader_mlm, val_loader_mlm
     torch.cuda.empty_cache()
-    gc.collect()
+    gc_collected = gc.collect()
+    print(f"gc collected items: {gc_collected}")
+    logger.info("pretraining finished, cleaning up memory")
     
 def train_and_eval_on_downstream_task(pretrained_model_path:str):
     if pretrained_model_path==None or not os.path.exists(pretrained_model_path) : 
         # use fresh vilbert 
-        print(f"Pretrained model path {pretrained_model_path} does not exist, using fresh model.")
+        info_str = f"Pretrained model path {pretrained_model_path} does not exist, using fresh model."
+        print(info_str)
+        logger.info(info_str)
+        
         config = Config()
         model = ViLBERT()
     
@@ -144,6 +153,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     config = Config()
+    config.learning_rate = 1e-5     # TODO: make this cleaner
     
     #TODO: also freeze co-attention layers here
     utils.params_summary(model=model)
@@ -171,6 +181,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     del model, trainer, train_dataset, val_dataset, train_loader, val_loader
     torch.cuda.empty_cache()
     gc.collect()
+    
+    logger.info("Training and evaluation on downstream task finished, cleaning up memory")
     
     
     
