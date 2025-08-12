@@ -62,6 +62,39 @@ class GeLU(nn.Module):
         return x * 0.5 * (1.0 + torch.erf(x / math.sqrt(2)))
     
     
+class InfoNCE(nn.Module): 
+    # inspiration from: https://github.com/arashkhoeini/infonce/blob/main/infonce/infonce.py
+    # temperature setting like in clip paper
+    def __init__(self, temperature:float = 0.07): 
+        super(InfoNCE, self).__init__()
+        self.temperature = temperature
+        
+        self.cross_entropy_loss = nn.CrossEntropyLoss()
+        
+        
+    # TODO: not quite sure if this implementation is correct
+    def forward(self, x, target_labels): 
+        
+        x = torch.nn.functional.normalize(x, dim=-1)
+        target_labels = torch.nn.functional.normalize(target_labels, dim=-1)
+        
+        n = target_labels.size(0)
+        logits = torch.matmul(x, target_labels.T()) / self.temperature
+        
+        labels = torch.arange(n)
+        
+        # loss2 with logits.T. same as axis=1 in clip paper
+        # loss2 = self.ce(logits, labels, axis=1)
+        loss1 = self.cross_entropy_loss(logits, labels)
+        loss2 = self.cross_entropy_loss(logits.T, labels)
+        
+        loss = (loss1 + loss2) / 2
+        
+        return loss
+        
+
+    
+    
     
 def freeze_all_layers(model: nn.Module): 
     for param in model.parameters(): 
