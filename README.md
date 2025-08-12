@@ -23,6 +23,32 @@ I'm currently working on it, so it is not yet complete.
 original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
 
 
+## Pretraining
+
+There are three pretraining tasks in ViLBERT: Masked Language Modelling, Masked Image Modelling, Alignment Prediction
+
+### MLM 
+for 15% of all tokens: 
+- 80% replaced with [MASK]
+- 10% replaced with random token
+- 10% unchanged
+
+array of length of tokens is returned. if masked: masked token, if not `token[i] = -100`(value for lossfunction to ignore it)
+
+### Alignment Prediction
+predict if images and caption are aligned. Is a dataset of 50/50 balance. 
+- "research has been focused on two main schemes, either reconstructing the masked signal, or comparing two latent representations, one for the unaltered input signal and one for the masked input."
+
+
+
+
+### MIM
+
+Two options: reconstruct masked patches, contrastive comparision of hidden representations. 
+
+Basd on my research I go for the contrastice approach, as this seems more interesting for me to implement .
+
+Mask patches of image
 
 ## Results
 Running `train_and_eval_on_downstream_task` with randomly initialized cross-attentions and 4 epochs gives the following results. 
@@ -49,5 +75,6 @@ Epoch 1/4, train loss: 0.6208, test loss: 0.5848,  accuracy: 0.6935
 Epoch 2/4, train loss: 0.5514, test loss: 0.5547,  accuracy: 0.7118
 Epoch 3/4, train loss: 0.5058, test loss: 0.5308,  accuracy: 0.7335
 Epoch 4/4, train loss: 0.4704, test loss: 0.5292,  accuracy: 0.7371
-
 ```
+
+

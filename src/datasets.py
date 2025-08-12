@@ -5,6 +5,9 @@ import pickle
 import csv
 import random
 
+from timm.data import resolve_data_config
+from timm.data.transforms_factory import create_transform
+
 from transformers import (
      # ViT stuff
     BaseImageProcessor,
@@ -47,7 +50,34 @@ def process_single_image(path:str) -> torch.Tensor:
     
     return img_tensor
 
+# def get_image_embedding(path: str, image_processor: BaseImageProcessor):
+#     try:
+#         with Image.open(path) as image:
+#             # Resize if too large, some images in cc are too large 
+#             # i need to resize them to mitigate warnings
+#             # vit sizes them down anyways
+#             width, height = image.size
+#             max_size = 4096  # Max dimension
+#             if width > max_size or height > max_size:
+#                 if width > height:
+#                     new_width = max_size
+#                     new_height = int(height * max_size / width)
+#                 else:
+#                     new_height = max_size  
+#                     new_width = int(width * max_size / height)
+#                 image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+#             image = image.convert("RGB")
+#             image = image_processor(images=image, return_tensors="pt")
+#             return image
+#     except Exception:
+#         # print(f"Error processing image {path}. Skipping.")
+#         return None
+
 def get_image_embedding(path: str, image_processor: BaseImageProcessor):
+    
+    config = resolve_data_config({}, model=VIT_MODEL_NAME)
+    transform = create_transform(**config)
     try:
         with Image.open(path) as image:
             # Resize if too large, some images in cc are too large 
@@ -65,10 +95,12 @@ def get_image_embedding(path: str, image_processor: BaseImageProcessor):
                 image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
             
             image = image.convert("RGB")
-            image = image_processor(images=image, return_tensors="pt")
-            return image
-    except Exception:
-        # print(f"Error processing image {path}. Skipping.")
+            # image = image_processor(images=image, return_tensors="pt")
+            image = transform(image).unsqueeze(0)  
+            return {"pixel_values": image}
+    except Exception as e:
+        print(f"Error processing image {path}. Skipping.")
+        print(f"error: {e}")
         return None
     
 
@@ -149,7 +181,7 @@ class CustomDataset(Dataset):
         """
         data = self.data[index]
        
-        # TODO: transformation 
+        # TODO: transformation, currently there is no transfromation
         if self.transform:
             img_tensor = self.transform(img_tensor)
         
@@ -489,6 +521,21 @@ class PretrainDatasetMLM(Dataset):
     
     def __len__(self,):
         return len(self.data)
+    
+    
+# class PretrainDatasetMIM(Dataset): 
+#     def __init__(
+#         self, 
+#         data: typing.List[typing.Tuple[str, str]], # path, text/caption
+#         tokenizer: PreTrainedTokenizerFast,
+#         image_processor: BaseImageProcessor,
+        
+#     ): 
+#         self.transform = None
+#         self.tokenizer = tokenizer
+#         self.image_processor = image_processor
+
+        
 
 
 def generate_data_list(path: str): 
