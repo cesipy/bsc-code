@@ -53,18 +53,21 @@ class ViLBERT(nn.Module):
         self.vit = timm.create_model(
             VIT_MODEL_NAME, 
             pretrained=True, 
-            num_classes=0, # num_classes=0 removes head
-            global_pool=""
+            num_classes=0,       # num_classes=0 removes head
+            global_pool="",      # we need whole sequence for mim
         )  
         
         
-        # self.bert = torch.compile(self.bert)  
-        # self.vit = torch.compile(self.vit)
+        self.bert = torch.compile(self.bert)  
+        self.vit = torch.compile(self.vit)
         
         self.bert.gradient_checkpointing_enable()
     
-        utils.freeze_all_layers(self.bert)
-        utils.freeze_all_layers(self.vit)
+        # utils.freeze_all_layers(self.bert)
+        # utils.freeze_all_layers(self.vit)
+        # self.bert.eval()
+        # self.vit.eval()
+
         
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
         
@@ -158,6 +161,9 @@ class ViLBERT(nn.Module):
         # TODO: fix naming conflict - fix input param name
         text_embedding = text_tensor
         vision_embedding = image_tensor
+        
+        # print(f"cls token shape: {vision_embedding[0,0].shape}")
+        # print(f"cls token: {text_embedding[0,0, : 5]}")
         
         for i in range(len(self.cross_attention)):
             text_embedding, vision_embedding = self.cross_attention[i](

@@ -25,12 +25,14 @@ import numpy as np
 
 from PIL import Image, UnidentifiedImageError
 
-from utils import Task
+from utils import Task; import utils
 from config import * 
 
 import warnings
 
 from logger import Logger
+
+logger = Logger()
 
 # disable PIL's decompression bomb warning, bc i get the following: 
 # DecompressionBombWarning: Image size (93950400 pixels) exceeds limit of 89478485 pixels, could be decompression bomb DOS attack.
@@ -39,6 +41,10 @@ warnings.filterwarnings("ignore", ".*Palette images with Transparency.*", catego
 
 
 Image.MAX_IMAGE_PIXELS = None
+
+# to avoid too many unused objects
+config = resolve_data_config({}, model=VIT_MODEL_NAME)
+vit_transform = create_transform(**config)
 
 def process_single_image(path:str) -> torch.Tensor: 
     img = cv2.imread(path)
@@ -76,8 +82,7 @@ def process_single_image(path:str) -> torch.Tensor:
 
 def get_image_embedding(path: str, image_processor: BaseImageProcessor):
     
-    config = resolve_data_config({}, model=VIT_MODEL_NAME)
-    transform = create_transform(**config)
+    
     try:
         with Image.open(path) as image:
             # Resize if too large, some images in cc are too large 
@@ -96,8 +101,11 @@ def get_image_embedding(path: str, image_processor: BaseImageProcessor):
             
             image = image.convert("RGB")
             # image = image_processor(images=image, return_tensors="pt")
-            image = transform(image).unsqueeze(0)  
-            return {"pixel_values": image}
+            # return image
+            image = vit_transform(image).unsqueeze(0) 
+            # logger.info(f"processed image shape: {image.shape}")
+            # to keep the format of transformers-package, which i was using before
+            return {"pixel_values": image}      
     except Exception as e:
         print(f"Error processing image {path}. Skipping.")
         print(f"error: {e}")
@@ -523,21 +531,87 @@ class PretrainDatasetMLM(Dataset):
         return len(self.data)
     
     
-# class PretrainDatasetMIM(Dataset): 
-#     def __init__(
-#         self, 
-#         data: typing.List[typing.Tuple[str, str]], # path, text/caption
-#         tokenizer: PreTrainedTokenizerFast,
-#         image_processor: BaseImageProcessor,
+class PretrainDatasetMIM(Dataset): 
+    def __init__(
+        self, 
+        data: typing.List[typing.Tuple[str, str]], # path, text/caption
+        tokenizer: PreTrainedTokenizerFast,
+        image_processor: BaseImageProcessor,
         
-#     ): 
-#         self.transform = None
-#         self.tokenizer = tokenizer
-#         self.image_processor = image_processor
-
+    ): 
+        self.transform = None
+        self.tokenizer = tokenizer
+        self.image_processor = image_processor
+        self.invalid_image_counter = 0
         
+        self.data = self.__generate_pretrain_dataset(data)
+        
+    def __generate_pretrain_dataset(
+        self, 
+        data: typing.List[typing.Tuple[str, str]],
+    ): 
+        data_mim = self.__generate_pretrain_dataset_mim(data)
+        
+        random.shuffle(data_mim)
+        return data_mim
+    
+    def __generate_pretrain_dataset_mim(self, data):
+        # returns task, path, text/caption, placeholder label 
+        return [
+            (Task.MASKED_IM, dp[0], dp[1], 3) for dp in data
+        ]
+        
+    def handle_fallback(self, ): 
+        self.invalid_image_counter += 1
+        if self.invalid_image_counter > 10:
+            raise ValueError("Too many invalid images encountered. Stopping.")
+        idx = random.randint(0, len(self.data) - 1)
+        
+        return self.__getitem__(idx)
+     
+        
+        
+    def __mask_image(self, img: torch.Tensor): 
+        img_numpy = utils.img_tensor_to_numpy(image_tensor=img)
+        
+        # TODO: add masking_prob
+        masked_img, masked_patches_idxs = utils.mask_image(img=img_numpy)
+        return masked_img, masked_patches_idxs
 
-
+    def __len__(self): 
+        return len(self.data)
+    
+    
+    def __getitem__(self, idx): 
+        dp = self.data[idx]
+        task, img_path, text, label = dp
+        
+        img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
+        text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
+        
+        if img_embeddings is None or text_embeddings is None:
+            # this should not happen anymore, as downloading conc.capt. checks for faulty imgs
+            return self.handle_fallback()
+        
+        self.invalid_image_counter = 0
+        # print(img_embeddings["pixel_values"].shape) # [1, 3, 224, 224]
+        
+        masked_img, masked_patches_idxs = self.__mask_image(
+            img=img_embeddings["pixel_values"].squeeze(0)      
+            )
+        
+        
+        assert task == Task.MASKED_IM, "something is completely wrong in the data processing step"
+        
+        return {
+            "task": task.value,     # torch cannot handle custom classes
+            "img" : img_embeddings, 
+             "masked_img": {"pixel_values": masked_img.unsqueeze(0)},  
+            "masked_patches_idxs": masked_patches_idxs, 
+            "text": text_embeddings,
+        }
+        
+        
 def generate_data_list(path: str): 
     dir_name = os.path.dirname(path)
     print("dirname: ", dir_name)
@@ -643,11 +717,10 @@ def main():
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     
-    dataset = PretrainDatasetAP(
-        data=dl, 
-        tokenizer=tokenizer,
-        image_processor=image_processor, 
-        preprocessing_prediction_alignment=True
+    dataset = PretrainDatasetMIM(
+        data = dl, 
+        tokenizer=tokenizer, 
+        image_processor=image_processor,
     )
     
     print(f"Dataset length: {len(dataset)}")
@@ -687,14 +760,11 @@ def main():
         persistent_workers=True
     )
     
-    for i in dataloader: 
-        text_decoded = tokenizer.decode(i["text"]["input_ids"][0][0], skip_special_tokens=True)
+    for batch in dataloader: 
+        ...
         
-        print(f"Task: {i['task']}")
-        print(f"Text: '{text_decoded}'")
-        print(f"Image shape: {i['img']['pixel_values'].shape}")
-        print(f"Label: {i['label'].item()}")
-        print("-" * 30)
+        # break  # only one batch for testing
+    
     
     
 if __name__ == "__main__":

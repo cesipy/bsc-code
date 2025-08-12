@@ -11,13 +11,16 @@ I'm currently working on it, so it is not yet complete.
 - [ ] add dropout in attention
 - [x] pretrain dataset fix: filter out images that are not working
 - [x] pretrain dataset mlm task
-- [x] pretrain dataset image task
-- [ ] apparently there is a problem with the `transformers` library, where ViT implementation causes 10x-40x? https://x.com/jbohnslav/status/1950550831381782798, => own implementation of ViT (maybe adapt from dl VU, assignment 03)
+- [x] apparently there is a problem with the `transformers` library, where ViT implementation causes 10x-40x? https://x.com/jbohnslav/status/1950550831381782798, => own implementation of ViT (maybe adapt from dl VU, assignment 03)
 - [x] logging to keep track of my development
 - [ ] visualization of pretraining tasks - like acc, loss, etc
     - [x] implement accuracy for pretraining - handle specific tasks
 - [x] fix problem with compile and saving
 
+- [ ] log everything
+- [ ] complete mim
+    - [ ] data augmentation
+    - [ ] teacher, student
 
 ## ViLBERT
 original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
@@ -46,9 +49,32 @@ predict if images and caption are aligned. Is a dataset of 50/50 balance.
 
 Two options: reconstruct masked patches, contrastive comparision of hidden representations. 
 
-Basd on my research I go for the contrastice approach, as this seems more interesting for me to implement .
+Basd on my research I go for the contrastice approach, as this seems more interesting for me to implement. 
 
-Mask patches of image
+<figure>
+    <img src="./res/markdown_res/contrastive_mim.png" width=400>
+</figure>
+
+the workflow is the following: 
+1) augment the data. Not yes timplemented
+2) mask image => (image, masked_image)
+3) encode(masked_image); encode(image)
+4) compute infoNCE on the representations, ONLY FOR UNMASKED tokens. 
+
+
+dataset returned from dataloader/dataset: 
+```python
+{
+    "task": task.value, 
+    "img" : img_embedding,      # og img, as tensor
+    "masked_img": masked_img, # masked image as tensor
+    "masked_patches_idxs": masked_patches_idxs, # indices of the masked patches,
+    "text": text_embeddings,
+}
+```
+
+
+
 
 ## Results
 Running `train_and_eval_on_downstream_task` with randomly initialized cross-attentions and 4 epochs gives the following results. 
