@@ -18,7 +18,7 @@ from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 
 
-
+# just for testing purposes here
 # to avoid too many unused objects
 config = resolve_data_config({}, model=VIT_MODEL_NAME)
 vit_transform = create_transform(**config)
@@ -203,6 +203,8 @@ class GeLU(nn.Module):
         """
         return x * 0.5 * (1.0 + torch.erf(x / math.sqrt(2)))
     
+
+    
     
 class InfoNCE(nn.Module): 
     # inspiration from: https://github.com/arashkhoeini/infonce/blob/main/infonce/infonce.py
@@ -221,9 +223,9 @@ class InfoNCE(nn.Module):
         target_labels = torch.nn.functional.normalize(target_labels, dim=-1)
         
         n = target_labels.size(0)
-        logits = torch.matmul(x, target_labels.T()) / self.temperature
+        logits = torch.matmul(x, target_labels.T) / self.temperature
         
-        labels = torch.arange(n)
+        labels = torch.arange(n, device=x.device)
         
         # loss2 with logits.T. same as axis=1 in clip paper
         # loss2 = self.ce(logits, labels, axis=1)
@@ -233,6 +235,8 @@ class InfoNCE(nn.Module):
         loss = (loss1 + loss2) / 2
         
         return loss
+    
+    
         
 
     

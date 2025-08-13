@@ -253,9 +253,6 @@ class ViLBERT(nn.Module):
         output_hidden_states=False,
         tasks:list[str]= None,      #TODO: make tasks an enunm
     ): 
-
-        
-        
         if "mlm" in tasks:
             # text_embedding_tensor = self.__forward_masked_text(
             #     ...
@@ -284,6 +281,22 @@ class ViLBERT(nn.Module):
         #     image_embedding_tensor = self.__forward_masked_image(
         #         ...
         #     )
+        
+        if "mim" in tasks: 
+            text_seqs, vision_seqs = self.forward_coattention(
+                text_input_ids=text_input_ids, 
+                text_attention_mask=text_attention_mask, 
+                text_token_type_ids=text_token_type_ids, 
+                image_pixel_values=image_pixel_values, 
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                extract_cls=False
+            )
+            
+            return text_seqs, vision_seqs
+            
+            
         
         if "alignment_prediction" in tasks: 
             text_embedding, image_embedding = self.forward_coattention(

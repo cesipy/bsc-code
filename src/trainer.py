@@ -144,6 +144,7 @@ class PretrainingTrainer:
         
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
+        self.loss_fn_mim = utils.InfoNCE(temperature=0.07)
         
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
@@ -328,6 +329,72 @@ class PretrainingTrainer:
         
         return loss.item()
     
+    def train_epoch_mim_batch(self, batch): 
+        
+        self.optimizer.zero_grad()
+        
+        task = ["mim"]
+        
+        current_task = batch["task"]            # [bs]
+        text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+        
+        original_image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+        masked_image = {k: v.squeeze(1).to(self.device) for k, v in batch["masked_img"].items()}
+        
+        # Mask indices - [bs, 196] where 1 = masked, 0 = unmasked
+        masked_patches_idxs = batch["masked_patches_idxs"].to(self.device)  # [bs, 196]
+        
+        with torch.amp.autocast(device_type=self.device):
+            text_seqs_masked, img_seqs_masked = self.model.forward_pretrain(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=masked_image["pixel_values"],
+                image_attention_mask=masked_image.get("attention_mask", None),
+                tasks=task
+            )
+            
+            text_seqs_unmasked, img_seqs_unmasked = self.model.forward_pretrain(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=original_image["pixel_values"],
+                image_attention_mask=original_image.get("attention_mask", None),
+                tasks=task
+            )
+            
+            loss = self.compute_mim_loss(
+                img_seqs_unmasked=img_seqs_unmasked, 
+                img_seqs_masked=img_seqs_masked, 
+                masked_patches_idxs=masked_patches_idxs
+            )
+            
+        scaled_loss = self.scaler.scale(loss)
+        scaled_loss.backward()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
+        
+        return loss.item()
+    
+    # TODO: clean this up
+    def train_epoch_mim(
+        self, 
+        dataloader_mim: DataLoader,
+    ): 
+        total_loss = 0
+        num_batches = 0
+        for batch in dataloader_mim: 
+            loss = self.train_epoch_mim_batch(batch)
+            total_loss += loss
+            num_batches += 1
+            
+        return total_loss / num_batches
+        
+                
+            
+            
+            
+        
     def train_epoch(
         self, 
         dataloader_ap: DataLoader,
@@ -355,6 +422,17 @@ class PretrainingTrainer:
         avg_loss_ap = total_loss_ap / num_batches
         avg_loss_mlm = total_loss_mlm / num_batches
         return avg_loss_ap, avg_loss_mlm
+    
+    
+    def train_mim(
+        self, 
+        train_dataloader: DataLoader,
+        epochs: int
+    ): 
+        for i in range(epochs): 
+            train_loss = self.train_epoch_mim(train_dataloader)
+            info_str = f"Epoch {i+1}/{epochs}, train loss MIM: {train_loss:.4f}"
+            print(info_str)
                 
     def train(
         self, 
@@ -441,3 +519,46 @@ class PretrainingTrainer:
         self.logger.info(f"Checkpoint saved to {filepath}")
         
         
+        
+
+    def compute_mim_loss(
+        self, 
+        img_seqs_masked, 
+        img_seqs_unmasked, 
+        masked_patches_idxs,
+    ): 
+        
+        # print(f"shape img_seqs_masked: {img_seqs_masked.shape}, shape img_seqs_unmasked: {img_seqs_unmasked.shape}, shape masked_patches_idxs: {masked_patches_idxs.shape}")
+        
+        # img_seqs_masked: [bs, num_patches+1, 768]
+        # img_seqs_unmasked: [bs, num_patches+1, 768]
+        # masked_patches_idxs: [bs, num_patches]
+        # the other have the same dimensions.
+        
+        batch_size = img_seqs_masked.shape[0]
+        
+        # i implemented a sequential code, that iterated over all the batches
+        # and then computed the loss. 
+        # genAI came up with the more efficient method for gpus
+        
+        # only compute loss for the unmasked patches, so masked_patches_idxs = 0
+        unmasked_patches: torch.Tensor[bool] = (masked_patches_idxs == 0)  # [bs, 196] -> if unmasked = 0
+        num_unmasked = unmasked_patches.sum(dim=1, keepdim=True)  # [bs, 1]
+        # print(f"num_unmasked: {num_unmasked}")
+        # print(f"shape unmasked_patches: {unmasked_patches.shape}")
+        # print(f"unmasked_patches: {unmasked_patches}")
+        
+        # add CLS token (always unmasked) to the beginning
+        cls_mask = torch.ones(batch_size, 1, device=self.device, dtype=torch.bool)  # [bs, 1]
+        full_unmasked_mask: torch.Tensor[bool] = torch.cat([cls_mask, unmasked_patches], dim=1)  # [bs, 197]
+        
+        # apply mask to select only unmasked positions for all samples
+        masked_feats = img_seqs_masked[full_unmasked_mask]      # [total_unmasked, 768]
+        unmasked_feats = img_seqs_unmasked[full_unmasked_mask]  # [total_unmasked, 768]
+        
+        # print(f"shape: masked_feats: {masked_feats.shape}, unmasked_feats: {unmasked_feats.shape}")
+        assert masked_feats.shape == unmasked_feats.shape 
+        # has shape between bs * ~177: [bs*~177, 768]
+        loss = self.loss_fn_mim(masked_feats, unmasked_feats)
+        
+        return loss
