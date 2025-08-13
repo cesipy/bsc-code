@@ -226,6 +226,58 @@ class PretrainingTrainer:
                     
         return total_loss / num_batches, acc
     
+    def evaluate_mim(self, dataloader: DataLoader): 
+        self.model.eval()
+        
+        total_loss  = 0
+        num_batches = 0
+        
+        with torch.no_grad(): 
+            for batch in dataloader: 
+                
+                tasks = ["mim"]
+
+                text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+        
+                original_image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+                masked_image = {k: v.squeeze(1).to(self.device) for k, v in batch["masked_img"].items()}
+                
+                # Mask indices - [bs, 196] where 1 = masked, 0 = unmasked
+                masked_patches_idxs = batch["masked_patches_idxs"].to(self.device)  # [bs, 196]
+                
+                
+                text_seqs_masked, img_seqs_masked = self.model.forward_pretrain(
+                    text_input_ids=text["input_ids"],
+                    text_attention_mask=text["attention_mask"],
+                    text_token_type_ids=text.get("token_type_ids", None),
+                    image_pixel_values=masked_image["pixel_values"],
+                    image_attention_mask=masked_image.get("attention_mask", None),
+                    tasks=tasks
+                )
+                
+                text_seqs_unmasked, img_seqs_unmasked = self.model.forward_pretrain(
+                    text_input_ids=text["input_ids"],
+                    text_attention_mask=text["attention_mask"],
+                    text_token_type_ids=text.get("token_type_ids", None),
+                    image_pixel_values=original_image["pixel_values"],
+                    image_attention_mask=original_image.get("attention_mask", None),
+                    tasks=tasks
+                )
+                
+                loss = self.compute_mim_loss(
+                    img_seqs_unmasked=img_seqs_unmasked,
+                    img_seqs_masked=img_seqs_masked,
+                    masked_patches_idxs=masked_patches_idxs
+                )
+                
+                total_loss += loss.item()
+                num_batches += 1
+                
+            return total_loss / num_batches
+                
+            
+    
+    
     def train_epoch_prediction(self, dataloader: DataLoader):
         self.model.train()
         total_loss = 0
@@ -427,11 +479,13 @@ class PretrainingTrainer:
     def train_mim(
         self, 
         train_dataloader: DataLoader,
+        test_datalaoder: DataLoader,
         epochs: int
     ): 
         for i in range(epochs): 
             train_loss = self.train_epoch_mim(train_dataloader)
-            info_str = f"Epoch {i+1}/{epochs}, train loss MIM: {train_loss:.4f}"
+            val_loss   = self.evaluate_mim(test_datalaoder)
+            info_str = f"Epoch {i+1}/{epochs}, train loss MIM: {train_loss:.4f}, validation loss MIM: {val_loss:.4f}"
             print(info_str)
                 
     def train(
@@ -519,6 +573,8 @@ class PretrainingTrainer:
         self.logger.info(f"Checkpoint saved to {filepath}")
         
         
+    
+    
         
 
     def compute_mim_loss(

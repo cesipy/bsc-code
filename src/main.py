@@ -240,7 +240,11 @@ def pretrain_MIM_only():
         config=Config(), 
     )
     
-    trainer.train_mim(train_dataloader=train_loader, epochs=epochs)
+    trainer.train_mim(
+        train_dataloader=train_loader, 
+        test_datalaoder=val_loader,
+        epochs=epochs
+    )
     
     
     
