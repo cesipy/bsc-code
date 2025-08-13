@@ -3,8 +3,8 @@ import random
 import typing
 
 import numpy as np
-import torch
-from torch import nn
+import torch; from torch import nn
+import torchvision; from torchvision import transforms
 import gc; import time
 from functools import wraps
 import matplotlib.pyplot as plt
@@ -60,6 +60,22 @@ class Task(Enum):
     MASKED_LM = 2
     MASKED_IM = 3       # masked image modelling
     
+    
+transforms_unmasked = torchvision.transforms.Compose([
+    transforms.RandomRotation(5),
+    transforms.RandomRotation(degrees=5),
+    transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.05),
+    transforms.RandomResizedCrop(size=224, scale=(0.95, 1.0)),
+])
+    
+transforms_masked = torchvision.transforms.Compose([
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomRotation(degrees=15),
+    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
+    transforms.RandomResizedCrop(size=224, scale=(0.7, 1.0)),  # More aggressive cropping
+    transforms.RandomGrayscale(p=0.1),
+    transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+])
 
 def memory_cleanup(func): 
     @wraps(func)

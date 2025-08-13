@@ -185,6 +185,7 @@ class PretrainingTrainer:
                     
         return total_loss / num_batches
     
+    
     def evaluate_ap(self, dataloader: DataLoader):
         self.model.eval()
         
@@ -226,6 +227,7 @@ class PretrainingTrainer:
                     
         return total_loss / num_batches, acc
     
+
     def evaluate_mim(self, dataloader: DataLoader): 
         self.model.eval()
         
@@ -277,7 +279,7 @@ class PretrainingTrainer:
                 
             
     
-    
+
     def train_epoch_prediction(self, dataloader: DataLoader):
         self.model.train()
         total_loss = 0

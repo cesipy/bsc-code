@@ -19,8 +19,10 @@ I'm currently working on it, so it is not yet complete.
 
 - [ ] log everything
 - [ ] complete mim
-    - [ ] data augmentation
-    - [ ] teacher, student
+    - [ ] data augmentation pipeline. 
+    - [ ] teacher, student ? this is to avoid moving target problem, but is it necessary?
+    - [ ] gradient stopping
+    - [ ] different batchsizes for tasks
 
 ## ViLBERT
 original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.

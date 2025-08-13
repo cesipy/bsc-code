@@ -191,7 +191,7 @@ def pretrain_MIM_only():
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:10_000]
+    data_list = data_list[:200]
     # validation_list = validation_list[:1_000]
     
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -207,11 +207,15 @@ def pretrain_MIM_only():
         data=train_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
+        transforms_weak=utils.transforms_unmasked,
+        transforms_strong=utils.transforms_masked
     )
     val_dataset   = PretrainDatasetMIM(
         data=val_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
+        transforms_weak=utils.transforms_unmasked,
+        transforms_strong=utils.transforms_masked,
     )
     
     train_loader = DataLoader(

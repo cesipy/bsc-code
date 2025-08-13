@@ -10,7 +10,7 @@ IMG_SIZE = (224, 224)
 PREPROCESSED_PATH = "res/preprocessed.pkl"      # not yet used, used to store precomputed datasets (in tensor form)
 TRAIN_TEST_RATIO = 0.8
 
-BATCH_SIZE = 72
+BATCH_SIZE = 32
 EPOCHS = 10
 
 TOKENIZER_MAX_LEN = 192

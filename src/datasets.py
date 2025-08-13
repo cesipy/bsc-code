@@ -537,12 +537,17 @@ class PretrainDatasetMIM(Dataset):
         data: typing.List[typing.Tuple[str, str]], # path, text/caption
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor,
+        transforms_weak=None,
+        transforms_strong=None,
         
     ): 
-        self.transform = None
+        self.transform = True if (transforms_weak or transforms_strong) else False
         self.tokenizer = tokenizer
         self.image_processor = image_processor
         self.invalid_image_counter = 0
+        
+        self.transforms_weak = transforms_weak
+        self.transforms_strong = transforms_strong
         
         self.data = self.__generate_pretrain_dataset(data)
         
@@ -593,12 +598,18 @@ class PretrainDatasetMIM(Dataset):
             # this should not happen anymore, as downloading conc.capt. checks for faulty imgs
             return self.handle_fallback()
         
-        self.invalid_image_counter = 0
-        # print(img_embeddings["pixel_values"].shape) # [1, 3, 224, 224]
-        
-        masked_img, masked_patches_idxs = self.__mask_image(
-            img=img_embeddings["pixel_values"].squeeze(0)      
-            )
+        original_img = img_embeddings["pixel_values"].squeeze(0)  # Remove batch dim for transforms
+    
+        if self.transforms_weak and self.transforms_strong:
+            weak_img = self.transforms_weak(original_img)
+            img_embeddings["pixel_values"] = weak_img.unsqueeze(0)  # Add batch dim back
+            
+
+            strong_img = self.transforms_strong(original_img)
+            masked_img, masked_patches_idxs = self.__mask_image(strong_img)
+        else:
+
+            masked_img, masked_patches_idxs = self.__mask_image(original_img)
         
         
         assert task == Task.MASKED_IM, "something is completely wrong in the data processing step"

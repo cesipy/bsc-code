@@ -133,22 +133,22 @@ class ViLBERT(nn.Module):
         output_hidden_states=False,
         extract_cls=True            # used for pretraining. should the cls token be extracted?
     ): 
-        with torch.no_grad():
-            text_output = self.bert(
-                input_ids=text_input_ids,
-                attention_mask=text_attention_mask,
-                token_type_ids=text_token_type_ids,
-                output_attentions=output_attentions,
-                output_hidden_states=output_hidden_states,
-            )
+        # with torch. ():
+        text_output = self.bert(
+            input_ids=text_input_ids,
+            attention_mask=text_attention_mask,
+            token_type_ids=text_token_type_ids,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+        )
         
         # image_output = self.vit(
         #     pixel_values=image_pixel_values,
         #     output_attentions=output_attentions,
         #     output_hidden_states=output_hidden_states,
         # )
-        with torch.no_grad():
-            image_output = self.vit(image_pixel_values)
+        # with torch.no_grad():
+        image_output = self.vit(image_pixel_values)
         
         text_tensor = text_output.last_hidden_state
         # image_tensor = image_output.last_hidden_state
