@@ -14,8 +14,8 @@ from transformers import (
     ViTImageProcessor,
 )
 
-TIMEOUT = 1.5
-WORKERS = 50
+TIMEOUT = 1.0
+WORKERS = 40
 
 image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
@@ -41,14 +41,12 @@ def is_image_openable(content, image_processor: BaseImageProcessor):
         return False
     
 def get_filename(content, url): 
-    image = Image.open(BytesIO(content))
-    format_lower = image.format.lower() if image.format else 'jpg'
-    
     base_filename = url.split("/")[-1].split('?')[0]  # remove query params
     if '.' in base_filename:
         base_filename = base_filename.rsplit('.', 1)[0]  # remove existing extension
     
-    filename = f"{base_filename}.{format_lower}"
+
+    filename = f"{base_filename}.jpg"
     return filename
     
 
@@ -63,13 +61,15 @@ def download_image(url: str, verbose=False):
                     print(f"Skipping {url}: Image cannot be opened.")
                 return None
             
+            image = Image.open(BytesIO(response.content)).convert("RGB")
+            image = image.resize((224, 224), Image.Resampling.LANCZOS)
+            
             filename = get_filename(content=response.content, url=url)
             
             filepath = Path("res/data/conceptual-captions/images") / filename
             filepath.parent.mkdir(parents=True, exist_ok=True)
             
-            with open(filepath, "wb") as f:
-                f.write(response.content)
+            image.save(filepath, format='JPEG', quality=95)
             return filepath
         else:
             if verbose:
@@ -95,7 +95,7 @@ def main():
         
     # data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
     data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
-    data_list = data_list[:200000]
+    data_list = data_list[:1_500_000]
 
 
     error_counter = 0
