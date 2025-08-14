@@ -45,8 +45,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         print(info_str)
         logger.info(info_str)
         
-    utils.freeze_all_layers(model.vit)
-    utils.freeze_all_layers(model.bert)
+    # utils.freeze_all_layers(model.vit)
+    # utils.freeze_all_layers(model.bert)
         
     path = "res/data/hateful_memes_data/train.jsonl"
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")

@@ -24,6 +24,8 @@ I'm currently working on it, so it is not yet complete.
     - [ ] gradient stopping
     - [ ] different batchsizes for tasks
 
+- [ ] better config handling
+
 ## ViLBERT
 original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
 
@@ -79,6 +81,75 @@ dataset returned from dataloader/dataset:
 
 
 ## Results
+
+running the pretraining on 125k images with all three pretraining tasks resulted in this pretraining loss: 
+
+<figure>
+<img src="res/markdown_res/training_losses-1755120573.png" width=400>
+</figure>
+
+```
+2025-08-13 15:45:10 - INFO  - trainer.py:train:518 - training with tasks: [<Task.ALIGNMENT_PREDICTION: 1>, <Task.MASKED_LM: 2>, <Task.MASKED_IM: 3>]
+2025-08-13 17:41:13 - INFO  - trainer.py:train:566 - Epoch 1/4, 
+	train loss MLM: 4.0114, 
+	test loss MLM: 3.4809, 
+	train loss AP: 0.4748, 
+	test loss AP: 0.3476, 
+	accuracy AP: 0.8484
+	train loss MIM: 3.1180, 
+	test loss MIM: 1.0458
+2025-08-13 17:41:16 - INFO  - trainer.py:__save_checkpoint:612 - Checkpoint saved to res/checkpoints/pretrained_1.pt
+2025-08-13 19:37:17 - INFO  - trainer.py:train:566 - Epoch 2/4, 
+	train loss MLM: 3.1049, 
+	test loss MLM: 2.9979, 
+	train loss AP: 0.3050, 
+	test loss AP: 0.3105, 
+	accuracy AP: 0.8682
+	train loss MIM: 0.8290, 
+	test loss MIM: 0.2725
+2025-08-13 19:37:20 - INFO  - trainer.py:__save_checkpoint:612 - Checkpoint saved to res/checkpoints/pretrained_2.pt
+2025-08-13 21:33:23 - INFO  - trainer.py:train:566 - Epoch 3/4, 
+	train loss MLM: 2.7849, 
+	test loss MLM: 2.8589, 
+	train loss AP: 0.2659, 
+	test loss AP: 0.3059, 
+	accuracy AP: 0.8666
+	train loss MIM: 0.4698, 
+	test loss MIM: 1.0823
+2025-08-13 21:33:26 - INFO  - trainer.py:__save_checkpoint:612 - Checkpoint saved to res/checkpoints/pretrained_3.pt
+2025-08-13 23:29:30 - INFO  - trainer.py:train:566 - Epoch 4/4, 
+	train loss MLM: 2.6156, 
+	test loss MLM: 2.7057, 
+	train loss AP: 0.2426, 
+	test loss AP: 0.2943, 
+	accuracy AP: 0.8787
+	train loss MIM: 0.3226, 
+	test loss MIM: 0.0857
+```
+
+
+on the downstream task it achieved, with encoders frozen:
+```
+❯ python src/evaluate.py --path res/checkpoints/pretrained_4.pt
+Model loaded from res/checkpoints/pretrained_4.pt, epoch 3
+Loaded model from res/checkpoints/pretrained_4.pt with config: {'embedding_dim': 768, 'vocab_size': 30522, 'num_hidden_layers': 12, 'num_attention_heads': 12, 'dropout_prob': 0.1, 'learning_rate': 3e-05, 'img_size': (224, 224), 'preprocessed_path': 'res/preprocessed.pkl', 'train_test_ratio': 0.8, 'batch_size': 32}
+trainable params: 42705468/237986364
+Epoch 1/4, train loss: 0.6365, test loss: 0.6183,  accuracy: 0.6576
+Epoch 2/4, train loss: 0.5943, test loss: 0.5932,  accuracy: 0.6753
+Epoch 3/4, train loss: 0.5659, test loss: 0.5823,  accuracy: 0.6818
+Epoch 4/4, train loss: 0.5404, test loss: 0.5725,  accuracy: 0.7035
+❯ python src/evaluate.py --path res/checkpoints/pretrained_1.pt
+Model loaded from res/checkpoints/pretrained_1.pt, epoch 0
+Loaded model from res/checkpoints/pretrained_1.pt with config: {'embedding_dim': 768, 'vocab_size': 30522, 'num_hidden_layers': 12, 'num_attention_heads': 12, 'dropout_prob': 0.1, 'learning_rate': 3e-05, 'img_size': (224, 224), 'preprocessed_path': 'res/preprocessed.pkl', 'train_test_ratio': 0.8, 'batch_size': 32}
+trainable params: 42705468/237986364
+dirname:  res/data/hateful_memes_data
+Epoch 1/4, train loss: 0.6353, test loss: 0.6286,  accuracy: 0.6535
+Epoch 2/4, train loss: 0.5980, test loss: 0.6170,  accuracy: 0.6665
+Epoch 3/4, train loss: 0.5668, test loss: 0.5937,  accuracy: 0.7000
+Epoch 4/4, train loss: 0.5389, test loss: 0.5853,  accuracy: 0.7041
+```
+
+
 Running `train_and_eval_on_downstream_task` with randomly initialized cross-attentions and 4 epochs gives the following results. 
 ```
 Epoch 1/4, train loss: 0.6354, test loss: 0.6107,  accuracy: 0.6829
