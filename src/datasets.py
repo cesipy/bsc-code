@@ -1,7 +1,6 @@
 import os
 import json
 import typing
-import pickle
 import csv
 import random
 
@@ -79,6 +78,140 @@ def process_single_image(path:str) -> torch.Tensor:
 #     except Exception:
 #         # print(f"Error processing image {path}. Skipping.")
 #         return None
+
+
+
+def get_dataloaders(
+    train_data, 
+    val_data, 
+    num_workers, 
+    prefetch, 
+    persistent_workers, 
+    pin_memory=True,
+    ): 
+    """
+    Returns: (
+        train_loader_ap, 
+        val_loader_ap, 
+        train_loader_mlm, 
+        val_loader_mlm, 
+        train_loader_mim, 
+        val_loader_mim
+    )
+    """
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+    
+    train_dataset_mim = PretrainDatasetMIM(
+        data=train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        transforms_weak=utils.transforms_unmasked,
+        transforms_strong=utils.transforms_masked
+    )
+    val_dataset_mim   = PretrainDatasetMIM(
+        data=val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        transforms_weak=utils.transforms_unmasked,
+        transforms_strong=utils.transforms_masked,
+    )
+    
+    train_dataset_ap = PretrainDatasetAP(
+        data=train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        preprocessing_prediction_alignment=False,
+    )
+    
+    
+    val_dataset_ap   = PretrainDatasetAP(
+        data=val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        preprocessing_prediction_alignment=False,
+    )
+    
+    train_dataset_mlm = PretrainDatasetMLM(
+        data=train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+    
+    val_dataset_mlm   = PretrainDatasetMLM(
+        data=val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+    
+    train_loader_mim = DataLoader(
+        dataset=train_dataset_mim,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+    
+    val_loader_mim = DataLoader(
+        dataset=val_dataset_mim,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+    
+    train_loader_ap = DataLoader(
+        dataset=train_dataset_ap, 
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=num_workers, 
+        pin_memory=pin_memory, 
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+    
+    val_loader_ap = DataLoader(
+        dataset=val_dataset_ap, 
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=num_workers, 
+        pin_memory=pin_memory, 
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+    
+    train_loader_mlm = DataLoader(
+        dataset=train_dataset_mlm,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+    
+    val_loader_mlm = DataLoader(
+        dataset=val_dataset_mlm,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+    
+    return (
+        train_loader_ap,
+        val_loader_ap,
+        train_loader_mlm,
+        val_loader_mlm,
+        train_loader_mim,
+        val_loader_mim,
+    )
 
 def get_image_embedding(path: str, image_processor: BaseImageProcessor):
     
@@ -266,7 +399,7 @@ class PretrainDatasetAP(Dataset):
         data: typing.List[typing.Tuple[str, str]],  # path, text/caption
     ): 
         data_list = data
-        true_alignment = [(Task.ALIGNMEN_PREDICTION, dp[0], dp[1], 1)
+        true_alignment = [(Task.ALIGNMENT_PREDICTION, dp[0], dp[1], 1)
                           for dp in data_list]
         
         if self.preprocessing_prediction_alignment: 
@@ -281,7 +414,7 @@ class PretrainDatasetAP(Dataset):
                 dp_path = data_list[i][0]
                 text = data_list[random_idx][1]
                 # shape: task, path, text, label
-                false_alignment.append((Task.ALIGNMEN_PREDICTION, dp_path, text, 0 ))
+                false_alignment.append((Task.ALIGNMENT_PREDICTION, dp_path, text, 0 ))
                 
             data_list = true_alignment + false_alignment
             random.shuffle(data_list)
@@ -344,7 +477,7 @@ class PretrainDatasetAP(Dataset):
         dp = self.data[index]
         task, img_path, text, label = dp
         
-        assert task == Task.ALIGNMEN_PREDICTION, "something is completely wrong in the data processing step"
+        assert task == Task.ALIGNMENT_PREDICTION, "something is completely wrong in the data processing step"
     
         if not self.preprocessing_prediction_alignment: 
             if random.random() < 0.5: 

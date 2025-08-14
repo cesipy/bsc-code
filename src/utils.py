@@ -10,12 +10,17 @@ from functools import wraps
 import matplotlib.pyplot as plt
 
 from PIL import Image
+from timm.data import resolve_data_config
+from timm.data.transforms_factory import create_transform
 
 from enum import Enum
 from config import *
 
-from timm.data import resolve_data_config
-from timm.data.transforms_factory import create_transform
+from logger import Logger
+
+
+
+logger = Logger()
 
 
 # just for testing purposes here
@@ -56,9 +61,13 @@ def get_image_embedding(path: str, image_processor=None):
 
 
 class Task(Enum): 
-    ALIGNMEN_PREDICTION = 1
+    ALIGNMENT_PREDICTION = 1
     MASKED_LM = 2
     MASKED_IM = 3       # masked image modelling
+    
+    #aliases 
+    MLM = 2
+    MIM = 3
     
     
 transforms_unmasked = torchvision.transforms.Compose([
@@ -286,47 +295,54 @@ def force_memory_cleanup():
         
     time.sleep(1)
         
-    # Force another garbage collection
     gc.collect()
     
     
     print(f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**3:.2f}GB / {torch.cuda.max_memory_allocated()/1024**3:.2f}GB")
 
 
-
 def plot_losses(
-    train_losses_ap, 
-    validation_losses_ap, 
-    train_losses_mlm, 
-    validation_losses_mlm
+    train_losses_ap=None, 
+    validation_losses_ap=None, 
+    train_losses_mlm=None, 
+    validation_losses_mlm=None,
+    train_losses_mim=None,
+    validation_losses_mim=None
 ):
-    epochs = range(1, len(train_losses_ap) + 1)
+    tasks_to_plot = []
+    if train_losses_ap is not None and validation_losses_ap is not None:
+        tasks_to_plot.append(('AP', train_losses_ap, validation_losses_ap, 'b', 'r'))
+    if train_losses_mlm is not None and validation_losses_mlm is not None:
+        tasks_to_plot.append(('MLM', train_losses_mlm, validation_losses_mlm, 'g', 'tab:orange'))  # Changed here
+    if train_losses_mim is not None and validation_losses_mim is not None:
+        tasks_to_plot.append(('MIM', train_losses_mim, validation_losses_mim, 'm', 'c'))  # Changed here
     
-    assert len(train_losses_ap) == len(validation_losses_ap) == len(train_losses_mlm) == len(validation_losses_mlm)
-    plt.figure(figsize=(12, 4))
+    if not tasks_to_plot:
+        print("No valid loss data to plot")
+        return
     
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs, train_losses_ap, 'b-', label='Train AP')
-    plt.plot(epochs, validation_losses_ap, 'r-', label='Val AP')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Alignment Prediction Loss')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    num_plots = len(tasks_to_plot)
+    epochs = range(1, len(tasks_to_plot[0][1]) + 1)
     
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs, train_losses_mlm, 'g-', label='Train MLM')
-    plt.plot(epochs, validation_losses_mlm, 'orange', label='Val MLM')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Masked Language Modeling Loss')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    plt.figure(figsize=(5 * num_plots, 4))
+    
+    for i, (name, train_loss, val_loss, train_color, val_color) in enumerate(tasks_to_plot):
+        plt.subplot(1, num_plots, i + 1)
+        plt.plot(epochs, train_loss, color=train_color, linestyle='-', label=f'Train {name}')  # Fixed
+        plt.plot(epochs, val_loss, color=val_color, linestyle='-', label=f'Val {name}')      # Fixed
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title(f'{name} Loss')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('res/training_losses.png', dpi=150, bbox_inches='tight')
-    # plt.show()
     
+    filename = f"res/training_losses-{int(time.time())}.png"
+    plt.savefig(filename, dpi=150, bbox_inches='tight')
+    info_str = f"saved plot to {filename}"
+    print(info_str)
+    logger.info(info_str)
     
 if __name__ == "__main__": 
     img_data: torch.Tensor =  get_image_embedding("res/test_img.jpg")

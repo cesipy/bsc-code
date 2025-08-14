@@ -58,8 +58,8 @@ class ViLBERT(nn.Module):
         )  
         
         
-        self.bert = torch.compile(self.bert)  
-        self.vit = torch.compile(self.vit)
+        # self.bert = torch.compile(self.bert)  
+        # self.vit = torch.compile(self.vit)
         
         self.bert.gradient_checkpointing_enable()
     

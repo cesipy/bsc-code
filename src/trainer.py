@@ -140,7 +140,7 @@ class PretrainingTrainer:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = model.to(self.device)
         
-        self.model = torch.compile(self.model)  
+        # self.model = torch.compile(self.model)  
         
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
@@ -444,38 +444,51 @@ class PretrainingTrainer:
             
         return total_loss / num_batches
         
-                
-            
-            
-            
-        
+
     def train_epoch(
         self, 
         dataloader_ap: DataLoader,
         dataloader_mlm: DataLoader,
+        dataloader_mim: DataLoader,
+        tasks: list[Task],
     ):
         assert len(dataloader_ap) == len(dataloader_mlm), "something is wrong, are the same dataset!"
+        assert len(dataloader_ap) == len(dataloader_mim), "something is wrong, are the same dataset!"
         self.model.train()
-        total_loss_ap = 0
+        total_loss_ap  = 0
         total_loss_mlm = 0
+        total_loss_mim = 0
         num_batches = 0
         
         total_batches = len(dataloader_ap)
         
-        for batch_ap, batch_mlm in tqdm(zip(dataloader_ap, dataloader_mlm), total=total_batches):
-            # alignment prediction
-            loss_ap = self.train_epoch_prediction_batch(batch_ap)
+        for batch_ap, batch_mlm, batch_mim in tqdm(
+            zip(dataloader_ap, dataloader_mlm, dataloader_mim), 
+            total=total_batches):
             
-            # masked language modeling
-            loss_mlm = self.train_epoch_mlm_batch(batch_mlm)
+            loss_ap = 0
+            loss_mlm = 0
+            loss_mim = 0
+            if Task.ALIGNMENT_PREDICTION in tasks:
+                # alignment prediction
+                loss_ap = self.train_epoch_prediction_batch(batch_ap)
+                
+            if Task.MASKED_LM in tasks:
+                # masked language modeling
+                loss_mlm = self.train_epoch_mlm_batch(batch_mlm)
+                
+            if Task.MASKED_IM in tasks:
+                loss_mim = self.train_epoch_mim_batch(batch_mim)
 
             total_loss_ap += loss_ap
             total_loss_mlm += loss_mlm
+            total_loss_mim += loss_mim
             num_batches += 1
             
         avg_loss_ap = total_loss_ap / num_batches
         avg_loss_mlm = total_loss_mlm / num_batches
-        return avg_loss_ap, avg_loss_mlm
+        avg_loss_mim = total_loss_mim / num_batches
+        return avg_loss_ap, avg_loss_mlm, avg_loss_mim
     
     
     def train_mim(
@@ -496,38 +509,58 @@ class PretrainingTrainer:
         test_dataloaderAP: DataLoader,      #alignment prediction
         train_dataloaderMLM: DataLoader,    #masked language modeling
         test_dataloaderMLM: DataLoader,     #masked language modeling
+        train_dataloaderMIM: DataLoader,    #masked image modeling
+        test_dataloaderMIM:  DataLoader,        #masked image modeling
         epochs: int, 
-        train_only_ap=False
+        tasks=[Task.ALIGNMENT_PREDICTION, Task.MLM, Task.MIM],
     ): 
+        info_str = f"training with tasks: {tasks}"
+        self.logger.info(info_str)
+        print(info_str)
         
         train_losses_ap= []
         validation_losses_ap = []
         train_losses_mlm = []
         validation_losses_mlm = []
-        for epoch in range(epochs):
-            if train_only_ap: 
-                t_loss_ap = self.train_epoch_prediction(train_dataloaderAP)
-                v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
-                info_str = f"Epoch {epoch+1}/{epochs}, train loss AP: {t_loss_ap:.4f}, test loss AP: {v_loss_ap:.4f}"
-                print(info_str)
-                self.logger.info(info_str)
-                continue
-            
-            t_loss_ap, t_loss_mlm = self.train_epoch(
+        train_losses_mim = []
+        validation_losses_mim = []
+        
+        for epoch in range(epochs):            
+            t_loss_ap, t_loss_mlm, t_loss_mim = self.train_epoch(
                 dataloader_ap=train_dataloaderAP,
-                dataloader_mlm=train_dataloaderMLM
+                dataloader_mlm=train_dataloaderMLM, 
+                dataloader_mim=train_dataloaderMIM,
+                tasks=tasks
             )
             
             v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
             v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
+            v_loss_mim = self.evaluate_mim(test_dataloaderMIM)
+            
+            # if Task.ALIGNMENT_PREDICTION in tasks:
+            #     v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
+            # else:
+            #     v_loss_ap, acc = 0, 0
+                
+            # if Task.MASKED_LM in tasks:
+            #     v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
+            # else:
+            #     v_loss_mlm = 0
+                
+            # if Task.MASKED_IM in tasks:
+            #     v_loss_mim = self.evaluate_mim(test_dataloaderMIM)
+            # else:
+            #     v_loss_mim = 0
             # print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
             info_str = (
                 f"Epoch {epoch+1}/{epochs}, "
-                f"\n\ttrain loss AP: {t_loss_ap:.4f}, "
                 f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "
-                f"\n\ttest loss AP: {v_loss_ap:.4f}, "
                 f"\n\ttest loss MLM: {v_loss_mlm:.4f}, "
+                f"\n\ttrain loss AP: {t_loss_ap:.4f}, "
+                f"\n\ttest loss AP: {v_loss_ap:.4f}, "
                 f"\n\taccuracy AP: {acc:.4f}"
+                f"\n\ttrain loss MIM: {t_loss_mim:.4f}, "
+                f"\n\ttest loss MIM: {v_loss_mim:.4f}"
             )
             print(info_str)
             self.logger.info(info_str)
@@ -543,12 +576,16 @@ class PretrainingTrainer:
             validation_losses_ap.append(v_loss_ap)
             train_losses_mlm.append(t_loss_mlm)
             validation_losses_mlm.append(v_loss_mlm)
+            train_losses_mim.append(t_loss_mim)
+            validation_losses_mim.append(v_loss_mim)
         
         utils.plot_losses(
             train_losses_ap=train_losses_ap,
             validation_losses_ap=validation_losses_ap,
             train_losses_mlm=train_losses_mlm,
-            validation_losses_mlm=validation_losses_mlm
+            validation_losses_mlm=validation_losses_mlm,
+            train_losses_mim=train_losses_mim,
+            validation_losses_mim=validation_losses_mim,
         )
                 
     def __save_checkpoint(self, filepath, epoch, train_loss_ap, train_loss_mlm):

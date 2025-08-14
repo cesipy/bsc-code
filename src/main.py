@@ -11,7 +11,7 @@ from transformers import (
     BertTokenizerFast, PreTrainedTokenizerFast, ViTImageProcessor
 )
 
-import utils
+import utils; from utils import Task
 import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
@@ -182,8 +182,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     gc.collect()
     logger.info("Training and evaluation on downstream task finished, cleaning up memory")
     
-    
-def pretrain_MIM_only(): 
+@utils.memory_cleanup
+def pretrain_(): 
     epochs = 4
     num_workers = 10
     prefetch= 4
@@ -191,8 +191,8 @@ def pretrain_MIM_only():
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:200]
-    # validation_list = validation_list[:1_000]
+    # data_list = data_list[:200]
+    # validation_list = validation_list[:1000]
     
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
@@ -200,42 +200,18 @@ def pretrain_MIM_only():
     train_data = data_list
     val_data   = validation_list
     
-    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-    
-    train_dataset = PretrainDatasetMIM(
-        data=train_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        transforms_weak=utils.transforms_unmasked,
-        transforms_strong=utils.transforms_masked
-    )
-    val_dataset   = PretrainDatasetMIM(
-        data=val_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        transforms_weak=utils.transforms_unmasked,
-        transforms_strong=utils.transforms_masked,
+    train_loader_ap, val_loader_ap, \
+    train_loader_mlm, val_loader_mlm, \
+    train_loader_mim, val_loader_mim \
+        =  datasets.get_dataloaders(
+        train_data=train_data, 
+        val_data=val_data, 
+        num_workers=num_workers, 
+        prefetch=prefetch,
+        persistent_workers=False, 
+        pin_memory=False
     )
     
-    train_loader = DataLoader(
-        dataset=train_dataset,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        prefetch_factor=prefetch
-    )
-    val_loader = DataLoader(
-        dataset=val_dataset,
-        batch_size=BATCH_SIZE,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        prefetch_factor=prefetch
-    )
     
     model = ViLBERT()
     utils.params_summary(model=model)
@@ -244,16 +220,23 @@ def pretrain_MIM_only():
         config=Config(), 
     )
     
-    trainer.train_mim(
-        train_dataloader=train_loader, 
-        test_datalaoder=val_loader,
-        epochs=epochs
+    trainer.train(
+        train_dataloaderAP=train_loader_ap,
+        test_dataloaderAP=val_loader_ap,
+        train_dataloaderMLM=train_loader_mlm,
+        test_dataloaderMLM=val_loader_mlm,
+        train_dataloaderMIM=train_loader_mim,
+        test_dataloaderMIM=val_loader_mim,
+        epochs=epochs, 
+        tasks=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],
     )
+    
+    
     
     
     
 if __name__ == "__main__":
     # pretain()
-    pretrain_MIM_only()
+    pretrain_()
     # train_and_eval_on_downstream_task(pretrained_model_path=None)
     # train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_4.pt")
