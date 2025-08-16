@@ -1,3 +1,6 @@
+import os
+machine = os.environ.get("MACHINE_TYPE", "local")  # local or remote: local - my gaming pc (16gb), remote - university gpu (24gb)
+
 EMBEDDING_DIM = 768
 VOCAB_SIZE    = 30522
 NUM_HIDDEN_LAYERS = 12
@@ -10,8 +13,12 @@ IMG_SIZE = (224, 224)
 PREPROCESSED_PATH = "res/preprocessed.pkl"      # not yet used, used to store precomputed datasets (in tensor form)
 TRAIN_TEST_RATIO = 0.8
 
-BATCH_SIZE = 32
-EPOCHS = 10
+if machine == "remote":
+    BATCH_SIZE = 88
+    EPOCHS = 10         # TODO: not yet used
+else: 
+    BATCH_SIZE = 32
+    EPOCHS = 10
 
 TOKENIZER_MAX_LEN = 192
 

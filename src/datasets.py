@@ -15,6 +15,7 @@ from transformers import (
     PreTrainedTokenizerFast,
     BertTokenizerFast
 )
+import torchvision; from torchvision import transforms
 
 import cv2 
 from torch.utils.data import Dataset, DataLoader
@@ -72,6 +73,8 @@ def get_dataloaders(
     """
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+    
+    print(f"dataset lengths: train: {len(train_data)}; val: {len(val_data)}")
     
     train_dataset_mim = PretrainDatasetMIM(
         data=train_data,
@@ -184,7 +187,7 @@ def get_dataloaders(
         val_loader_mim,
     )
 
-def get_image_embedding(path: str, image_processor: BaseImageProcessor):
+def get_image_embedding(path: str, image_processor: BaseImageProcessor, transform=None):
     
     
     try:
@@ -205,10 +208,15 @@ def get_image_embedding(path: str, image_processor: BaseImageProcessor):
             
             image = image.convert("RGB")
 
-            # performs the transformation (torchvision transform) for 
-            # the vit model
-            # currently only normalization, as dataset is already resized
-            image = utils.vit_transform(image).unsqueeze(0) 
+            # TODO: fix this
+            if not transform:
+                # performs the transformation (torchvision transform) for 
+                # the vit model
+                # currently only normalization, as dataset is already resized
+                image = utils.vit_transform(image).unsqueeze(0) 
+            
+            else: 
+                image = transform(image)
             # logger.info(f"processed image shape: {image.shape}")
             # to keep the format of transformers-package, which i was using before
             return {"pixel_values": image}      
@@ -244,7 +252,8 @@ class CustomDataset(Dataset):
         self.image_processor = image_processor
         
         os.remove(PREPROCESSED_PATH) if os.path.exists(PREPROCESSED_PATH) else None
-        self.data = self.__preprocess_data(data)
+        # self.data = self.__preprocess_data(data)
+        self.data = data
         
         # TODO: caching preprocessed, or even do memory pinning -
         # with open(PREPROCESSED_PATH, "wb") as f:
@@ -293,13 +302,29 @@ class CustomDataset(Dataset):
             "text": text_tensor
         }
         """
+        
         data = self.data[index]
+        img_path, label, text = data
+        
+        img_embeddings = get_image_embedding(
+            img_path, 
+            image_processor=self.image_processor, 
+            transform=utils.vit_transform_full)
+        text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
+        
+        label_tensor = torch.tensor(label, dtype=torch.long)
        
         # TODO: transformation, currently there is no transfromation
         if self.transform:
             img_tensor = self.transform(img_tensor)
+            
+        return {
+            "img": img_embeddings,
+            "label": label_tensor,
+            "text": text_embeddings,
+            
+        }
         
-        return data
     
 
 class PretrainDatasetAP(Dataset): 
@@ -751,7 +776,7 @@ def generate_data_list(path: str):
         
         # if not exists
         if not os.path.exists(os.path.join(dir_name, image_path)):
-            # print(f"Image {image_path} does not exist in {dir_name}. Skipping.")
+            print(f"Image {image_path} does not exist in {dir_name}. Skipping.")
             continue
         
         dp = (os.path.join(dir_name, image_path), label, text)
@@ -776,7 +801,7 @@ def generate_data_list_pretrain(path: str):
             path = row[1]
             
             if not os.path.exists(path):
-                # print(f"Image {path} does not exist. Skipping.")
+                print(f"Image {path} does not exist. Skipping.")
                 continue
             
             data_list.append((path, text))

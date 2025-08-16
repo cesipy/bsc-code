@@ -58,15 +58,14 @@ class ViLBERT(nn.Module):
         )  
         
         
-        # self.bert = torch.compile(self.bert)  
-        # self.vit = torch.compile(self.vit)
+        self.bert = torch.compile(self.bert)  
+        self.vit = torch.compile(self.vit)
         
         self.bert.gradient_checkpointing_enable()
     
-        # utils.freeze_all_layers(self.bert)
-        # utils.freeze_all_layers(self.vit)
-        # self.bert.eval()
-        # self.vit.eval()
+        utils.freeze_all_layers(self.bert)
+        utils.freeze_all_layers(self.vit)
+
 
         
         self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)

@@ -5,6 +5,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 import gc
+import argparse
+from typing import Optional
+
 import torch; from torch.utils.data import DataLoader, Dataset
 
 from transformers import (
@@ -183,15 +186,15 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     logger.info("Training and evaluation on downstream task finished, cleaning up memory")
     
 @utils.memory_cleanup
-def pretrain_(): 
+def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]): 
     epochs = 4
-    num_workers = 10
+    num_workers = 4
     prefetch= 4
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    # data_list = data_list[:200]
+    data_list = data_list[:200_000]
     # validation_list = validation_list[:1000]
     
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -199,6 +202,8 @@ def pretrain_():
     # val_data   = data_list[train_idx:]
     train_data = data_list
     val_data   = validation_list
+    
+    print(len(train_data), len(val_data))
     
     train_loader_ap, val_loader_ap, \
     train_loader_mlm, val_loader_mlm, \
@@ -230,14 +235,43 @@ def pretrain_():
         train_dataloaderMIM=train_loader_mim,
         test_dataloaderMIM=val_loader_mim,
         epochs=epochs, 
-        tasks=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],
+        tasks=tasks,
     )
+    
+    logger.info("finished training. \n\n " + 20*"-")
+    
+def parse_args(): 
+    p = argparse.ArgumentParser(description="pretrain")
+    # p.add_argument("--tasks", type="str", default=None)
+    p.add_argument("--no-mim", action='store_true', help="disable masked image modeling")
+    p.add_argument("--no-mlm", action='store_true', help="disable masked language modeling") 
+    p.add_argument("--no-ap", action='store_true', help="disable alignment prediction")
+    
+    
+    active_tasks_tmp = []
+    res = p.parse_args()
+    
+    if not res.no_mim: 
+        active_tasks_tmp.append(Task.MASKED_IM)
+    if not res.no_mlm:
+        active_tasks_tmp.append(Task.MASKED_LM)
+    if not res.no_ap:
+        active_tasks_tmp.append(Task.ALIGNMENT_PREDICTION)
+        
+        
+    if len(active_tasks_tmp) == 0: 
+        raise ValueError("At least one task must be active for pretraining")
+    
+    return active_tasks_tmp
+    
     
     
     
 
 if __name__ == "__main__":
     # pretain()
-    pretrain_()
+    
+    tasks = parse_args()
+    pretrain_(tasks=tasks)
     # train_and_eval_on_downstream_task(pretrained_model_path=None)
     # train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_4.pt")
