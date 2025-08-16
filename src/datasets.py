@@ -4,8 +4,7 @@ import typing
 import csv
 import random
 
-from timm.data import resolve_data_config
-from timm.data.transforms_factory import create_transform
+
 
 from transformers import (
      # ViT stuff
@@ -41,9 +40,6 @@ warnings.filterwarnings("ignore", ".*Palette images with Transparency.*", catego
 
 Image.MAX_IMAGE_PIXELS = None
 
-# to avoid too many unused objects
-config = resolve_data_config({}, model=VIT_MODEL_NAME)
-vit_transform = create_transform(**config)
 
 def process_single_image(path:str) -> torch.Tensor: 
     img = cv2.imread(path)
@@ -54,31 +50,6 @@ def process_single_image(path:str) -> torch.Tensor:
     img_tensor = torch.from_numpy(img.astype(np.float32))
     
     return img_tensor
-
-# def get_image_embedding(path: str, image_processor: BaseImageProcessor):
-#     try:
-#         with Image.open(path) as image:
-#             # Resize if too large, some images in cc are too large 
-#             # i need to resize them to mitigate warnings
-#             # vit sizes them down anyways
-#             width, height = image.size
-#             max_size = 4096  # Max dimension
-#             if width > max_size or height > max_size:
-#                 if width > height:
-#                     new_width = max_size
-#                     new_height = int(height * max_size / width)
-#                 else:
-#                     new_height = max_size  
-#                     new_width = int(width * max_size / height)
-#                 image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-#             image = image.convert("RGB")
-#             image = image_processor(images=image, return_tensors="pt")
-#             return image
-#     except Exception:
-#         # print(f"Error processing image {path}. Skipping.")
-#         return None
-
 
 
 def get_dataloaders(
@@ -233,9 +204,11 @@ def get_image_embedding(path: str, image_processor: BaseImageProcessor):
                 image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
             
             image = image.convert("RGB")
-            # image = image_processor(images=image, return_tensors="pt")
-            # return image
-            image = vit_transform(image).unsqueeze(0) 
+
+            # performs the transformation (torchvision transform) for 
+            # the vit model
+            # currently only normalization, as dataset is already resized
+            image = utils.vit_transform(image).unsqueeze(0) 
             # logger.info(f"processed image shape: {image.shape}")
             # to keep the format of transformers-package, which i was using before
             return {"pixel_values": image}      

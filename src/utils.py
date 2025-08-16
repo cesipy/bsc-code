@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
+from timm.data import resolve_data_config
+from timm.data.transforms_factory import create_transform
+from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+
 
 from enum import Enum
 from config import *
@@ -23,10 +27,6 @@ from logger import Logger
 logger = Logger()
 
 
-# just for testing purposes here
-# to avoid too many unused objects
-config = resolve_data_config({}, model=VIT_MODEL_NAME)
-vit_transform = create_transform(**config)
 
 def get_image_embedding(path: str, image_processor=None):
     
@@ -85,6 +85,21 @@ transforms_masked = torchvision.transforms.Compose([
     transforms.RandomGrayscale(p=0.1),
     transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
 ])
+
+config = resolve_data_config({}, model=VIT_MODEL_NAME)
+# vit_transform = create_transform(**config)        # this was used before
+# vit_transform: Compose(
+#     Resize(size=256, interpolation=bicubic, max_size=None, antialias=True)
+#     CenterCrop(size=(224, 224))
+#     MaybeToTensor()
+#     Normalize(mean=tensor([0.4850, 0.4560, 0.4060]), std=tensor([0.2290, 0.2240, 0.2250]))
+# )
+
+vit_transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
+])
+
 
 def memory_cleanup(func): 
     @wraps(func)

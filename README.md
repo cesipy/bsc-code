@@ -177,3 +177,38 @@ Epoch 4/4, train loss: 0.4704, test loss: 0.5292,  accuracy: 0.7371
 ```
 
 
+
+
+## Remarks 
+
+This section covers implementation decisions. 
+
+### Datasets
+
+the pretraining dataset is downloaded using `src/download_cc.py`. It tries to download and open pictures from the conceptual captions dataset (`res/data/conceptual-captions/Train_GCC-training.tsv`). Some links are invalid and some images not openable, those are not saved. 
+In the downloading step, I already resize to 224x224, in order to save memory.
+
+In the dataset handling in `src/datasets.py`, transformations for the timm-vit are applied.
+```python 
+vit_transform = create_transform(**config)        # this was used before
+vit_transform: Compose(
+    Resize(size=256, interpolation=bicubic, max_size=None, antialias=True)
+    CenterCrop(size=(224, 224))
+    MaybeToTensor()
+    Normalize(mean=tensor([0.4850, 0.4560, 0.4060]), std=tensor([0.2290, 0.2240, 0.2250]))
+)
+```
+
+But as I already resize the images to 224x224, I don't need the resizing and cropping anymore.
+=> 
+```python
+from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+vit_transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
+])
+```
+
+This generates the correct input for ViT. In the dataset, then the transformations are done. for pretraining, masking the language tokens, masking the vision tokens and creating the correct task for alignment prediction. 
+
+

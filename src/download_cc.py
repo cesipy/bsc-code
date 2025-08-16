@@ -14,8 +14,8 @@ from transformers import (
     ViTImageProcessor,
 )
 
-TIMEOUT = 1.0
-WORKERS = 40
+TIMEOUT = 0.3
+WORKERS = 80
 
 image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
@@ -93,9 +93,9 @@ def save_file(downloaded_data):
 
 def main():
         
-    # data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
-    data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
-    data_list = data_list[:1_500_000]
+    data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
+    # data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
+    # data_list = data_list[:1_500_000]
 
 
     error_counter = 0
@@ -110,6 +110,9 @@ def main():
                 error_counter += 1
             else:
                 downloaded_data.append((text, filepath))
+                
+            if len(downloaded_data) % 1000 == 0:
+                save_file(downloaded_data)
 
 
     save_file(downloaded_data)

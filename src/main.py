@@ -211,6 +211,8 @@ def pretrain_():
         persistent_workers=False, 
         pin_memory=False
     )
+        
+    print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
     
     
     model = ViLBERT()
@@ -233,8 +235,7 @@ def pretrain_():
     
     
     
-    
-    
+
 if __name__ == "__main__":
     # pretain()
     pretrain_()
