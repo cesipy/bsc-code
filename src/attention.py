@@ -52,6 +52,170 @@ class Attention_Block(nn.Module):
     
     return self.to_out(attention)
 
+class BiAttention_Block(nn.Module): 
+    def __init__(self, dim, heads=8, dropout=0.): 
+        super(BiAttention_Block, self).__init__()
+        
+        self.dk = dim // heads  # inner head dimension. Dim and number of heads must be multiple numbers between them
+        self.dim = dim
+        
+        self.heads = heads
+        
+        
+        self.bi_attention = BiAttention(dim=dim, heads=heads, dropout=dropout)
+        self.bi_attention_output = BiAttention_Output(dim=dim, heads=heads, dropout=dropout)
+        
+        
+        self.ff_text = FeedForward_Block(
+            dim=dim, 
+            mlp_factor=4,
+            dropout=dropout
+        )
+        
+        self.ff_vision = FeedForward_Block(
+            dim=dim,
+            mlp_factor=4,
+            dropout=dropout
+        )
+        
+        
+    def forward(self, text_tensor, vision_tensor): 
+        
+        text_attn, vision_attn, text_residual, vision_residual = self.bi_attention(
+            text_tensor=text_tensor, 
+            vision_tensor=vision_tensor
+        )
+        
+        text_output, vision_output = self.bi_attention_output(
+            text_attn=text_attn,
+            vision_attn=vision_attn,
+            text_input=text_residual,
+            vision_input=vision_residual,
+        )
+        
+        text_attn_residual = text_output
+        vision_attn_residual = vision_output
+        
+        text_ff_output = self.ff_text(text_output)
+        vision_ff_output = self.ff_vision(vision_output)
+        
+        text_output = text_attn_residual + text_ff_output
+        vision_output = vision_attn_residual + vision_ff_output
+        
+        return text_output, vision_output
+        
+        
+
+
+class BiAttention_Output(nn.Module):
+    def __init__(self, dim, heads, dropout): 
+        super(BiAttention_Output, self).__init__()
+        
+        self.dk = dim // heads  # inner head dimension. Dim and number of heads must be multiple numbers between them
+        self.dim = dim
+        
+        self.heads = heads
+        
+        
+        self.projection_text = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.Dropout(dropout)
+        )
+        
+        self.projection_vision = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.Dropout(dropout)
+        )
+        
+        self.norm1 = nn.LayerNorm(dim)
+        self.norm2 = nn.LayerNorm(dim)
+        
+        
+    def forward(self, text_attn, vision_attn, text_input,  vision_input):
+        # text_embedded: [bs, seq_len, embedding_dim]
+        # text_input: [bs, seq_len, embedding_dim]
+        # vision_embedded: [bs, num_patches, embedding_dim]
+        # vision_input: [bs, num_patches, embedding_dim]
+        
+        current_text = self.projection_text(text_attn)
+        current_vision = self.projection_vision(vision_attn)
+        
+        # residual conns: 
+        current_text = current_text + text_input
+        current_vision = current_vision + vision_input
+        
+        current_text = self.norm1(current_text)
+        current_vision = self.norm2(current_vision)
+        
+        return current_text, current_vision
+        
+        
+class BiAttention(nn.Module): 
+    def __init__(self, dim, heads, dropout): 
+        super(BiAttention, self).__init__()
+        
+        self.dk = dim // heads  # inner head dimension. Dim and number of heads must be multiple numbers between them
+        self.dim = dim
+        
+        self.heads = heads
+        
+        
+        self.norm1 = nn.LayerNorm(dim)
+        self.norm2 = nn.LayerNorm(dim)
+        self.dropout = nn.Dropout(dropout)
+        
+        self.query1 = nn.Linear(in_features=dim, out_features=dim)
+        self.key1   = nn.Linear(in_features=dim, out_features=dim)
+        self.value1 = nn.Linear(in_features=dim, out_features=dim)
+        
+        self.query2 = nn.Linear(in_features=dim, out_features=dim)
+        self.key2   = nn.Linear(in_features=dim, out_features=dim)
+        self.value2 = nn.Linear(in_features=dim, out_features=dim)
+        
+        self.softmax = nn.Softmax(dim=-1)
+        
+        self.rearrange_qkv = Rearrange('b n (h d) -> b h n d', h=heads)
+        
+    def forward(self, text_tensor, vision_tensor): 
+        
+        text_residual = text_tensor; vision_residual = vision_tensor
+        
+        text_tensor = self.norm1(text_tensor)
+        vision_tensor = self.norm2(vision_tensor)
+        
+        text_proj_k = self.key1(text_tensor)
+        text_proj_q = self.query1(text_tensor)
+        text_proj_v = self.value1(text_tensor)
+        
+        vision_proj_k = self.key2(vision_tensor)
+        vision_proj_q = self.query2(vision_tensor)
+        vision_proj_v = self.value2(vision_tensor)
+        
+        text_q = self.rearrange_qkv(text_proj_q)
+        text_k = self.rearrange_qkv(text_proj_k)    
+        text_v = self.rearrange_qkv(text_proj_v)
+        
+        vision_q = self.rearrange_qkv(vision_proj_q)
+        vision_k = self.rearrange_qkv(vision_proj_k)
+        vision_v = self.rearrange_qkv(vision_proj_v)
+        
+        text_qk_scaled = torch.matmul(text_q, text_k.transpose(-1, -2)) * self.dk ** -0.5
+        text_attention_qk = self.softmax(text_qk_scaled)
+        
+        attn1 = torch.matmul(text_attention_qk, text_v)
+        attn1 = rearrange(attn1, 'b h n d -> b n (h d)')
+        
+        vision_qk_scaled = torch.matmul(vision_q, vision_k.transpose(-1, -2)) * self.dk ** -0.5
+        vision_attention_qk = self.softmax(vision_qk_scaled)
+        
+        
+        attn2 = torch.matmul(vision_attention_qk, vision_v)
+        attn2 = rearrange(attn2, 'b h n d -> b n (h d)')
+        
+        return attn1, attn2, text_residual, vision_residual
+        
+        
+
 class CrossAttention(nn.Module): 
     def __init__(self, dim, heads=8, dropout=0.): 
         super(CrossAttention, self).__init__()

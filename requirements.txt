@@ -9,3 +9,4 @@ opencv-contrib-python
 numpy
 matplotlib
 timm
+info-nce-pytorch
