@@ -11,7 +11,7 @@ from logger import Logger
 
 
 
-from pytorch_metric_learning.losses import NTXentLoss
+from info_nce import InfoNCE, info_nce
 
 
 class Trainer(): 
@@ -147,7 +147,7 @@ class PretrainingTrainer:
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
         # self.loss_fn_mim = utils.InfoNCE(temperature=0.07)
-        self.loss_fn_mim =  NTXentLoss(temperature=0.07)
+        self.loss_fn_mim = InfoNCE()
         
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
         self.config = config
@@ -655,6 +655,7 @@ class PretrainingTrainer:
         # print(f"shape: masked_feats: {masked_feats.shape}, unmasked_feats: {unmasked_feats.shape}")
         assert masked_feats.shape == unmasked_feats.shape 
         # has shape between bs * ~177: [bs*~177, 768]
+        # loss = torch.nn.functional.mse_loss(masked_feats, unmasked_feats)
         loss = self.loss_fn_mim(masked_feats, unmasked_feats)
         
         return loss

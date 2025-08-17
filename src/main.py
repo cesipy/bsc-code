@@ -195,7 +195,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:200_000]
+    data_list = data_list[:2_000]
     # validation_list = validation_list[:1000]
     
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)

@@ -9,4 +9,3 @@ opencv-contrib-python
 numpy
 matplotlib
 timm
-pytorch-metric-learning
