@@ -11,7 +11,8 @@ from transformers import (
     BertTokenizerFast, PreTrainedTokenizerFast, ViTImageProcessor
 )
 
-import utils; from utils import Task
+import utils
+from task import Task
 import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
@@ -36,7 +37,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         print(info_str)
         logger.info(info_str)
         
-        config = Config()
+        config = ViLBERTConfig()
         model = ViLBERT()
     
     else:    
@@ -52,7 +53,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     path = "res/data/hateful_memes_data/train.jsonl"
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-    config = Config()
+    config = ViLBERTConfig()
     
     #TODO: also freeze co-attention layers here
     utils.params_summary(model=model)

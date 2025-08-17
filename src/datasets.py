@@ -24,7 +24,8 @@ import numpy as np
 
 from PIL import Image, UnidentifiedImageError
 
-from utils import Task; import utils
+import utils
+from task import Task
 from config import * 
 
 import warnings

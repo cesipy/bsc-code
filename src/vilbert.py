@@ -41,8 +41,9 @@ torch.backends.cudnn.enabled = True
 
 
 class ViLBERT(nn.Module): 
-    def __init__(self,): 
+    def __init__(self, config: ViLBERTConfig): 
         super(ViLBERT, self).__init__()
+        self.config = config
         
         # loads pretrained transformers, no head for task. with transformers.BertFor.... I 
         # could download pretrained transformers for specific tasks
@@ -68,29 +69,36 @@ class ViLBERT(nn.Module):
 
 
         
-        self.attention_layer = Attention_Block(dim=EMBEDDING_DIM, heads=1, dropout=DROPOUT_PROB)
+        self.attention_layer = Attention_Block(
+            dim=self.config.embedding_dim, 
+            heads=self.config.num_attention_heads, 
+            dropout=self.config.dropout_prob)
         
         self.cross_attention = []
-        self.depth = DEPTH
+        self.depth = self.config.depth
         for i in range(self.depth): 
-            self.cross_attention.append(CrossAttentionBlock(dim=EMBEDDING_DIM, heads=8, dropout=DROPOUT_PROB))
+            self.cross_attention.append(CrossAttentionBlock(
+                dim=self.config.embedding_dim, 
+                heads=self.config.num_attention_heads, 
+                dropout=self.config.dropout_prob,
+            ))
 
         self.cross_attention = nn.ModuleList(self.cross_attention)
 
         # pretrain heads
-        self.alignment_fc = nn.Linear(2*EMBEDDING_DIM, 1)
-        self.mlm = nn.Linear(EMBEDDING_DIM, self.bert.config.vocab_size)    #30522
+        self.alignment_fc = nn.Linear(2*self.config.embedding_dim , 1)
+        self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
         # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
         # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
         
         # for hateful memes classifiction
         self.fc = nn.Sequential(
-            nn.Linear(2*EMBEDDING_DIM, FC_HIDDEN_DIM),
+            nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
-            nn.Dropout(DROPOUT_PROB),
+            nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, FC_HIDDEN_DIM//2), 
             nn.ReLU(inplace=True),
-            nn.Dropout(DROPOUT_PROB),
+            nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM//2, 1), 
         )
 

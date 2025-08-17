@@ -14,7 +14,8 @@ from transformers import (
     BertTokenizerFast, PreTrainedTokenizerFast, ViTImageProcessor
 )
 
-import utils; from utils import Task
+import utils
+from task import Task
 import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
@@ -119,7 +120,7 @@ def pretain():
     
     trainer = PretrainingTrainer(
         model=model, 
-        config=Config(), 
+        config=ViLBERTConfig(), 
     )
     
     trainer.train(
@@ -145,7 +146,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         print(info_str)
         logger.info(info_str)
         
-        config = Config()
+        config = ViLBERTConfig()
         model = ViLBERT()
     
     else:    
@@ -155,7 +156,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     path = "res/data/hateful_memes_data/train.jsonl"
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-    config = Config()
+    config = ViLBERTConfig()
     config.learning_rate = 1e-5     # TODO: make this cleaner
     
     #TODO: also freeze co-attention layers here
@@ -219,12 +220,15 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         
     print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
     
+    config = ViLBERTConfig(
+        pretraining_tasks=tasks[:]
+    )
     
-    model = ViLBERT()
+    model = ViLBERT(config=config)
     utils.params_summary(model=model)
     trainer = PretrainingTrainer(
         model=model, 
-        config=Config(), 
+        config=config, 
     )
     
     trainer.train(
@@ -235,7 +239,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         train_dataloaderMIM=train_loader_mim,
         test_dataloaderMIM=val_loader_mim,
         epochs=epochs, 
-        tasks=tasks,
+
     )
     
     logger.info("finished training. \n\n " + 20*"-")

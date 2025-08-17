@@ -1,4 +1,8 @@
 import os
+from typing import Optional
+
+from task import Task
+
 machine = os.environ.get("MACHINE_TYPE", "local")  # local or remote: local - my gaming pc (16gb), remote - university gpu (24gb)
 
 EMBEDDING_DIM = 768
@@ -30,18 +34,24 @@ DEPTH = 1                   # how many co-attn layers in transformer
 VIT_MODEL_NAME = "vit_base_patch16_224"
 
 
-class Config: 
-    def __init__(self, 
-                 embedding_dim=EMBEDDING_DIM,
-                 vocab_size=VOCAB_SIZE,
-                 num_hidden_layers=NUM_HIDDEN_LAYERS,
-                 num_attention_heads=NUM_ATTENTION_HEADS,
-                 dropout_prob=DROPOUT_PROB,
-                 learning_rate=LEARNING_RATE,
-                 img_size=IMG_SIZE,
-                 preprocessed_path=PREPROCESSED_PATH,
-                 train_test_ratio=TRAIN_TEST_RATIO,
-                 batch_size=BATCH_SIZE):
+
+
+class ViLBERTConfig: 
+    def __init__(
+        self, 
+        embedding_dim=EMBEDDING_DIM,
+        vocab_size=VOCAB_SIZE,
+        num_hidden_layers=NUM_HIDDEN_LAYERS,
+        num_attention_heads=NUM_ATTENTION_HEADS,
+        dropout_prob=DROPOUT_PROB,
+        learning_rate=LEARNING_RATE,
+        img_size=IMG_SIZE,
+        preprocessed_path=PREPROCESSED_PATH,
+        train_test_ratio=TRAIN_TEST_RATIO,
+        batch_size=BATCH_SIZE, 
+        depth=DEPTH,
+        pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]  # default tasks to pretrain on
+    ):
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
         self.num_hidden_layers = num_hidden_layers
@@ -52,6 +62,8 @@ class Config:
         self.preprocessed_path = preprocessed_path
         self.train_test_ratio = train_test_ratio
         self.batch_size = batch_size
+        self.depth = depth
+        self.pretraining_tasks = pretraining_tasks
         
     
     def items(self):
@@ -62,3 +74,6 @@ class Config:
     
     def values(self):
         return vars(self).values()
+    
+    def __str__(self, ): 
+        return f"ViLBERTConfig({', '.join([f'{k}={v}' for k, v in self.items()])})"
