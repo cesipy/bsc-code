@@ -10,6 +10,7 @@ from logger import Logger
 
 
 
+from pytorch_metric_learning.losses import NTXentLoss
 
 
 class Trainer(): 
@@ -144,7 +145,8 @@ class PretrainingTrainer:
         
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
-        self.loss_fn_mim = utils.InfoNCE(temperature=0.07)
+        # self.loss_fn_mim = utils.InfoNCE(temperature=0.07)
+        self.loss_fn_mim =  NTXentLoss(temperature=0.07)
         
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
