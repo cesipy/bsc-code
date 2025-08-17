@@ -28,7 +28,7 @@ TOKENIZER_MAX_LEN = 192
 
 
 FC_HIDDEN_DIM = 1024        # what hidden size in fc head
-DEPTH = 1                   # how many co-attn layers in transformer
+DEPTH = 4                  # how many co-attn layers in transformer
 
 
 VIT_MODEL_NAME = "vit_base_patch16_224"

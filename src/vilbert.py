@@ -23,7 +23,11 @@ import timm
 
 from PIL import Image
 
-from attention import Attention_Block, CrossAttention, CrossAttentionBlock, FeedForward_Block
+from attention import(
+    Attention_Block, 
+    CrossAttention, CrossAttentionBlock, FeedForward_Block, 
+    BiAttention_Block
+) 
 
 import utils
 from config import *
@@ -67,23 +71,34 @@ class ViLBERT(nn.Module):
         # utils.freeze_all_layers(self.bert)
         # utils.freeze_all_layers(self.vit)
 
-
+        cross_attention_layers = [0, 2]     # starts with 0, not 1!
         
         self.attention_layer = Attention_Block(
             dim=self.config.embedding_dim, 
             heads=self.config.num_attention_heads, 
             dropout=self.config.dropout_prob)
         
-        self.cross_attention = []
+        self.attentions = []
         self.depth = self.config.depth
+        
+        assert len(cross_attention_layers)< self.depth
         for i in range(self.depth): 
-            self.cross_attention.append(CrossAttentionBlock(
-                dim=self.config.embedding_dim, 
-                heads=self.config.num_attention_heads, 
-                dropout=self.config.dropout_prob,
-            ))
+            
+            if i in cross_attention_layers:
+                self.attentions.append(CrossAttentionBlock(
+                    dim=self.config.embedding_dim, 
+                    heads=self.config.num_attention_heads, 
+                    dropout=self.config.dropout_prob,
+                ))
+                
+            else: 
+                self.attentions.append(BiAttention_Block(
+                    dim=self.config.embedding_dim, 
+                    heads=self.config.num_attention_heads,
+                    dropout=self.config.dropout_prob,
+                ))
 
-        self.cross_attention = nn.ModuleList(self.cross_attention)
+        self.attentions = nn.ModuleList(self.attentions)
 
         # pretrain heads
         self.alignment_fc = nn.Linear(2*self.config.embedding_dim , 1)
@@ -172,8 +187,8 @@ class ViLBERT(nn.Module):
         # print(f"cls token shape: {vision_embedding[0,0].shape}")
         # print(f"cls token: {text_embedding[0,0, : 5]}")
         
-        for i in range(len(self.cross_attention)):
-            text_embedding, vision_embedding = self.cross_attention[i](
+        for i in range(len(self.attentions)):
+            text_embedding, vision_embedding = self.attentions[i](
                 text_tensor=text_embedding, 
                 vision_tensor=vision_embedding
             )
