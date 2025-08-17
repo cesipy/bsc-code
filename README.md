@@ -82,6 +82,35 @@ dataset returned from dataloader/dataset:
 
 ## Results
 
+
+### 17.08 - comparing different pretraining tasks
+with frozen encoders in pretraining. 
+
+
+**Task Combinations Tested:**
+1. **Baseline**: No pretraining 
+2. **All Tasks**: MIM + MLM + AP
+3. **Two Tasks**: MLM + AP (no MIM)
+4. **Single Task**: AP only
+
+**Findings:**
+
+| Pretraining Tasks | Downstream Accuracy (Final) | Improvement over Baseline |
+|-------------------|----------------------------|--------------------------|
+| **None (Baseline)** | 67.5% ± 0.7% | - |
+| **All (MIM+MLM+AP)** | **69.7%** | **+2.2%** |
+| **MLM + AP** | **71.0%** | **+3.5%** |
+| **AP Only** | **70.8%** | **+3.3%** |
+
+
+**Pretraining Task Analysis:**
+
+**Alignment Prediction (AP) Performance:**
+- All tasks: 80% → 86% accuracy
+- MLM + AP: 82% → 87% accuracy  
+- AP only: 83% → **88%** accuracy (best)
+
+
 running the pretraining on 125k images with all three pretraining tasks resulted in this pretraining loss: 
 
 <figure>

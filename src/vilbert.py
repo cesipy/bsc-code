@@ -63,8 +63,8 @@ class ViLBERT(nn.Module):
         
         self.bert.gradient_checkpointing_enable()
     
-        utils.freeze_all_layers(self.bert)
-        utils.freeze_all_layers(self.vit)
+        # utils.freeze_all_layers(self.bert)
+        # utils.freeze_all_layers(self.vit)
 
 
         
