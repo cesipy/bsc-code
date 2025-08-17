@@ -791,8 +791,9 @@ def generate_data_list(path: str):
     return data_list
     
     
-def generate_data_list_pretrain(path: str): 
+def generate_data_list_pretrain(path: str, max_number=None): 
     data_list = []
+    counter = 0
     with open(path) as fd: 
         rd = csv.reader(fd, quotechar='"')
         next(rd)
@@ -805,7 +806,11 @@ def generate_data_list_pretrain(path: str):
                 print(f"Image {path} does not exist. Skipping.")
                 continue
             
+            counter +=1
+            
             data_list.append((path, text))
+            if max_number and counter >= max_number:
+                break
             
     return data_list
 
