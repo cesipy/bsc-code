@@ -26,7 +26,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.utils.checkpoint")
 warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modules.module")
 
-machine = os.getenv("MACHINE_TYPE", "home")     # remote or home
+machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 logger = Logger()
 
 @utils.memory_cleanup
@@ -38,7 +38,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         logger.info(info_str)
         
         config = ViLBERTConfig()
-        model = ViLBERT()
+        model = ViLBERT(config=config)
     
     else:    
         device = "cuda" if torch.cuda.is_available() else "cpu"
