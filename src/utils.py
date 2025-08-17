@@ -19,7 +19,7 @@ from torchvision.transforms import InterpolationMode
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
 
-from enum import Enum
+
 from config import *
 
 from logger import Logger
@@ -62,16 +62,7 @@ def get_image_embedding(path: str, image_processor=None):
         return None
 
 
-class Task(Enum): 
-    ALIGNMENT_PREDICTION = 1
-    MASKED_LM = 2
-    MASKED_IM = 3       # masked image modelling
-    
-    #aliases 
-    MLM = 2
-    MIM = 3
-    
-    
+
 transforms_unmasked = torchvision.transforms.Compose([
     transforms.RandomRotation(5),
     transforms.RandomRotation(degrees=5),

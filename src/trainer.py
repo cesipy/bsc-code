@@ -5,16 +5,17 @@ from tqdm import tqdm
 
 from vilbert import ViLBERT
 from config import * 
-from utils import Task; import utils
+import utils
+from task import Task
 from logger import Logger
 
 
 
-from pytorch_metric_learning.losses import NTXentLoss
+from info_nce import InfoNCE, info_nce
 
 
 class Trainer(): 
-    def __init__(self, model: ViLBERT, config: Config): 
+    def __init__(self, model: ViLBERT, config: ViLBERTConfig): 
         self.lr = config.learning_rate
         self.model = model
         self.config = config
@@ -131,7 +132,7 @@ class PretrainingTrainer:
     def __init__(
         self, 
         model: ViLBERT, 
-        config: Config,
+        config: ViLBERTConfig,
     ): 
         self.optimizer = torch.optim.AdamW(
             model.parameters(), 
@@ -146,9 +147,8 @@ class PretrainingTrainer:
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
         # self.loss_fn_mim = utils.InfoNCE(temperature=0.07)
-        self.loss_fn_mim =  NTXentLoss(temperature=0.07)
+        self.loss_fn_mim = InfoNCE()
         
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
         self.config = config
         self.logger = Logger()
@@ -514,9 +514,8 @@ class PretrainingTrainer:
         train_dataloaderMIM: DataLoader,    #masked image modeling
         test_dataloaderMIM:  DataLoader,        #masked image modeling
         epochs: int, 
-        tasks=[Task.ALIGNMENT_PREDICTION, Task.MLM, Task.MIM],
     ): 
-        info_str = f"training with tasks: {tasks}"
+        info_str = f"training with tasks: {self.config.pretraining_tasks}"
         self.logger.info(info_str)
         print(info_str)
         
@@ -532,7 +531,7 @@ class PretrainingTrainer:
                 dataloader_ap=train_dataloaderAP,
                 dataloader_mlm=train_dataloaderMLM, 
                 dataloader_mim=train_dataloaderMIM,
-                tasks=tasks
+                tasks=self.config.pretraining_tasks,
             )
             
             v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
@@ -656,6 +655,7 @@ class PretrainingTrainer:
         # print(f"shape: masked_feats: {masked_feats.shape}, unmasked_feats: {unmasked_feats.shape}")
         assert masked_feats.shape == unmasked_feats.shape 
         # has shape between bs * ~177: [bs*~177, 768]
+        # loss = torch.nn.functional.mse_loss(masked_feats, unmasked_feats)
         loss = self.loss_fn_mim(masked_feats, unmasked_feats)
         
         return loss
