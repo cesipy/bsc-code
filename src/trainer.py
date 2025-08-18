@@ -599,14 +599,20 @@ class PretrainingTrainer:
             model_state_dict = self.model._orig_mod.state_dict()
         else: 
             model_state_dict = self.model.state_dict()
+            
+        config_dict = self.config.__dict__.copy()
+        if 'pretraining_tasks' in config_dict:
+            config_dict['pretraining_tasks'] = [task.value for task in config_dict['pretraining_tasks']]
+        
+        
         checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': model_state_dict,
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'scaler_state_dict': self.scaler.state_dict(),
-            'train_loss_ap': train_loss_ap,
-            'train_loss_mlm': train_loss_mlm,
-            'config': self.config.__dict__ if hasattr(self, 'config') else None
+            "epoch": epoch,
+            "model_state_dict": model_state_dict,
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "scaler_state_dict": self.scaler.state_dict(),
+            "train_loss_ap": train_loss_ap,
+            "train_loss_mlm": train_loss_mlm,
+            "config": config_dict
         }
         torch.save(checkpoint, filepath)
         print(f"Checkpoint saved to {filepath}")

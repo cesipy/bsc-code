@@ -337,11 +337,25 @@ class ViLBERT(nn.Module):
             
     @classmethod
     def from_pretrained_checkpoint(cls, checkpoint_path, device='cuda'):
-        """Load a pretrained ViLBERT model from checkpoint
-        from genAI"""
-        checkpoint = torch.load(checkpoint_path, map_location=device)
+        """Load a pretrained ViLBERT model from checkpoint"""
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
         
-        model = cls()  # Initialize with default config
+        # Handle config properly - it's saved as a dict, need to convert back to object
+        if 'config' in checkpoint and checkpoint['config'] is not None:
+            config_dict = checkpoint['config']
+            
+            # Convert task values back to Task enums if they exist
+            if 'pretraining_tasks' in config_dict and config_dict['pretraining_tasks']:
+                from task import Task  # Import here to avoid circular import
+                config_dict['pretraining_tasks'] = [Task(value) for value in config_dict['pretraining_tasks']]
+            
+            # Create ViLBERTConfig object from the dict
+            config = ViLBERTConfig(**config_dict)
+        else:
+            print("Warning: No config found in checkpoint, using default config")
+            config = ViLBERTConfig()
+        
+        model = cls(config)
         model.load_state_dict(checkpoint['model_state_dict'])
         model = model.to(device)
         

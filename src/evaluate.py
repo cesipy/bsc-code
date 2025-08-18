@@ -64,12 +64,13 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     val_data   = train_data_list[train_idx:] 
     
     if machine == "remote":
-        bs = 640     # obout 23.3gb vrman 
+        bs = 64    # obout 23.3gb vrman 
         config.learning_rate = 6e-5#5e-6     # TODO: make this cleaner
     else: 
-        bs = 320
+        bs = 64
         config.learning_rate = 3e-5
     
+    print(bs)
     
     num_workers = 4
     pin_memory= True
@@ -110,10 +111,12 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     
     
 if __name__ == "__main__": 
-    
-    p = argparse.ArgumentParser(description="train on hateful memes")
-    p.add_argument("--path", type=str, default=None,
-                   help="Path to pretrained model checkpoint (optional)")
-    train_and_eval_on_downstream_task(pretrained_model_path=p.parse_args().path)
-    
+    try: 
+        p = argparse.ArgumentParser(description="train on hateful memes")
+        p.add_argument("--path", type=str, default=None,
+                    help="Path to pretrained model checkpoint (optional)")
+        train_and_eval_on_downstream_task(pretrained_model_path=p.parse_args().path)
+    except Exception as e: 
+        logger.error(f"Error during training and evaluation: {e}")
+        raise e
     

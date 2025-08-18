@@ -310,7 +310,8 @@ class CustomDataset(Dataset):
         img_embeddings = get_image_embedding(
             img_path, 
             image_processor=self.image_processor, 
-            transform=utils.vit_transform_full)
+            transform=utils.vit_transform_full
+        )
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
         
         label_tensor = torch.tensor(label, dtype=torch.long)

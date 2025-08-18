@@ -193,9 +193,9 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     prefetch= 4
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
-    data_list = datasets.generate_data_list_pretrain(path=path, max_number=300000)
+    data_list = datasets.generate_data_list_pretrain(path=path, max_number=300_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:200000]
+    data_list = data_list[:200_000]
     # validation_list = validation_list[:1000]
     
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -273,9 +273,14 @@ def parse_args():
     
 
 if __name__ == "__main__":
-    # pretain()
-    
-    tasks = parse_args()
-    pretrain_(tasks=tasks)
-    # train_and_eval_on_downstream_task(pretrained_model_path=None)
-    # train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_4.pt")
+    try: 
+        # pretain()
+        
+        tasks = parse_args()
+        pretrain_(tasks=tasks)
+        
+        # train_and_eval_on_downstream_task(pretrained_model_path=None)
+        # train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_4.pt")
+    except Exception as e : 
+        logger.error(f"Error during pretraining or training on downstream task: {e}")
+        raise e
