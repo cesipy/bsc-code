@@ -6,6 +6,53 @@ from config import *
 
 import utils
 
+class Attention_Block(nn.Module):
+    # Some inspiration from the deep learning assignment 3,
+    # Credits to javier urena
+  def __init__(self, dim, heads=8, dropout=0.):
+    super(Attention_Block, self).__init__()
+
+    self.dk = dim // heads # inner head dimension. Dim and number of heads must be multiple numbers between them
+    self.heads = heads
+
+    self.norm = nn.LayerNorm(dim)
+    self.dropout = nn.Dropout(dropout)
+
+    self.query = nn.Linear(in_features=dim, out_features=dim)
+    self.key   = nn.Linear(in_features=dim, out_features=dim)
+    self.value = nn.Linear(in_features=dim, out_features=dim)
+
+    self.softmax = nn.Softmax(dim=-1)
+
+    self.rearrange_qkv = Rearrange('b n (h d) -> b h n d', h=heads)
+
+
+    self.to_out = nn.Sequential(
+        nn.Linear(dim, dim),
+        nn.Dropout(dropout)
+    ) if dim != self.dk else nn.Identity()
+
+  def forward(self, x):
+    x = self.norm(x)
+
+    x_proj_k = self.key(x)
+    x_proj_q = self.query(x)
+    x_proj_v = self.value(x)
+
+    q = self.rearrange_qkv(x_proj_q)
+    k = self.rearrange_qkv(x_proj_k)
+    v = self.rearrange_qkv(x_proj_v)
+
+    #attention mechanism softmax(Q, K) /sqrt(dk)
+    qk_scaled = torch.matmul(q, k.transpose(-1, -2)) * self.dk ** -0.5
+    attention_qk = self.softmax(qk_scaled)
+
+    attention = torch.matmul(attention_qk, v)
+
+    attention = rearrange(attention, 'b h n d -> b n (h d)')
+
+    return self.to_out(attention)
+
 
 class DualAttention_Block(nn.Module):
     def __init__(self, dim, heads=8, dropout=0.):

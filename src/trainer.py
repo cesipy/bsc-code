@@ -10,6 +10,9 @@ from task import Task
 from logger import Logger
 
 
+import analysis
+
+
 
 from info_nce import InfoNCE, info_nce
 
@@ -92,6 +95,8 @@ class Trainer():
         total_preds = 0
         correct_preds = 0
 
+        layer_sims = []
+
         with torch.no_grad():
             for batch in dataloader:
                 data_dict = batch
@@ -101,13 +106,31 @@ class Trainer():
                 text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
                 image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
-                preds = self.model(
+                preds, intermediate_representations = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
+                    save_intermediate_representations=True
                 )
+                # len(list) = DEPTH;
+                # list[0]["vision_embedding"].shape: [ bs, dim]
+                # print(f"len intermediate_representations: {len(intermediate_representations)}")
+                # print(f"shape vision: {intermediate_representations[0]['vision_embedding'].shape}")
+                # print(f"shape text: {intermediate_representations[0]['text_embedding'].shape}")
+
+                current_layer_sims: list[dict] = analysis.process_intermediate_repr(intermediate_representations)
+
+                layer_sims.extend(current_layer_sims)
+
+                # avg_sim = sum(sims) / len(sims)
+                # info_str = f"acg cos sim: {avg_sim}"
+                # self.logger.info(info_str)
+                # print(info_str)
+
+
+
                 preds = preds.squeeze()
                 label = label.float()
 
@@ -119,13 +142,16 @@ class Trainer():
                 preds = (preds > 0.5).float()  # convert to binary
                 correct_preds += (preds == label).sum().item()
                 total_preds   += label.size(0)
+
+        analysis.analyse(layer_similarities=layer_sims, num_layers=self.model.depth)
+
         if total_preds == 0:
             acc = 0
         else:
             acc = correct_preds / total_preds
 
         return total_loss / num_batches, acc
-        
+
 
 
 class PretrainingTrainer:
@@ -278,8 +304,6 @@ class PretrainingTrainer:
                 num_batches += 1
 
             return total_loss / num_batches
-
-
 
 
     def train_epoch_prediction(self, dataloader: DataLoader):

@@ -51,6 +51,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     utils.freeze_all_layers(model.bert)
 
     path = "res/data/hateful_memes_data/train.jsonl"
+    val_path = "res/data/hateful_memes_data/test.jsonl"
+
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     config = ViLBERTConfig()
@@ -58,10 +60,16 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     #TODO: also freeze co-attention layers here
     utils.params_summary(model=model)
     train_data_list = datasets.generate_data_list(path)
+    # val_data_list = datasets.generate_data_list(val_path)
+
+    # train_data_list = train_data_list[:1000]
 
     train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
     train_data = train_data_list[:train_idx]
     val_data   = train_data_list[train_idx:]
+    # train_data = train_data_list
+    # val_data = val_data_list
+
 
     if machine == "remote":
         bs = 64    # obout 23.3gb vrman

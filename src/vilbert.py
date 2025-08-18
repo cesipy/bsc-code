@@ -29,10 +29,9 @@ from attention import(
     DualAttention_Block
 )
 
-import utils
+
 from config import *
 from logger import Logger
-from task import Task
 
 logger = Logger()
 
@@ -131,9 +130,11 @@ class ViLBERT(nn.Module):
         image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
+        save_intermediate_representations=False
     ):
 
-        text_embedding, image_embedding = self.forward_coattention(
+        if save_intermediate_representations:
+            text_embedding, image_embedding, intermediate_representations = self.forward_coattention(
             text_input_ids=text_input_ids,
             text_attention_mask=text_attention_mask,
             text_token_type_ids=text_token_type_ids,
@@ -141,12 +142,30 @@ class ViLBERT(nn.Module):
             image_attention_mask=image_attention_mask,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
-        )
+            # extract_cls=True,
+            save_intermediate_representations=True
+            )
+
+        else:
+            text_embedding, image_embedding = self.forward_coattention(
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                save_intermediate_representations=save_intermediate_representations
+            )
         # print(f"shape of text_embedding: {text_embedding.shape}")
         # print(f"shape of image_embedding: {image_embedding.shape}")
         concatted_embedding = torch.cat([text_embedding, image_embedding], dim=1)
         # print(f"shape of concatted_embedding: {concatted_embedding.shape}")
         out = self.fc(concatted_embedding)
+
+        if save_intermediate_representations:
+            return out, intermediate_representations
+
         return out
 
     def forward_coattention(
@@ -158,7 +177,9 @@ class ViLBERT(nn.Module):
         image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
-        extract_cls=True            # used for pretraining. should the cls token be extracted?
+        extract_cls=True ,          # used for pretraining. should the cls token be extracted?
+                                    # not extracted for pretraining, extracted for downstream tasks
+        save_intermediate_representations=False
     ):
         # with torch. ():
         text_output = self.bert(
@@ -192,11 +213,36 @@ class ViLBERT(nn.Module):
         # print(f"cls token shape: {vision_embedding[0,0].shape}")
         # print(f"cls token: {text_embedding[0,0, : 5]}")
 
+
+        intermediate_representations = []
+
         for i in range(len(self.attentions)):
             text_embedding, vision_embedding = self.attentions[i](
                 text_tensor=text_embedding,
                 vision_tensor=vision_embedding
             )
+
+            if save_intermediate_representations:
+                # current_text_cls = text_embedding[:, 0, :]
+                # current_vision_cls = vision_embedding[:, 0, :]
+                # current_dict = {
+                #     "layer": i,
+                #     "text_embedding": current_text_cls,
+                #     "vision_embedding": current_vision_cls,
+                #     "is_cross_attention": i in self.config.cross_attention_layers,
+                # }
+
+                current_text_mean = torch.mean(text_embedding, dim=1)
+                current_vision_mean = torch.mean(vision_embedding, dim=1)
+
+                current_dict = {
+                    "layer": i,
+                    "text_embedding": current_text_mean,
+                    "vision_embedding": current_vision_mean,
+                    "is_cross_attention": i in self.config.cross_attention_layers,
+                }
+
+                intermediate_representations.append(current_dict)
 
 
         if not extract_cls:
@@ -204,9 +250,12 @@ class ViLBERT(nn.Module):
 
 
         #extract the cls token.
-        # TODO: implement also gap pooling for comparison
+        # TODO: implement also gap pooling for comparison (optional)
         text_embedding = text_embedding[:, 0, :]
         vision_embedding = vision_embedding[:, 0, :]
+
+        if save_intermediate_representations:
+            return text_embedding, vision_embedding, intermediate_representations
         return text_embedding, vision_embedding
 
     def forward_concat(
