@@ -600,10 +600,7 @@ class PretrainingTrainer:
         else: 
             model_state_dict = self.model.state_dict()
             
-        config_dict = self.config.__dict__.copy()
-        if 'pretraining_tasks' in config_dict:
-            config_dict['pretraining_tasks'] = [task.value for task in config_dict['pretraining_tasks']]
-        
+        config_dict = self.config.to_dict()
         
         checkpoint = {
             "epoch": epoch,
