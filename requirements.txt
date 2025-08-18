@@ -1,7 +1,7 @@
 torch
 transformers
 torchvision
-einops 
+einops
 torchinfo
 torchmetrics
 tqdm

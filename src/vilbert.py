@@ -5,16 +5,16 @@ from einops import rearrange, repeat        # functions for tensor dimension reo
 from einops.layers.torch import Rearrange   # same as rearrange but works as a torch layer
 from transformers import (
     #BERT stuff
-    BertModel, 
-    BertConfig, 
-    BertTokenizer, 
-    BertTokenizerFast, 
-    
+    BertModel,
+    BertConfig,
+    BertTokenizer,
+    BertTokenizerFast,
+
     # ViT stuff
-    ViTConfig, 
+    ViTConfig,
     ViTModel,
     ViTImageProcessor,
-    
+
     # type hinting stuff
     PreTrainedTokenizerFast,
 )
@@ -24,10 +24,10 @@ import timm
 from PIL import Image
 
 from attention import(
-    Attention_Block, 
-    CrossAttention, CrossAttentionBlock, FeedForward_Block, 
-    BiAttention_Block
-) 
+    Attention_Block,
+    CrossAttention, CrossAttentionBlock, FeedForward_Block,
+    DualAttention_Block
+)
 
 import utils
 from config import *
@@ -44,61 +44,61 @@ logger = Logger()
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.deterministic = False 
+torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.enabled = True
 
 
-class ViLBERT(nn.Module): 
-    def __init__(self, config: ViLBERTConfig): 
+class ViLBERT(nn.Module):
+    def __init__(self, config: ViLBERTConfig):
         super(ViLBERT, self).__init__()
         self.config = config
-        
-        # loads pretrained transformers, no head for task. with transformers.BertFor.... I 
+
+        # loads pretrained transformers, no head for task. with transformers.BertFor.... I
         # could download pretrained transformers for specific tasks
         self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
-        
-        # apparently transformers vit implementatins is flawed. 
+
+        # apparently transformers vit implementatins is flawed.
         # self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
         self.vit = timm.create_model(
-            VIT_MODEL_NAME, 
-            pretrained=True, 
+            VIT_MODEL_NAME,
+            pretrained=True,
             num_classes=0,       # num_classes=0 removes head
             global_pool="",      # we need whole sequence for mim
-        )  
-        
-        
-        # self.bert = torch.compile(self.bert)  
+        )
+
+
+        # self.bert = torch.compile(self.bert)
         # self.vit = torch.compile(self.vit)
-        
+
         self.bert.gradient_checkpointing_enable()
-    
+
         # utils.freeze_all_layers(self.bert)
         # utils.freeze_all_layers(self.vit)
 
         # cross_attention_layers = [0, 2]     # starts with 0, not 1!
         cross_attention_layers = config.cross_attention_layers
-        
+
         self.attention_layer = Attention_Block(
-            dim=self.config.embedding_dim, 
-            heads=self.config.num_attention_heads, 
+            dim=self.config.embedding_dim,
+            heads=self.config.num_attention_heads,
             dropout=self.config.dropout_prob)
-        
+
         self.attentions = []
         self.depth = self.config.depth
-        
+
         assert len(cross_attention_layers)<= self.depth
-        for i in range(self.depth): 
-            
+        for i in range(self.depth):
+
             if i in cross_attention_layers:
                 self.attentions.append(CrossAttentionBlock(
-                    dim=self.config.embedding_dim, 
-                    heads=self.config.num_attention_heads, 
+                    dim=self.config.embedding_dim,
+                    heads=self.config.num_attention_heads,
                     dropout=self.config.dropout_prob,
                 ))
-                
-            else: 
-                self.attentions.append(BiAttention_Block(
-                    dim=self.config.embedding_dim, 
+
+            else:
+                self.attentions.append(DualAttention_Block(
+                    dim=self.config.embedding_dim,
                     heads=self.config.num_attention_heads,
                     dropout=self.config.dropout_prob,
                 ))
@@ -110,16 +110,16 @@ class ViLBERT(nn.Module):
         self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
         # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
         # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
-        
+
         # for hateful memes classifiction
         self.fc = nn.Sequential(
             nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, FC_HIDDEN_DIM//2), 
+            nn.Linear(FC_HIDDEN_DIM, FC_HIDDEN_DIM//2),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM//2, 1), 
+            nn.Linear(FC_HIDDEN_DIM//2, 1),
         )
 
     def forward(
@@ -132,7 +132,7 @@ class ViLBERT(nn.Module):
         output_attentions=False,
         output_hidden_states=False,
     ):
-        
+
         text_embedding, image_embedding = self.forward_coattention(
             text_input_ids=text_input_ids,
             text_attention_mask=text_attention_mask,
@@ -148,18 +148,18 @@ class ViLBERT(nn.Module):
         # print(f"shape of concatted_embedding: {concatted_embedding.shape}")
         out = self.fc(concatted_embedding)
         return out
-    
+
     def forward_coattention(
-        self, 
+        self,
         text_input_ids,
         text_attention_mask=None,
         text_token_type_ids=None,
         image_pixel_values=None,
-        image_attention_mask=None, 
+        image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
         extract_cls=True            # used for pretraining. should the cls token be extracted?
-    ): 
+    ):
         # with torch. ():
         text_output = self.bert(
             input_ids=text_input_ids,
@@ -168,7 +168,7 @@ class ViLBERT(nn.Module):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
         )
-        
+
         # image_output = self.vit(
         #     pixel_values=image_pixel_values,
         #     output_attentions=output_attentions,
@@ -176,7 +176,7 @@ class ViLBERT(nn.Module):
         # )
         # with torch.no_grad():
         image_output = self.vit(image_pixel_values)
-        
+
         text_tensor = text_output.last_hidden_state
         # image_tensor = image_output.last_hidden_state
         image_tensor = image_output
@@ -188,37 +188,37 @@ class ViLBERT(nn.Module):
         # TODO: fix naming conflict - fix input param name
         text_embedding = text_tensor
         vision_embedding = image_tensor
-        
+
         # print(f"cls token shape: {vision_embedding[0,0].shape}")
         # print(f"cls token: {text_embedding[0,0, : 5]}")
-        
+
         for i in range(len(self.attentions)):
             text_embedding, vision_embedding = self.attentions[i](
-                text_tensor=text_embedding, 
+                text_tensor=text_embedding,
                 vision_tensor=vision_embedding
             )
 
 
-        if not extract_cls: 
+        if not extract_cls:
             return text_embedding, vision_embedding
-            
-        
-        #extract the cls token. 
+
+
+        #extract the cls token.
         # TODO: implement also gap pooling for comparison
-        text_embedding = text_embedding[:, 0, :]  
-        vision_embedding = vision_embedding[:, 0, :] 
+        text_embedding = text_embedding[:, 0, :]
+        vision_embedding = vision_embedding[:, 0, :]
         return text_embedding, vision_embedding
 
     def forward_concat(
-        self, 
+        self,
         text_input_ids,
         text_attention_mask=None,
         text_token_type_ids=None,
         image_pixel_values=None,
-        image_attention_mask=None, 
+        image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
-    ): 
+    ):
         text_output = self.bert(
             input_ids=text_input_ids,
             attention_mask=text_attention_mask,
@@ -226,33 +226,33 @@ class ViLBERT(nn.Module):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
         )
-        
+
         image_output = self.vit(
             pixel_values=image_pixel_values,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
         )
-        
+
         text_tensor = text_output.last_hidden_state
         image_tensor = image_output.last_hidden_state
         # dim 1, bc we want to add the image embeddings to the text embeddings
         # shape text: [bs, seq_len, embedding_dim
         # shape image: [bs, num_patches, embedding_dim]
         concat_embedding = torch.concat([text_tensor, image_tensor], dim=1)
-    
+
         return self.attention_layer(concat_embedding)
 
 
     def forward_naive(
-        self, 
+        self,
         text_input_ids,
         text_attention_mask=None,
         text_token_type_ids=None,
         image_pixel_values=None,
-        image_attention_mask=None, 
+        image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
-    ): 
+    ):
         text_output = self.bert(
             input_ids=text_input_ids,
             attention_mask=text_attention_mask,
@@ -260,31 +260,31 @@ class ViLBERT(nn.Module):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
         )
-        
+
         image_output = self.vit(
             pixel_values=image_pixel_values,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
         )
-        
+
         return text_output.last_hidden_state, image_output.last_hidden_state
 
     def forward_pretrain(
-        self, 
+        self,
         text_input_ids,
         text_attention_mask=None,
         text_token_type_ids=None,
         image_pixel_values=None,
-        image_attention_mask=None, 
+        image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
         tasks:list[str]= None,      #TODO: make tasks an enunm
-    ): 
+    ):
         if "mlm" in tasks:
             # text_embedding_tensor = self.__forward_masked_text(
             #     ...
             # )
-            # TODO: is it here correct to only use the text_seqs alone? or some concattenation of both modalities? 
+            # TODO: is it here correct to only use the text_seqs alone? or some concattenation of both modalities?
             text_seqs, vision_seqs = self.forward_coattention(
                 text_input_ids=text_input_ids,
                 text_attention_mask=text_attention_mask,
@@ -296,36 +296,36 @@ class ViLBERT(nn.Module):
                 extract_cls=False,  # do not extract cls token for pretraining
             )
             # for i, token in enumerate(text_input_ids):
-            #     if token != -1: 
+            #     if token != -1:
             mlm_logits = self.mlm(text_seqs)
             return mlm_logits
-            
-            
-            
+
+
+
         # TODO: later, needs an object regonition model to learn the output
         # distribution from  - minimize kl div for this task
         # if 'task_masked_image' in tasks:
         #     image_embedding_tensor = self.__forward_masked_image(
         #         ...
         #     )
-        
-        if "mim" in tasks: 
+
+        if "mim" in tasks:
             text_seqs, vision_seqs = self.forward_coattention(
-                text_input_ids=text_input_ids, 
-                text_attention_mask=text_attention_mask, 
-                text_token_type_ids=text_token_type_ids, 
-                image_pixel_values=image_pixel_values, 
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
                 image_attention_mask=image_attention_mask,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
                 extract_cls=False
             )
-            
+
             return text_seqs, vision_seqs
-            
-            
-        
-        if "alignment_prediction" in tasks: 
+
+
+
+        if "alignment_prediction" in tasks:
             text_embedding, image_embedding = self.forward_coattention(
                 text_input_ids=text_input_ids,
                 text_attention_mask=text_attention_mask,
@@ -339,43 +339,43 @@ class ViLBERT(nn.Module):
             shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
             alignment_logits = self.alignment_fc(shared_embedding)
             return alignment_logits
-            
+
     @classmethod
     def from_pretrained_checkpoint(cls, checkpoint_path, device='cuda'):
         """Load a pretrained ViLBERT model from checkpoint
         generated by GenAI"""
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-        
+
         # Handle config properly - it's saved as a dict, need to convert back to object
         if 'config' in checkpoint and checkpoint['config'] is not None:
             config_dict = checkpoint['config']
-            
-            
+
+
             config = ViLBERTConfig.from_dict(config_dict)
         else:
             print("Warning: No config found in checkpoint, using default config")
-            logger.warn("No config found in checkpoint, using default config") 
+            logger.warn("No config found in checkpoint, using default config")
             config = ViLBERTConfig()
-        
+
         model = cls(config)
         model.load_state_dict(checkpoint['model_state_dict'])
         model = model.to(device)
-        
+
         print(f"Model loaded from {checkpoint_path}, epoch {checkpoint.get('epoch', 'unknown')}")
         return model, checkpoint
-        
 
-def main(): 
+
+def main():
     config = BertConfig()
     model = ViLBERT(config)
-    
+
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    
+
     text = "hello, what is you name?"
     text_tokens = tokenizer(text, return_tensors="pt")
-    
+
     # can be simply passed to the model without further processing
-    #print(type(text_tokens))        
+    #print(type(text_tokens))
     # transformers.tokenization_utils_base.BatchEncoding, simple dictionary
 
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
@@ -389,16 +389,16 @@ def main():
         image_pixel_values=image_processed["pixel_values"],
         image_attention_mask=image_processed.get("attention_mask", None),
     )
-    
+
     concat = torch.cat((res_linguistic, res_visual), dim=1)
     print(f"lingu shape: {res_linguistic.shape}")
     print(f"visual shape: {res_visual.shape}")
-    print(f"concat shape: {concat.shape}")    
-    
+    print(f"concat shape: {concat.shape}")
+
     # console outputs
     # lingu shape: torch.Size([1, 9, 768])
     # visual shape: torch.Size([1, 197, 768])
-    # concat shape: torch.Size([1, 206, 768])  
+    # concat shape: torch.Size([1, 206, 768])
 
 
     print("-"*15)
@@ -410,9 +410,9 @@ def main():
         image_pixel_values=image_processed["pixel_values"],
         image_attention_mask=image_processed.get("attention_mask", None),
     )
-    
+
     print(f"concatted shape: {res.shape}")
-    
+
     print("-"*15)
     print("cattention model now")
     res_text, res_vision = model.forward_coattention(
@@ -422,13 +422,13 @@ def main():
         image_pixel_values=image_processed["pixel_values"],
         image_attention_mask=image_processed.get("attention_mask", None),
     )
-    
+
     print(f"text shape: {res_text.shape}")
     print(f"vision shape: {res_vision.shape}")
 
-    
-    
-    
-    
+
+
+
+
 if __name__ == "__main__":
     main()

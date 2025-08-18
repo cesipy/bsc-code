@@ -69,7 +69,7 @@ class ViLBERTConfig:
         self.pretraining_tasks = pretraining_tasks
         self.cross_attention_layers = cross_attention_layers
         
-        assert depth >= len(cross_attention_layers), \
+        assert depth >= len(cross_attention_layers)
         
     
     def items(self):
