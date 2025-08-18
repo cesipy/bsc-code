@@ -86,6 +86,24 @@ dataset returned from dataloader/dataset:
 
 ## Results
 
+## 18.08
+easy similarity implementation with cosine-similarity lead to poor results on hatefulmemes:
+```bash
+2025-08-18 18:40:27 - INFO  - analysis.py:analyse:124 - Layer layer0 (cross attention): avg cosine similarity: -0.0169
+2025-08-18 18:40:27 - INFO  - analysis.py:analyse:124 - Layer layer1 (cross attention): avg cosine similarity: -0.0050
+2025-08-18 18:40:27 - INFO  - analysis.py:analyse:124 - Layer layer2 (cross attention): avg cosine similarity: 0.0123
+2025-08-18 18:40:27 - INFO  - analysis.py:analyse:124 - Layer layer3 (cross attention): avg cosine similarity: 0.0212
+2025-08-18 18:40:27 - INFO  - trainer.py:train:87 - Epoch 4/4, train loss: 0.4890, test loss: 0.5661,  accuracy: 0.7224
+2025-08-18 18:40:27 - INFO  - evaluate.py:train_and_eval_on_downstream_task:118 - Training and evaluation on downstream task finished, cleaning up memory
+
+```
+- nearly no similarity, layers 0 and 2 are coattentions, the other dualselfattention
+- tried comparison of cls and global avg pool => same bad results
+
+=> problem of dataset? hateful memes might have complex alignment, more complex than conceptual captions?
+- also: only small pretraining on home gpu, might need longer runs for real results; alignment might not happened yet?
+
+
 
 ### 17.08 - comparing different pretraining tasks
 with frozen encoders in pretraining.

@@ -120,7 +120,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
 
         # if is_cross_attention:
         avg_cosine = sum(measures) / len(measures)
-        info_str = f"Layer {layer} (cross attention): avg cosine similarity: {avg_cosine:.4f}"
+        info_str = f"layer {layer} (cross attention): avg cosine sim.: {avg_cosine:.4f}"
         logger.info(info_str)
         print(info_str)
 
