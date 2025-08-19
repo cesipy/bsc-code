@@ -25,6 +25,10 @@ def cosine_similarity_batch(
     vision_embedding: torch.Tensor
 ) -> torch.Tensor:
 
+
+    # sim = torch.nn.functional.cosine_similarity(text_embedding, vision_embedding, dim=1)
+    # return sim
+
     norm_text = nn.functional.normalize(text_embedding, dim=-1)
     norm_vision = nn.functional.normalize(vision_embedding, dim=-1)
 
@@ -42,7 +46,10 @@ def cka(
 
     ...
 
-def process_intermediate_repr(intermediate_reprs: list[dict]):
+def process_intermediate_repr(
+    intermediate_reprs: list[dict],
+    pooling_method:str ="cls"
+    ):
     """
     processes intermediate representations and
     computes quantitative measurements.
@@ -50,23 +57,34 @@ def process_intermediate_repr(intermediate_reprs: list[dict]):
     input: intermediate_reprs: list of dicts
     dict= {
         "layer": int,
-        "text_embedding": torch.Tensor,
-        "vision_embedding": torch.Tensor,
+        "text_embedding": torch.Tensor,     # shape [bs, num_tokens, dim]
+        "vision_embedding": torch.Tensor,   # shape [bs, num_patches+1, dim]
         "is_cross_attention": bool
     }
     """
+    assert pooling_method in ["cls", "mean"], "invalid pooling method specified!!"
+
     layers_sims = []
 
 
     for i, representation in enumerate(intermediate_reprs):
+
+        if pooling_method == "cls":
+            text_embedding = representation["text_embedding"][:, 0, :]
+            vision_embedding = representation["vision_embedding"][:, 0, :]
+
+        elif pooling_method == "mean":
+            text_embedding = torch.mean(representation["text_embedding"], dim=1)
+            vision_embedding = torch.mean(representation["vision_embedding"], dim=1)
+
         #shape vision: [bs, 768]
         #shape text: [bs, 768]
 
         # TODO: currently only processing the first example in batch.
         # maybe something more sophisticated needed?
 
-        text_embedding_sample = representation["text_embedding"]
-        vision_embedding_sample = representation["vision_embedding"]
+        text_embedding_sample = text_embedding
+        vision_embedding_sample = vision_embedding
         is_corss_attention = representation["is_cross_attention"]
         layer = representation["layer"]
 
@@ -102,7 +120,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
     layers = {}
     for i in range(num_layers):
         layers[f"layer{i}"] = {
-            "is_cross_attention": True,
+            "is_cross_attention": False,
             "similarity_measures": []
         }
 
@@ -120,7 +138,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
 
         # if is_cross_attention:
         avg_cosine = sum(measures) / len(measures)
-        info_str = f"layer {layer} (cross attention): avg cosine sim.: {avg_cosine:.4f}"
+        info_str = f"layer {layer} (co-attn- {is_cross_attention}): avg cosine sim.: {avg_cosine:.4f}"
         logger.info(info_str)
         print(info_str)
 

@@ -164,6 +164,8 @@ def analyse_on_cc(pretrained_model_path: str):
         image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
         label = batch["label"].to(device)
 
+        # print(f"img shape: {image['pixel_values'].shape}, ")
+
         preds, intermediate_representations = model(
             text_input_ids=text["input_ids"],
             text_attention_mask=text["attention_mask"],
@@ -172,6 +174,7 @@ def analyse_on_cc(pretrained_model_path: str):
             image_attention_mask=image.get("attention_mask", None),
             save_intermediate_representations=True
         )
+
 
         current_layer_sims: list[dict] = analysis.process_intermediate_repr(intermediate_representations)
 

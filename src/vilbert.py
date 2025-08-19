@@ -223,22 +223,30 @@ class ViLBERT(nn.Module):
             )
 
             if save_intermediate_representations:
-                # current_text_cls = text_embedding[:, 0, :]
-                # current_vision_cls = vision_embedding[:, 0, :]
+                #TODO: return everything, choose strategy in analysation.
+                current_text_cls = text_embedding[:, 0, :]
+                current_vision_cls = vision_embedding[:, 0, :]
+                current_dict = {
+                    "layer": i,
+                    "text_embedding": current_text_cls,
+                    "vision_embedding": current_vision_cls,
+                    "is_cross_attention": i in self.config.cross_attention_layers,
+                }
+
+                # current_text_mean = torch.mean(text_embedding, dim=1)
+                # current_vision_mean = torch.mean(vision_embedding, dim=1)
+
                 # current_dict = {
                 #     "layer": i,
-                #     "text_embedding": current_text_cls,
-                #     "vision_embedding": current_vision_cls,
+                #     "text_embedding": current_text_mean,
+                #     "vision_embedding": current_vision_mean,
                 #     "is_cross_attention": i in self.config.cross_attention_layers,
                 # }
 
-                current_text_mean = torch.mean(text_embedding, dim=1)
-                current_vision_mean = torch.mean(vision_embedding, dim=1)
-
                 current_dict = {
                     "layer": i,
-                    "text_embedding": current_text_mean,
-                    "vision_embedding": current_vision_mean,
+                    "text_embedding": text_embedding,
+                    "vision_embedding": vision_embedding,
                     "is_cross_attention": i in self.config.cross_attention_layers,
                 }
 
