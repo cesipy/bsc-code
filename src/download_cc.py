@@ -19,56 +19,56 @@ WORKERS = 80
 
 image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
-def read_file(path:str): 
+def read_file(path:str):
     data_list = []
-    
+
     with open(path) as fd:
         rd = csv.reader(fd, delimiter="\t", quotechar='"')
         for row in rd:
             text = row[0]
             url = row[1]
-            
+
             data_list.append((text, url))
-    
+
     return data_list
 
 def is_image_openable(content, image_processor: BaseImageProcessor):
-    try:  
+    try:
         image = Image.open(BytesIO(content)).convert("RGB")
         image = image_processor(images=image, return_tensors="pt")
         return True
-    except Exception: 
+    except Exception:
         return False
-    
-def get_filename(content, url): 
+
+def get_filename(content, url):
     base_filename = url.split("/")[-1].split('?')[0]  # remove query params
     if '.' in base_filename:
         base_filename = base_filename.rsplit('.', 1)[0]  # remove existing extension
-    
+
 
     filename = f"{base_filename}.jpg"
     return filename
-    
 
-def download_image(url: str, verbose=False): 
 
-    try: 
+def download_image(url: str, verbose=False):
+
+    try:
         response = requests.get(url, timeout=TIMEOUT)
         if response.status_code == 200:
-            
+
             if not is_image_openable(response.content, image_processor=image_processor):
                 if verbose:
                     print(f"Skipping {url}: Image cannot be opened.")
                 return None
-            
+
             image = Image.open(BytesIO(response.content)).convert("RGB")
             image = image.resize((224, 224), Image.Resampling.LANCZOS)
-            
+
             filename = get_filename(content=response.content, url=url)
-            
+
             filepath = Path("res/data/conceptual-captions/images") / filename
             filepath.parent.mkdir(parents=True, exist_ok=True)
-            
+
             image.save(filepath, format='JPEG', quality=95)
             return filepath
         else:
@@ -92,7 +92,7 @@ def save_file(downloaded_data):
         writer.writerows(downloaded_data)
 
 def main():
-        
+
     data_list = read_file("res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv")
     # data_list = read_file("res/data/conceptual-captions/Train_GCC-training.tsv")
     # data_list = data_list[:1_500_000]
@@ -103,14 +103,14 @@ def main():
 
     with ThreadPoolExecutor(max_workers=WORKERS) as executor:
         futures = {executor.submit(download_single, dp): dp for dp in data_list}
-        
+
         for future in tqdm(as_completed(futures), total=len(data_list), desc="downloading images"):
             text, url, filepath = future.result()
             if filepath is None:
                 error_counter += 1
             else:
                 downloaded_data.append((text, filepath))
-                
+
             if len(downloaded_data) % 1000 == 0:
                 save_file(downloaded_data)
 

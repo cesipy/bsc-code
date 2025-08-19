@@ -2,7 +2,7 @@
 *.log
 *.vscode
 venv*
-res/data/conceptual-captions/images  
+res/data/conceptual-captions/images
 res/data/hateful_memes_data/img
 *__pycache__
 .python-version

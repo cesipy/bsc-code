@@ -31,7 +31,7 @@ class Logger:
             f.write(log_entry)
 
 
-            
+
     def _get_caller_info(self):
         '''
         include caller of log instance in order to see the function calling the wrapperof `_log`.
