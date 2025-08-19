@@ -175,8 +175,21 @@ def analyse_on_cc(pretrained_model_path: str):
             save_intermediate_representations=True
         )
 
+        #generate dummy reprs
+        # intermediate_representations = [
+        #     {
+        #         "text_embedding": torch.randn(16, 197, 768),  # Example shape
+        #         "vision_embedding": torch.randn(16, 197, 768),  # Example shape
+        #         "is_cross_attention": i in [0, 2],
+        #         "layer": i
+        #     } for i in range(4)
+        # ]
 
-        current_layer_sims: list[dict] = analysis.process_intermediate_repr(intermediate_representations)
+
+        current_layer_sims: list[dict] = analysis.process_intermediate_repr(
+            intermediate_reprs=intermediate_representations,
+            pooling_method="cls",
+        )
 
         layer_sims.extend(current_layer_sims)
 

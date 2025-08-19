@@ -1,4 +1,5 @@
 import torch; from torch import nn
+from ckatorch.core import cka_batch, cka_base
 
 from config import *
 import utils
@@ -42,9 +43,25 @@ def cosine_similarity_batch(
 def cka(
     text_embedding: torch.Tensor,
     vision_embedding: torch.Tensor
-    ) -> float:
+) -> float:
+    """
+    Compute Centered Kernel Alignment (CKA) between two representations.
 
-    ...
+    Args:
+        text_embedding:  shape [batch_size, embedding_dim]
+        vision_embedding: shape [batch_size, embedding_dim]
+
+    """
+    cka_score = cka_batch(text_embedding, vision_embedding)   # needs shape [bs, tokens, dim], but i have different tokens
+    # => i could pad tokenizer to 197?
+    # cka_score = cka_base(
+    #     x=text_embedding,
+    #     y=vision_embedding,
+    #     kernel="linear",         # Use linear kernel (standard for CKA)
+    #     unbiased=False,          # Use biased version (standard)
+    #     method="fro_norm"        # Use Frobenius norm method
+    # )
+    return cka_score.item()
 
 def process_intermediate_repr(
     intermediate_reprs: list[dict],
@@ -66,8 +83,12 @@ def process_intermediate_repr(
 
     layers_sims = []
 
-
     for i, representation in enumerate(intermediate_reprs):
+        print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
+        cka_sim = cka(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
 
         if pooling_method == "cls":
             text_embedding = representation["text_embedding"][:, 0, :]
@@ -93,11 +114,14 @@ def process_intermediate_repr(
             vision_embedding=vision_embedding_sample
         )
 
+
+
         layers_sims.append(
             {
                 "layer": layer,
                 "is_cross_attention": is_corss_attention,
                 "cosine_similarity": torch.mean(cos_sim).item(),
+                "cka_similarity": cka_sim,
             }
         )
 
@@ -112,8 +136,9 @@ def analyse(layer_similarities: list[dict], num_layers: int):
     """input format:
         {
             "layer": layer,
-            "is_cross_attention": is_corss_attention,
-            "cosine_similarity": torch.mean(cos_sim).item(),
+            "is_cross_attention": is_cross_attention,
+            "cosine_similarity": float,
+            "cka_similarity": float,
         }
     """
 
@@ -127,19 +152,33 @@ def analyse(layer_similarities: list[dict], num_layers: int):
     for similarity_measure in layer_similarities:
         layer = similarity_measure["layer"]
         is_cross_attention = similarity_measure["is_cross_attention"]
-        cos_sim = similarity_measure["cosine_similarity"]
 
-        layers[f"layer{layer}"]["similarity_measures"].append(cos_sim)
+        # Store the entire similarity_measure dict instead of just cosine
+        layers[f"layer{layer}"]["similarity_measures"].append(similarity_measure)
         layers[f"layer{layer}"]["is_cross_attention"] = is_cross_attention
 
-    for layer in layers:
-        is_cross_attention = layers[layer]["is_cross_attention"]
-        measures = layers[layer]["similarity_measures"]
+    for layer_name in layers:
+        is_cross_attention = layers[layer_name]["is_cross_attention"]
+        measures = layers[layer_name]["similarity_measures"]
 
-        # if is_cross_attention:
-        avg_cosine = sum(measures) / len(measures)
-        info_str = f"layer {layer} (co-attn- {is_cross_attention}): avg cosine sim.: {avg_cosine:.4f}"
-        logger.info(info_str)
-        print(info_str)
+        if measures:  # Only process if we have measurements
+            # Extract cosine and CKA values
+            cos_values = [m["cosine_similarity"] for m in measures]
+            cka_values = [m["cka_similarity"] for m in measures]
+
+            avg_cosine = sum(cos_values) / len(cos_values)
+            avg_cka = sum(cka_values) / len(cka_values)
+
+            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}"
+            logger.info(info_str)
+            print(info_str)
 
 
+if __name__ == "__main__":
+    data1 = torch.rand(10240,  768)  # Example shape
+    data2 = torch.rand(10240,  768)  # Example shape
+
+    sim_identical =cka(data1, data1)
+    sim_different = cka(data1, data2)
+
+    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
