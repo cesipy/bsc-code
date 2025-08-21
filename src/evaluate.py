@@ -11,6 +11,8 @@ from transformers import (
     BertTokenizerFast, PreTrainedTokenizerFast, ViTImageProcessor
 )
 
+from torchvision import transforms; import torchvision
+
 import utils
 from task import Task
 import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
@@ -22,6 +24,7 @@ from logger import Logger
 import argparse
 
 import analysis
+import trainer
 
 import warnings
 # Suppress specific PyTorch warnings
@@ -49,8 +52,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         print(info_str)
         logger.info(info_str)
 
-    utils.freeze_all_layers(model.vit)
-    utils.freeze_all_layers(model.bert)
+    # utils.freeze_all_layers(model.vit)
+    # utils.freeze_all_layers(model.bert)
 
     path = "res/data/hateful_memes_data/train.jsonl"
     val_path = "res/data/hateful_memes_data/test.jsonl"
@@ -77,17 +80,44 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         bs = 64    # obout 23.3gb vrman
         config.learning_rate = 6e-5#5e-6     # TODO: make this cleaner
     else:
-        bs = 64
-        config.learning_rate = 3e-5
+        bs = 32
 
+    config.learning_rate = 2e-6
     print(bs)
+
+    transform_hm = transforms.Compose([
+
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
+
+        transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
+        transforms.RandomAffine(
+            degrees=10,
+            translate=(0.05, 0.05),
+            scale=(0.95, 1.05),
+            shear=2
+        ),
+        transforms.RandomApply([
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
+        ], p=0.2),
+
+        transforms.RandomGrayscale(p=0.1),
+        transforms.RandomHorizontalFlip(p=0.2),
+        transforms.RandomErasing(),
+
+    ])
 
     num_workers = 4
     pin_memory= True
     prefetch_factor = 3
 
+
     train_data = train_data
-    train_dataset = CustomDataset(train_data, tokenizer=tokenizer, image_processor=image_processor)
+    train_dataset = CustomDataset(
+        train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        transforms=transform_hm
+    )
     val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
 
     train_loader = DataLoader(
@@ -111,7 +141,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
-        epochs=4
+        epochs=20
     )
 
     del model, trainer, train_dataset, val_dataset, train_loader, val_loader
@@ -156,44 +186,7 @@ def analyse_on_cc(pretrained_model_path: str):
         print(info_str)
         logger.info(info_str)
 
-        layer_sims = []
-
-    for batch in dataloader:
-        current_task = batch["task"][0].item()  # Get task type
-        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
-        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
-        label = batch["label"].to(device)
-
-        # print(f"img shape: {image['pixel_values'].shape}, ")
-
-        preds, intermediate_representations = model(
-            text_input_ids=text["input_ids"],
-            text_attention_mask=text["attention_mask"],
-            text_token_type_ids=text.get("token_type_ids", None),
-            image_pixel_values=image["pixel_values"],
-            image_attention_mask=image.get("attention_mask", None),
-            save_intermediate_representations=True
-        )
-
-        #generate dummy reprs
-        # intermediate_representations = [
-        #     {
-        #         "text_embedding": torch.randn(16, 197, 768),  # Example shape
-        #         "vision_embedding": torch.randn(16, 197, 768),  # Example shape
-        #         "is_cross_attention": i in [0, 2],
-        #         "layer": i
-        #     } for i in range(4)
-        # ]
-
-
-        current_layer_sims: list[dict] = analysis.process_intermediate_repr(
-            intermediate_reprs=intermediate_representations,
-            pooling_method="cls",
-        )
-
-        layer_sims.extend(current_layer_sims)
-
-    analysis.analyse(layer_similarities=layer_sims, num_layers=model.depth)
+        trainer.analyse_cc_alignment(dataloader=dataloader, model=model)
 
 
 if __name__ == "__main__":
@@ -201,8 +194,8 @@ if __name__ == "__main__":
         p = argparse.ArgumentParser(description="train on hateful memes")
         p.add_argument("--path", type=str, default=None,
                     help="Path to pretrained model checkpoint (optional)")
-        # train_and_eval_on_downstream_task(pretrained_model_path=p.parse_args().path)
-        analyse_on_cc(pretrained_model_path=p.parse_args().path)
+        train_and_eval_on_downstream_task(pretrained_model_path=p.parse_args().path)
+        # analyse_on_cc(pretrained_model_path=p.parse_args().path)
     except Exception as e:
         logger.error(f"Error during training and evaluation: {e}")
         raise e

@@ -245,6 +245,7 @@ class CustomDataset(Dataset):
         data: typing.List[typing.Tuple[str, int, str]],
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor,
+        transforms=None
 
     ):
         self.logger = Logger()
@@ -259,6 +260,9 @@ class CustomDataset(Dataset):
         # TODO: caching preprocessed, or even do memory pinning -
         # with open(PREPROCESSED_PATH, "wb") as f:
         #     pickle.dump(self.data, f)
+
+        self.transforms = transforms
+
 
 
     def __preprocess_data(self, data:typing.List[typing.Tuple[str, int, str]]):
@@ -310,15 +314,19 @@ class CustomDataset(Dataset):
         img_embeddings = get_image_embedding(
             img_path,
             image_processor=self.image_processor,
-            transform=utils.vit_transform_full
+            # transform=utils.vit_transform_full
+            transform=utils.vit_transform        # not vit transform full anymore - no now i resized the images in the dataset
         )
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
+
         label_tensor = torch.tensor(label, dtype=torch.long)
 
-        # TODO: transformation, currently there is no transfromation
-        if self.transform:
-            img_tensor = self.transform(img_tensor)
+
+        if self.transforms:
+            img_tensor = img_embeddings["pixel_values"].squeeze(0)
+            img_tensor = self.transforms(img_tensor)
+            img_embeddings["pixel_values"] = img_tensor.unsqueeze(0)
 
         return {
             "img": img_embeddings,

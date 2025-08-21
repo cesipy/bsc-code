@@ -349,7 +349,7 @@ def plot_losses(
 
     plt.tight_layout()
 
-    filename = f"res/training_losses-{int(time.time())}.png"
+    filename = f"res/plots/training_losses-{int(time.time())}.png"
     plt.savefig(filename, dpi=150, bbox_inches='tight')
     info_str = f"saved plot to {filename}"
     print(info_str)

@@ -84,7 +84,7 @@ def process_intermediate_repr(
     layers_sims = []
 
     for i, representation in enumerate(intermediate_reprs):
-        print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
+        # print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
         cka_sim = cka(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]

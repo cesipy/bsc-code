@@ -110,16 +110,26 @@ class ViLBERT(nn.Module):
         # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
         # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
 
+
         # for hateful memes classifiction
+        # self.fc = nn.Sequential(
+        #     nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
+        #     nn.ReLU(inplace=True),
+        #     nn.Dropout(self.config.dropout_prob),
+        #     nn.Linear(FC_HIDDEN_DIM, FC_HIDDEN_DIM//2),
+        #     nn.ReLU(inplace=True),
+        #     nn.Dropout(self.config.dropout_prob),
+        #     nn.Linear(FC_HIDDEN_DIM//2, 1),
+        # )
+
+        
         self.fc = nn.Sequential(
             nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, FC_HIDDEN_DIM//2),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM//2, 1),
+            nn.Linear(FC_HIDDEN_DIM, 1),
         )
+
 
     def forward(
         self,
@@ -236,7 +246,8 @@ class ViLBERT(nn.Module):
                 # current_text_mean = torch.mean(text_embedding, dim=1)
                 # current_vision_mean = torch.mean(vision_embedding, dim=1)
 
-                # current_dict = {
+                # current_dict =
+                # {
                 #     "layer": i,
                 #     "text_embedding": current_text_mean,
                 #     "vision_embedding": current_vision_mean,
