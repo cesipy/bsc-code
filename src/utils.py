@@ -30,6 +30,8 @@ logger = Logger()
 
 
 
+
+
 def get_image_embedding(path: str, image_processor=None):
 
 

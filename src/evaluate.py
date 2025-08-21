@@ -137,11 +137,20 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         prefetch_factor=prefetch_factor,
         )
 
+    hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
+        batch_size=4,
+        num_workers=4,
+        pin_memory=False,
+        prefetch_factor=4,
+    )
+
     trainer = Trainer(model, config)
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
-        epochs=20
+        epochs=20,
+        hm_dataloader=hm_dataloader,
+        cc_dataloader=cc_dataloader
     )
 
     del model, trainer, train_dataset, val_dataset, train_loader, val_loader
@@ -186,7 +195,7 @@ def analyse_on_cc(pretrained_model_path: str):
         print(info_str)
         logger.info(info_str)
 
-        trainer.analyse_cc_alignment(dataloader=dataloader, model=model)
+        trainer.analyse_alignment(dataloader=dataloader, model=model)
 
 
 if __name__ == "__main__":

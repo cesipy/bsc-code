@@ -11,10 +11,58 @@ from logger import Logger
 
 
 import analysis
+from datasets import CustomDataset, PretrainDatasetAP
 
 
 
 from info_nce import InfoNCE, info_nce
+
+
+
+def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    layer_sims = []
+
+    for batch in dataloader:
+
+        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+        label = batch["label"].to(device)
+
+        # print(f"img shape: {image['pixel_values'].shape}, ")
+
+        preds, intermediate_representations = model(
+            text_input_ids=text["input_ids"],
+            text_attention_mask=text["attention_mask"],
+            text_token_type_ids=text.get("token_type_ids", None),
+            image_pixel_values=image["pixel_values"],
+            image_attention_mask=image.get("attention_mask", None),
+            save_intermediate_representations=True
+        )
+
+        #generate dummy reprs
+        # intermediate_representations = [
+        #     {
+        #         "text_embedding": torch.randn(16, 197, 768),
+        #         "vision_embedding": torch.randn(16, 197, 768),
+        #         "is_cross_attention": i in [0, 2],
+        #         "layer": i
+        #     } for i in range(4)
+        # ]
+
+
+        current_layer_sims: list[dict] = analysis.process_intermediate_repr(
+            intermediate_reprs=intermediate_representations,
+            pooling_method="cls",
+        )
+
+        layer_sims.extend(current_layer_sims)
+
+    analysis.analyse(layer_similarities=layer_sims, num_layers=model.depth)
+
+
+
 
 
 class Trainer():
@@ -33,6 +81,8 @@ class Trainer():
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = self.model.to(self.device)
+
+
 
     def train_epoch(self, data_loader: DataLoader):
         self.model.train()
@@ -77,7 +127,9 @@ class Trainer():
         self,
         train_dataloader: DataLoader,
         test_dataloader:  DataLoader,
-        epochs: int
+        epochs: int,
+        hm_dataloader: CustomDataset=None,
+        cc_dataloader: PretrainDatasetAP=None,
     ):
         for epoch in range(epochs):
             train_loss = self.train_epoch(train_dataloader)
@@ -85,6 +137,17 @@ class Trainer():
             info_str = f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f},  accuracy: {acc:.4f}"
             print(info_str)
             self.logger.info(info_str)
+
+            if hm_dataloader is not None and cc_dataloader is not None:
+                info_str = "alignment for hateful memes:"
+                print(info_str)
+                self.logger.info(info_str)
+                analyse_alignment(hm_dataloader, self.model)
+
+                info_str = "alignment for conceptual captions:"
+                print(info_str)
+                analyse_alignment(cc_dataloader, self.model)
+                self.logger.info(info_str)
 
     def evaluate(self, dataloader: DataLoader):
         self.model.eval()
@@ -95,7 +158,7 @@ class Trainer():
         total_preds = 0
         correct_preds = 0
 
-        layer_sims = []
+        # layer_sims = []
 
         with torch.no_grad():
             for batch in dataloader:
@@ -106,23 +169,33 @@ class Trainer():
                 text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
                 image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
-                preds, intermediate_representations = self.model(
+                # preds, intermediate_representations = self.model(
+                #     text_input_ids= text["input_ids"],
+                #     text_attention_mask= text["attention_mask"],
+                #     text_token_type_ids= text.get("token_type_ids", None),
+                #     image_pixel_values= image["pixel_values"],
+                #     image_attention_mask= image.get("attention_mask", None),
+                #     save_intermediate_representations=True
+                # )
+                preds = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
-                    save_intermediate_representations=True
+                    save_intermediate_representations=False
                 )
+
+
                 # len(list) = DEPTH;
                 # list[0]["vision_embedding"].shape: [ bs, dim]
                 # print(f"len intermediate_representations: {len(intermediate_representations)}")
                 # print(f"shape vision: {intermediate_representations[0]['vision_embedding'].shape}")
                 # print(f"shape text: {intermediate_representations[0]['text_embedding'].shape}")
 
-                current_layer_sims: list[dict] = analysis.process_intermediate_repr(intermediate_representations)
+                # current_layer_sims: list[dict] = analysis.process_intermediate_repr(intermediate_representations)
 
-                layer_sims.extend(current_layer_sims)
+                # layer_sims.extend(current_layer_sims)
 
                 # avg_sim = sum(sims) / len(sims)
                 # info_str = f"acg cos sim: {avg_sim}"
@@ -143,7 +216,7 @@ class Trainer():
                 correct_preds += (preds == label).sum().item()
                 total_preds   += label.size(0)
 
-        analysis.analyse(layer_similarities=layer_sims, num_layers=self.model.depth)
+        # analysis.analyse(layer_similarities=layer_sims, num_layers=self.model.depth)
 
         if total_preds == 0:
             acc = 0
@@ -151,8 +224,6 @@ class Trainer():
             acc = correct_preds / total_preds
 
         return total_loss / num_batches, acc
-
-
 
 class PretrainingTrainer:
     def __init__(
@@ -538,6 +609,8 @@ class PretrainingTrainer:
         train_dataloaderMIM: DataLoader,    #masked image modeling
         test_dataloaderMIM:  DataLoader,        #masked image modeling
         epochs: int,
+        hm_dataloader: CustomDataset=None,
+        cc_dataloader: PretrainDatasetAP=None,
     ):
         info_str = f"training with tasks: {self.config.pretraining_tasks}"
         self.logger.info(info_str)
@@ -603,6 +676,18 @@ class PretrainingTrainer:
             validation_losses_mlm.append(v_loss_mlm)
             train_losses_mim.append(t_loss_mim)
             validation_losses_mim.append(v_loss_mim)
+
+
+            if hm_dataloader is not None and cc_dataloader is not None:
+                info_str = "alignment for hateful memes:"
+                print(info_str)
+                self.logger.info(info_str)
+                analyse_alignment(hm_dataloader, self.model)
+
+                info_str = "alignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+
 
         utils.plot_losses(
             train_losses_ap=train_losses_ap,

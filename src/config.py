@@ -9,7 +9,7 @@ EMBEDDING_DIM = 768
 VOCAB_SIZE    = 30522
 NUM_HIDDEN_LAYERS = 12
 NUM_ATTENTION_HEADS = 12
-DROPOUT_PROB        = 0.1
+DROPOUT_PROB        = 0.4
 LEARNING_RATE       = 3e-5
 
 # data specific
@@ -27,9 +27,9 @@ else:
 TOKENIZER_MAX_LEN = 197
 
 
-FC_HIDDEN_DIM = 1024        # what hidden size in fc head
-DEPTH = 4                  # how many co-attn layers in transformer
-CROSS_ATTENTION_LAYERS = [0,2]      # first and 3rd layer are coattn
+FC_HIDDEN_DIM = 512       # what hidden size in fc head
+DEPTH = 6            # how many co-attn layers in transformer
+CROSS_ATTENTION_LAYERS = [1,2,3,4,5,6]      # first and 3rd layer are coattn
 
 
 VIT_MODEL_NAME = "vit_base_patch16_224"

@@ -231,6 +231,13 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         config=config,
     )
 
+    hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
+        batch_size=4,
+        num_workers=4,
+        pin_memory=False,
+        prefetch_factor=4
+    )
+
     trainer.train(
         train_dataloaderAP=train_loader_ap,
         test_dataloaderAP=val_loader_ap,
@@ -239,6 +246,8 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         train_dataloaderMIM=train_loader_mim,
         test_dataloaderMIM=val_loader_mim,
         epochs=epochs,
+        hm_dataloader=hm_dataloader,
+        cc_dataloader=cc_dataloader
     )
 
     logger.info("finished training. \n\n " + 20*"-")

@@ -153,7 +153,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
         layer = similarity_measure["layer"]
         is_cross_attention = similarity_measure["is_cross_attention"]
 
-        # Store the entire similarity_measure dict instead of just cosine
+
         layers[f"layer{layer}"]["similarity_measures"].append(similarity_measure)
         layers[f"layer{layer}"]["is_cross_attention"] = is_cross_attention
 
@@ -161,8 +161,8 @@ def analyse(layer_similarities: list[dict], num_layers: int):
         is_cross_attention = layers[layer_name]["is_cross_attention"]
         measures = layers[layer_name]["similarity_measures"]
 
-        if measures:  # Only process if we have measurements
-            # Extract cosine and CKA values
+        if measures:
+
             cos_values = [m["cosine_similarity"] for m in measures]
             cka_values = [m["cka_similarity"] for m in measures]
 
@@ -175,8 +175,8 @@ def analyse(layer_similarities: list[dict], num_layers: int):
 
 
 if __name__ == "__main__":
-    data1 = torch.rand(10240,  768)  # Example shape
-    data2 = torch.rand(10240,  768)  # Example shape
+    data1 = torch.rand(1, 192, 768)
+    data2 = torch.rand(1, 192,768)
 
     sim_identical =cka(data1, data1)
     sim_different = cka(data1, data2)

@@ -1,6 +1,6 @@
 import os
 import json
-import typing
+import typing;
 import csv
 import random
 
@@ -52,6 +52,63 @@ def process_single_image(path:str) -> torch.Tensor:
     img_tensor = torch.from_numpy(img.astype(np.float32))
 
     return img_tensor
+
+def get_alignment_dataloaders(
+    batch_size,
+    num_workers: int,
+    pin_memory: bool,
+    prefetch_factor: int,
+    )-> typing.Tuple[DataLoader, DataLoader]:
+    """
+    returns tuple of dataloader in the following order:
+    dataloader-hateful-memes, dataloader-conceputal-captions
+    """
+
+    path_cc = "res/data/conceptual-captions/validation.csv"
+    path_hm = "res/data/hateful_memes_data/train.jsonl"
+
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    data_list_hm = generate_data_list(path_hm)
+    #TODO: it now uses the complete dataset, not the train-test split here for alignment analysis
+    data_list_cc = generate_data_list_pretrain(path=path_cc, max_number=None)
+
+    dataset_hm = CustomDataset(
+        data=data_list_hm,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+
+    dataset_cc = PretrainDatasetAP(
+        data=data_list_cc,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        preprocessing_prediction_alignment=False
+    )
+
+    dataloader_hm = DataLoader(
+        dataset=dataset_hm,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+    )
+
+    dataloader_cc = DataLoader(
+        dataset=dataset_cc,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+    )
+
+    return dataloader_hm, dataloader_cc
+
+
+
 
 
 def get_dataloaders(
