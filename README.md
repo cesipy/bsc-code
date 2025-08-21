@@ -11,6 +11,11 @@ I'm currently working on it, so it is not yet complete.
 - [ ] different batchsizes for tasks
 	- maybe too difficult to implement!
 - [ ] is residual handling in crossattention correct?
+- [ ] evaluate functino for measuring avg alignment measures.
+- [ ] complete pipeline for running experiments
+- [ ] other datasets implement
+- [ ] implement further alignment measures
+- [ ] hateful memes downsize to 224
 
 
 
@@ -263,3 +268,18 @@ vit_transform = transforms.Compose([
 This generates the correct input for ViT. In the dataset, then the transformations are done. for pretraining, masking the language tokens, masking the vision tokens and creating the correct task for alignment prediction.
 
 
+The custom datasets inherit from `torch.utils.data.dataset` and return the following dictionary:
+```python
+{
+	"task": task.value,  # Task enum value
+	"img": img_embedding,  # Image embedding as tensor
+	"masked_img": masked_img,  # Masked image as tensor
+	"masked_patches_idxs": masked_patches_idxs,  # Indices of the masked patches
+	"text": text_embeddings,  # Text embeddings as tensor
+}
+```
+
+If alignment on new datasets should be tested, it should have the form of:
+```python
+{"img": ..., "text": ..., "label": ...}
+```
