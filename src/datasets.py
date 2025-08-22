@@ -80,8 +80,8 @@ def get_alignment_dataloaders(
     #TODO: it now uses the complete dataset, not the train-test split here for alignment analysis
     data_list_cc = generate_data_list_pretrain(path=path_cc, max_number=None)
     random.shuffle(data_list_cc)
-    data_list_hm = data_list_hm[num_samples]
-    data_list_cc = data_list_cc[num_samples]
+    data_list_hm = data_list_hm[:num_samples]
+    data_list_cc = data_list_cc[:num_samples]
 
     dataset_hm = CustomDataset(
         data=data_list_hm,

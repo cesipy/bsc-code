@@ -25,7 +25,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
     layer_sims = []
     with torch.no_grad():
-        for batch in dataloader:
+        for i, batch in enumerate(dataloader):
 
             text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
             image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
@@ -52,6 +52,11 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             #     } for i in range(4)
             # ]
 
+            for repr_dict in intermediate_representations:
+                repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
+                repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
+
+
 
             current_layer_sims: list[dict] = analysis.process_intermediate_repr(
                 intermediate_reprs=intermediate_representations,
@@ -59,6 +64,9 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             )
 
             layer_sims.extend(current_layer_sims)
+
+            if i % 10 == 0:
+                torch.cuda.empty_cache()
 
     analysis.analyse(layer_similarities=layer_sims, num_layers=model.depth)
     model.train()
@@ -148,9 +156,11 @@ class Trainer():
 
                 info_str = "alignment for conceptual captions:"
                 print(info_str)
-                analyse_alignment(cc_dataloader, self.model)
                 self.logger.info(info_str)
-                # from cka_wrapper import analyze_all_layers_alignment
+                analyse_alignment(cc_dataloader, self.model)
+
+
+
                 # info_str = "CKA alignment analysis on CC dataset:"
                 # print(info_str)
                 # self.logger.info(info_str)
