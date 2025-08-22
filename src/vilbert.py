@@ -246,6 +246,8 @@ class ViLBERT(nn.Module):
 
 
         if not extract_cls:
+            if save_intermediate_representations:
+                return text_embedding, vision_embedding, intermediate_representations
             return text_embedding, vision_embedding
 
 

@@ -15,7 +15,14 @@ I'm currently working on it, so it is not yet complete.
 - [ ] complete pipeline for running experiments
 - [ ] other datasets implement
 - [ ] implement further alignment measures
-- [ ] hateful memes downsize to 224
+	- [ ] cca
+	- [ ] wasserstein distance
+	- [ ] svcca
+	- [ ] sae (maybe)
+- [x] hateful memes downsize to 224
+- [ ] unify the alignment measurements
+- [ ] pytorch hooks for intermediate layers
+	- quite hard to implement, plus there is not much documentation on this topic.
 
 
 
@@ -90,6 +97,184 @@ dataset returned from dataloader/dataset:
 
 
 ## Results
+
+## 22.08
+```bash
+(venv310) cedric.sillaber@c703i-gpu10:~/coding/bsc-code$ python src/evaluate.py
+Pretrained model path None does not exist, using fresh model.
+trainable params: 280982844/280982844
+dirname:  res/data/hateful_memes_data
+32
+bs_alignment_analysis: 100
+dirname:  res/data/hateful_memes_data
+Epoch 1/5, train loss: 0.6454, test loss: 0.6212,  accuracy: 0.6535
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:12<00:00,  4.07s/it]
+Layer 0 CKA alignment score: 0.0704
+Layer 0 (cross-attn: False): CKA = 0.0704
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 1 CKA alignment score: 0.0727
+Layer 1 (cross-attn: True): CKA = 0.0727
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 2 CKA alignment score: 0.0731
+Layer 2 (cross-attn: False): CKA = 0.0731
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 3 CKA alignment score: 0.0720
+Layer 3 (cross-attn: True): CKA = 0.0720
+Epoch 2/5, train loss: 0.5965, test loss: 0.5645,  accuracy: 0.7229
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 0 CKA alignment score: 0.0759
+Layer 0 (cross-attn: False): CKA = 0.0759
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 1 CKA alignment score: 0.0746
+Layer 1 (cross-attn: True): CKA = 0.0746
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 2 CKA alignment score: 0.0779
+Layer 2 (cross-attn: False): CKA = 0.0779
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 3 CKA alignment score: 0.0776
+Layer 3 (cross-attn: True): CKA = 0.0776
+Epoch 3/5, train loss: 0.5528, test loss: 0.5626,  accuracy: 0.7412
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 0 CKA alignment score: 0.0787
+Layer 0 (cross-attn: False): CKA = 0.0787
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 1 CKA alignment score: 0.0817
+Layer 1 (cross-attn: True): CKA = 0.0817
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 2 CKA alignment score: 0.0811
+Layer 2 (cross-attn: False): CKA = 0.0811
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 3 CKA alignment score: 0.0760
+Layer 3 (cross-attn: True): CKA = 0.0760
+Epoch 4/5, train loss: 0.5223, test loss: 0.5519,  accuracy: 0.7353
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 0 CKA alignment score: 0.0811
+Layer 0 (cross-attn: False): CKA = 0.0811
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 1 CKA alignment score: 0.0862
+Layer 1 (cross-attn: True): CKA = 0.0862
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 2 CKA alignment score: 0.0805
+Layer 2 (cross-attn: False): CKA = 0.0805
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 3 CKA alignment score: 0.0831
+Layer 3 (cross-attn: True): CKA = 0.0831
+Epoch 5/5, train loss: 0.4917, test loss: 0.5586,  accuracy: 0.7359
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 0 CKA alignment score: 0.0868
+Layer 0 (cross-attn: False): CKA = 0.0868
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 1 CKA alignment score: 0.0841
+Layer 1 (cross-attn: True): CKA = 0.0841
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 2 CKA alignment score: 0.0875
+Layer 2 (cross-attn: False): CKA = 0.0875
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.97s/it]
+Layer 3 CKA alignment score: 0.0848
+Layer 3 (cross-attn: True): CKA = 0.0848
+(venv310) cedric.sillaber@c703i-gpu10:~/coding/bsc-code$ python src/evaluate.py --path res/checkpoints/pretrained_epoch2_task123.pt
+Model loaded from res/checkpoints/pretrained_epoch2_task123.pt, epoch 1
+Loaded model from res/checkpoints/pretrained_epoch2_task123.pt with config: {'embedding_dim': 768, 'vocab_size': 30522, 'num_hidden_layers': 12, 'num_attention_heads': 12, 'dropout_prob': 0.4, 'learning_rate': 3e-05, 'img_size': (224, 224), 'preprocessed_path': 'res/preprocessed.pkl', 'train_test_ratio': 0.8, 'batch_size': 40, 'depth': 4, 'pretraining_tasks': [3, 2, 1], 'cross_attention_layers': [1, 3]}
+trainable params: 280982844/280982844
+dirname:  res/data/hateful_memes_data
+48
+bs_alignment_analysis: 100
+dirname:  res/data/hateful_memes_data
+Epoch 1/5, train loss: 0.6515, test loss: 0.6571,  accuracy: 0.6312
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:12<00:00,  4.02s/it]
+Layer 0 CKA alignment score: 0.0153
+Layer 0 (cross-attn: False): CKA = 0.0153
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 1 CKA alignment score: 0.0183
+Layer 1 (cross-attn: True): CKA = 0.0183
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 2 CKA alignment score: 0.0179
+Layer 2 (cross-attn: False): CKA = 0.0179
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 3 CKA alignment score: 0.0157
+Layer 3 (cross-attn: True): CKA = 0.0157
+Epoch 2/5, train loss: 0.6348, test loss: 0.6428,  accuracy: 0.6359
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |:  67%|██████████████████████████████████████████████                       | 2/3 [00:07<00:03,  3.98s/it]
+| Computing CKA epoch 2 |:  60%|████████████████████████████████████▌                        | 3/5
+| Computing CKA epoch 2 |:  80%|████████████████████████████████████████████████▊            | 4/5
+| Computing CKA epoch 2 |: 100%|█████████████████████████████████████████████████████████████| 5/5
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 | Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 0 CKA alignment score: 0.0162
+Layer 0 (cross-attn: False): CKA = 0.0162
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 1 CKA alignment score: 0.0186
+Layer 1 (cross-attn: True): CKA = 0.0186
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 2 CKA alignment score: 0.0154
+Layer 2 (cross-attn: False): CKA = 0.0154
+| Computing CKA |: 100%|█████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 3 CKA alignment score: 0.0159
+Layer 3 (cross-attn: True): CKA = 0.0159
+Epoch 3/5, train loss: 0.6070, test loss: 0.6238,  accuracy: 0.6647
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 0 CKA alignment score: 0.0162
+Layer 0 (cross-attn: False): CKA = 0.0162
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.98s/it]
+Layer 1 CKA alignment score: 0.0170
+Layer 1 (cross-attn: True): CKA = 0.0170
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 2 CKA alignment score: 0.0173
+Layer 2 (cross-attn: False): CKA = 0.0173
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 3 CKA alignment score: 0.0142
+Layer 3 (cross-attn: True): CKA = 0.0142
+Epoch 4/5, train loss: 0.5768, test loss: 0.6099,  accuracy: 0.6912
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 0 CKA alignment score: 0.0148
+Layer 0 (cross-attn: False): CKA = 0.0148
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  4.00s/it]
+Layer 1 CKA alignment score: 0.0190
+Layer 1 (cross-attn: True): CKA = 0.0190
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 2 CKA alignment score: 0.0164
+Layer 2 (cross-attn: False): CKA = 0.0164
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 3 CKA alignment score: 0.0150
+Layer 3 (cross-attn: True): CKA = 0.0150
+Epoch 5/5, train loss: 0.5560, test loss: 0.5981,  accuracy: 0.7018
+CKA alignment analysis on CC dataset:
+Analyzing layer-wise alignment with ckatorch...
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 0 CKA alignment score: 0.0166
+Layer 0 (cross-attn: False): CKA = 0.0166
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 1 CKA alignment score: 0.0181
+Layer 1 (cross-attn: True): CKA = 0.0181
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 2 CKA alignment score: 0.0164
+Layer 2 (cross-attn: False): CKA = 0.0164
+| Computing CKA |: 100%|█████████████████████████████████████████████████████████████████████| 3/3 [00:11<00:00,  3.99s/it]
+Layer 3 CKA alignment score: 0.0160
+Layer 3 (cross-attn: True): CKA = 0.0160
+```
+
+lower alignment with pretraining! cosine similarity is higher after pretraining, also for hateful memes, where it was not pretrained, but cka is really lower.
+
+Also implemented ckatorch integration.
+the modules in `cka_wrapper.py`  wrap vilbert to one modality, so i can use ckatorch library. this library takes two models as input and calculates the batch cka for them. however, my tests found, that this is more or less the same as using cka_batch in my own implementation. the only point: they efficently use pytorch hooks to save memory.
 
 ## 18.08
 easy similarity implementation with cosine-similarity lead to poor results on hatefulmemes:

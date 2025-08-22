@@ -20,46 +20,48 @@ from info_nce import InfoNCE, info_nce
 
 
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
+    model.eval()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     layer_sims = []
+    with torch.no_grad():
+        for batch in dataloader:
 
-    for batch in dataloader:
+            text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+            image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+            label = batch["label"].to(device)
 
-        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
-        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
-        label = batch["label"].to(device)
+            # print(f"img shape: {image['pixel_values'].shape}, ")
 
-        # print(f"img shape: {image['pixel_values'].shape}, ")
+            preds, intermediate_representations = model(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                save_intermediate_representations=True
+            )
 
-        preds, intermediate_representations = model(
-            text_input_ids=text["input_ids"],
-            text_attention_mask=text["attention_mask"],
-            text_token_type_ids=text.get("token_type_ids", None),
-            image_pixel_values=image["pixel_values"],
-            image_attention_mask=image.get("attention_mask", None),
-            save_intermediate_representations=True
-        )
-
-        #generate dummy reprs
-        # intermediate_representations = [
-        #     {
-        #         "text_embedding": torch.randn(16, 197, 768),
-        #         "vision_embedding": torch.randn(16, 197, 768),
-        #         "is_cross_attention": i in [0, 2],
-        #         "layer": i
-        #     } for i in range(4)
-        # ]
+            #generate dummy reprs
+            # intermediate_representations = [
+            #     {
+            #         "text_embedding": torch.randn(16, 197, 768),
+            #         "vision_embedding": torch.randn(16, 197, 768),
+            #         "is_cross_attention": i in [0, 2],
+            #         "layer": i
+            #     } for i in range(4)
+            # ]
 
 
-        current_layer_sims: list[dict] = analysis.process_intermediate_repr(
-            intermediate_reprs=intermediate_representations,
-            pooling_method="cls",
-        )
+            current_layer_sims: list[dict] = analysis.process_intermediate_repr(
+                intermediate_reprs=intermediate_representations,
+                pooling_method="cls",
+            )
 
-        layer_sims.extend(current_layer_sims)
+            layer_sims.extend(current_layer_sims)
 
     analysis.analyse(layer_similarities=layer_sims, num_layers=model.depth)
+    model.train()
 
 
 
@@ -148,6 +150,18 @@ class Trainer():
                 print(info_str)
                 analyse_alignment(cc_dataloader, self.model)
                 self.logger.info(info_str)
+                # from cka_wrapper import analyze_all_layers_alignment
+                # info_str = "CKA alignment analysis on CC dataset:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # # analyze_all_layers_alignment(
+                # #     model=self.model,
+                # #     dataloader=cc_dataloader,
+                # # )
+                # analyze_all_layers_alignment(
+                #     model=self.model,
+                #     dataloader=hm_dataloader
+                # )
 
     def evaluate(self, dataloader: DataLoader):
         self.model.eval()

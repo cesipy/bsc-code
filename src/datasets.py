@@ -58,6 +58,7 @@ def get_alignment_dataloaders(
     num_workers: int,
     pin_memory: bool,
     prefetch_factor: int,
+    num_samples:int = 1000
     )-> typing.Tuple[DataLoader, DataLoader]:
     """
     returns tuple of dataloader in the following order:
@@ -71,8 +72,16 @@ def get_alignment_dataloaders(
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
     data_list_hm = generate_data_list(path_hm)
+    random.shuffle(data_list_hm)
+    # TODO: not needed for every sample!
+
+    assert num_samples <= len(data_list_hm)
+
     #TODO: it now uses the complete dataset, not the train-test split here for alignment analysis
     data_list_cc = generate_data_list_pretrain(path=path_cc, max_number=None)
+    random.shuffle(data_list_cc)
+    data_list_hm = data_list_hm[num_samples]
+    data_list_cc = data_list_cc[num_samples]
 
     dataset_hm = CustomDataset(
         data=data_list_hm,
