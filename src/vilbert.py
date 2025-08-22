@@ -122,7 +122,7 @@ class ViLBERT(nn.Module):
         #     nn.Linear(FC_HIDDEN_DIM//2, 1),
         # )
 
-        
+
         self.fc = nn.Sequential(
             nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
@@ -224,7 +224,7 @@ class ViLBERT(nn.Module):
         # print(f"cls token: {text_embedding[0,0, : 5]}")
 
 
-        intermediate_representations = []
+        intermediate_representations = [] if save_intermediate_representations else None
 
         for i in range(len(self.attentions)):
             text_embedding, vision_embedding = self.attentions[i](
@@ -234,30 +234,11 @@ class ViLBERT(nn.Module):
 
             if save_intermediate_representations:
                 #TODO: return everything, choose strategy in analysation.
-                current_text_cls = text_embedding[:, 0, :]
-                current_vision_cls = vision_embedding[:, 0, :]
-                current_dict = {
-                    "layer": i,
-                    "text_embedding": current_text_cls,
-                    "vision_embedding": current_vision_cls,
-                    "is_cross_attention": i in self.config.cross_attention_layers,
-                }
-
-                # current_text_mean = torch.mean(text_embedding, dim=1)
-                # current_vision_mean = torch.mean(vision_embedding, dim=1)
-
-                # current_dict =
-                # {
-                #     "layer": i,
-                #     "text_embedding": current_text_mean,
-                #     "vision_embedding": current_vision_mean,
-                #     "is_cross_attention": i in self.config.cross_attention_layers,
-                # }
 
                 current_dict = {
                     "layer": i,
-                    "text_embedding": text_embedding,
-                    "vision_embedding": vision_embedding,
+                    "text_embedding": text_embedding.clone(),
+                    "vision_embedding": vision_embedding.clone(),
                     "is_cross_attention": i in self.config.cross_attention_layers,
                 }
 

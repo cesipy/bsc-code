@@ -77,10 +77,11 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
 
 
     if machine == "remote":
-        bs = 64    # obout 23.3gb vrman
-        config.learning_rate = 6e-5#5e-6     # TODO: make this cleaner
+        bs = 96    # obout 23.3gb vrman
+        bs_alignment_analysis = 40
     else:
         bs = 32
+        bs_alignment_analysis = 6
 
     config.learning_rate = 2e-6
     print(bs)
@@ -110,7 +111,6 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     pin_memory= True
     prefetch_factor = 3
 
-
     train_data = train_data
     train_dataset = CustomDataset(
         train_data,
@@ -138,7 +138,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         )
 
     hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
-        batch_size=4,
+        batch_size=bs_alignment_analysis,
         num_workers=4,
         pin_memory=False,
         prefetch_factor=4,
@@ -148,7 +148,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
-        epochs=20,
+        epochs=5,
         hm_dataloader=hm_dataloader,
         cc_dataloader=cc_dataloader
     )

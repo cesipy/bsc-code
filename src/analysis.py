@@ -114,8 +114,6 @@ def process_intermediate_repr(
             vision_embedding=vision_embedding_sample
         )
 
-
-
         layers_sims.append(
             {
                 "layer": layer,
@@ -173,12 +171,73 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             logger.info(info_str)
             print(info_str)
 
+def cka_custom(X, Y):
+    """
+    Compute Centered Kernel Alignment (CKA) between two matrices.
+
+    Args:
+        X: torch.Tensor of shape [n_samples, features_x]
+        Y: torch.Tensor of shape [n_samples, features_y]
+
+    Returns:
+        CKA score (float between 0 and 1)
+    """
+    n = X.shape[0]
+
+    # Compute linear Gram matrices
+    K_X = torch.mm(X, X.T)  # [n, n]
+    K_Y = torch.mm(Y, Y.T)  # [n, n]
+
+    # Center the Gram matrices
+    # H = I - (1/n) * ones_matrix
+    ones = torch.ones(n, n, device=X.device)
+    H = torch.eye(n, device=X.device) - (1/n) * ones
+
+    K_X_centered = torch.mm(torch.mm(H, K_X), H)
+    K_Y_centered = torch.mm(torch.mm(H, K_Y), H)
+
+    # Compute CKA using Frobenius norm formula
+    numerator = torch.trace(torch.mm(K_X_centered, K_Y_centered))
+
+    norm_X = torch.norm(K_X_centered, p='fro')
+    norm_Y = torch.norm(K_Y_centered, p='fro')
+    denominator = norm_X * norm_Y
+
+    if denominator == 0:
+        return torch.tensor(0.0)
+
+    cka_score = numerator / denominator
+    return cka_score.item()
+
+
 
 if __name__ == "__main__":
-    data1 = torch.rand(1, 192, 768)
-    data2 = torch.rand(1, 192,768)
+    data1 = torch.rand(10, 192, 768)
+    data2 = torch.rand(10, 192,768)
 
     sim_identical =cka(data1, data1)
     sim_different = cka(data1, data2)
+
+
+    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
+
+    data1 = torch.rand(100, 1, 768)
+    data2 = torch.rand(100, 1, 768)
+
+    sim_identical = cka_batch(data1, data1)
+    sim_different = cka_batch(data1, data2)
+
+    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
+
+    data_m1 = torch.rand(100,768)
+    data_m2 = torch.rand(100,768)
+
+    sim_identical = cka_base(x=data_m1, y= data_m1, kernel="linear", unbiased=False, method="fro_norm")
+    sim_different = cka_base(x=data_m1, y=data_m2, kernel="linear", unbiased=False, method="fro_norm")
+
+    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
+
+    sim_identical = cka_custom(data_m1, data_m1)
+    sim_different = cka_custom(data_m1, data_m2)
 
     print(f"sim indentical: {sim_identical}, sim different: {sim_different}")

@@ -230,6 +230,7 @@ class PretrainingTrainer:
         self,
         model: ViLBERT,
         config: ViLBERTConfig,
+        tasks: list[Task] = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]
     ):
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
@@ -238,6 +239,7 @@ class PretrainingTrainer:
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = model.to(self.device)
+        self.tasks = tasks
 
         # self.model = torch.compile(self.model)
 
@@ -623,6 +625,7 @@ class PretrainingTrainer:
         train_losses_mim = []
         validation_losses_mim = []
 
+
         for epoch in range(epochs):
             t_loss_ap, t_loss_mlm, t_loss_mim = self.train_epoch(
                 dataloader_ap=train_dataloaderAP,
@@ -662,9 +665,14 @@ class PretrainingTrainer:
             )
             print(info_str)
             self.logger.info(info_str)
-
+            task_string = ""
+            tasks_vals = [task.value for task in self.tasks]
+            tasks_vals.sort()
+            for val in tasks_vals:
+                task_string += f"{val}"
+            filepath = f"res/checkpoints/pretrained_epoch{epoch+1}_task{task_string}.pt"
             self.__save_checkpoint(
-                filepath=f"res/checkpoints/pretrained_{epoch+1}.pt",
+                filepath=filepath,
                 epoch=epoch,
                 train_loss_ap=t_loss_ap,            # do i really need those?
                 train_loss_mlm=t_loss_mlm,
@@ -687,6 +695,7 @@ class PretrainingTrainer:
                 info_str = "alignment for conceptual captions:"
                 print(info_str)
                 self.logger.info(info_str)
+                analyse_alignment(cc_dataloader, self.model)
 
 
         utils.plot_losses(
