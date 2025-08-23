@@ -141,6 +141,25 @@ class Trainer():
         hm_dataloader: CustomDataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
+        # do one check with the alignment dataloaders before starting training
+        if hm_dataloader is not None and cc_dataloader is not None:
+                info_str = "\n\nbefore training, evaluating on uninitialized model"
+                print(info_str)
+                self.logger.info(info_str)
+                info_str = "alignment for hateful memes:"
+                print(info_str)
+                self.logger.info(info_str)
+                analyse_alignment(hm_dataloader, self.model)
+
+                info_str = "alignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+                analyse_alignment(cc_dataloader, self.model)
+
+                info_str = "finished!" + "\n" + 20*"-"
+                print(info_str)
+                self.logger.info(info_str)
+
         for epoch in range(epochs):
             train_loss = self.train_epoch(train_dataloader)
             test_loss, acc  = self.evaluate(test_dataloader)

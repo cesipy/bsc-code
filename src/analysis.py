@@ -73,6 +73,38 @@ def svcca_similarity(
     result = np.mean(result["cca_coef1"])
     return result
 
+def mutual_nearest_neighbor_alignment(text_embeds, vision_embeds, k=5):
+    # this measurement is from the paper
+    # The Platonic Representation Hypothesis
+    # where they got values of about 0.16. theoretically the range of this measurement is 0 to 1.
+    # but they also noted, that their alignment score was increasing, but not even near the top value of 1.
+    batch_size = text_embeds.shape[0]
+
+    text_dists = torch.cdist(text_embeds, text_embeds)
+    vision_dists = torch.cdist(vision_embeds, vision_embeds)
+
+    # largest=False => exclude self
+    _, text_neighbors = text_dists.topk(k+1, largest=False)
+    _, vision_neighbors = vision_dists.topk(k+1, largest=False)
+
+
+
+    #remove self (index 0) from neighbors
+    text_neighbors = text_neighbors[:, 1:]  # [batch_size, k]
+    vision_neighbors = vision_neighbors[:, 1:]  # [batch_size, k]
+
+    # was manually counting, genai gave me this more efficient method
+    total_overlap = 0
+    for i in range(batch_size):
+        # Use torch operations to count intersections
+        text_nn = text_neighbors[i]  # [k]
+        vision_nn = vision_neighbors[i]  # [k]
+
+        # Count how many elements in text_nn are also in vision_nn
+        overlap = torch.isin(text_nn, vision_nn).sum().item()
+        total_overlap += overlap
+
+    return total_overlap / (batch_size * k)
 
 def cka(
     text_embedding: torch.Tensor,
@@ -119,6 +151,8 @@ def process_intermediate_repr(
 
     for i, representation in enumerate(intermediate_reprs):
         # print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
+
+
         cka_sim = cka(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
@@ -167,6 +201,14 @@ def process_intermediate_repr(
             vision_embedding=vision_embedding_sample
         )
 
+        mutual_nearest_neighbor_alignment_score = mutual_nearest_neighbor_alignment(
+            text_embeds=text_embedding,
+            vision_embeds=vision_embedding,
+            k=5
+        )
+        # print(f"mutual nearest neighbor alignment score: {mutual_nearest_neighbor_alignment_score}")
+
+
         layers_sims.append(
             {
                 "layer": layer,
@@ -175,7 +217,8 @@ def process_intermediate_repr(
                 "cka_similarity": cka_sim,
                 "max_similarity_tp": max_similarity_tp,
                 "max_similarity_pt": max_similarity_pt,
-                "svcca_similarity": svcca_sim
+                "svcca_similarity": svcca_sim,
+                "mutual_nearest_neighbor_alignment": mutual_nearest_neighbor_alignment_score
             }
         )
 
@@ -254,6 +297,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             max_similarity_values_tp = [m["max_similarity_tp"] for m in measures]
             max_similarity_values_pt = [m["max_similarity_pt"] for m in measures]
             svcca_values = [m["svcca_similarity"] for m in measures]
+            mutual_nn_values = [m["mutual_nearest_neighbor_alignment"] for m in measures]
 
 
             avg_cosine = sum(cos_values) / len(cos_values)
@@ -261,8 +305,9 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             avg_max_similarity_tp = sum(max_similarity_values_tp) / len(max_similarity_values_tp)
             avg_max_similarity_pt = sum(max_similarity_values_pt) / len(max_similarity_values_pt)
             avg_svcca = sum(svcca_values) / len(svcca_values)
+            avg_mutual_nn = sum(mutual_nn_values) / len(mutual_nn_values)
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}"
+            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}, mutual_nn={avg_mutual_nn:.4f}"
             logger.info(info_str)
             print(info_str)
 

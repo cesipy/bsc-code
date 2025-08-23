@@ -110,6 +110,9 @@ class ViLBERT(nn.Module):
         # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
         # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
 
+        for attn in self.attentions:
+            attn.apply(self._init_weights)
+
 
         # for hateful memes classifiction
         # self.fc = nn.Sequential(
@@ -129,6 +132,16 @@ class ViLBERT(nn.Module):
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, 1),
         )
+
+    def _init_weights(self, module):
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            # torch.nn.init.xavier_uniform_(module.weight)
+
+            # https://stats.stackexchange.com/a/637888
+            std = 0.02
+            torch.nn.init.normal_(module.weight, mean=0.0, std=std)
+        # if module.bias is not None:
+        #     torch.nn.init.zeros_(module.bias)
 
 
     def forward(

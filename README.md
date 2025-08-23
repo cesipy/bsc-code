@@ -11,16 +11,19 @@ I'm currently working on it, so it is not yet complete.
 - [ ] different batchsizes for tasks
 	- maybe too difficult to implement!
 - [ ] is residual handling in crossattention correct?
-- [ ] evaluate functino for measuring avg alignment measures.
-- [ ] complete pipeline for running experiments
+- [x] evaluate functino for measuring avg alignment measures.
+- [x] complete pipeline for running experiments
 - [ ] other datasets implement
+	- [ ] find alignment datasets in literature
+
+- [ ] data augmentation for AP pretraining
 - [ ] implement further alignment measures
-	- [ ] cca
+	- [x] cca
 	- [ ] wasserstein distance
-	- [ ] svcca
+	- [x] svcca
 	- [ ] sae (maybe)
 - [x] hateful memes downsize to 224
-- [ ] unify the alignment measurements
+- [x] unify the alignment measurements
 - [ ] pytorch hooks for intermediate layers
 	- quite hard to implement, plus there is not much documentation on this topic.
 
