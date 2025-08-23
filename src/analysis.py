@@ -1,5 +1,7 @@
 import torch; from torch import nn
 from ckatorch.core import cka_batch, cka_base
+import numpy as np
+import cca_core
 
 from config import *
 import utils
@@ -38,6 +40,38 @@ def cosine_similarity_batch(
 
     return sim  # [bs] tensor of similarities
 
+def svcca_similarity(
+    text_embedding: torch.Tensor,
+    vision_embedding: torch.Tensor
+):
+
+    text_embedding_numpy = text_embedding.detach().cpu().numpy()
+    vision_embedding_numpy = vision_embedding.detach().cpu().numpy()
+
+    # print(f"text embedding shape: {text_embedding_numpy.shape}, vision embedding shape: {vision_embedding_numpy.shape}")
+
+
+    #cca processing needs numpy input, numpy is different to tensors
+    # needs shape [dim, tokens * bs]
+    # each row: one feature dimension; dim[i]
+    # each column: one datapoint/token/patch
+
+    text_input = text_embedding_numpy.reshape(-1, text_embedding_numpy.shape[-1])
+    text_input = text_input.transpose()     # [dim, tokens*bs]
+    vision_input = vision_embedding_numpy.reshape(-1, vision_embedding_numpy.shape[-1])
+    vision_input = vision_input.transpose()  # [dim, patches*bs]
+
+    # print(f"reshaped text input shape: {text_input.shape}")
+    result = cca_core.get_cca_similarity(
+        text_input,
+        vision_input,
+        verbose=False
+    )
+
+    # single value result
+    # from https://github.com/google/svcca/blob/master/tutorials/001_Introduction.ipynb
+    result = np.mean(result["cca_coef1"])
+    return result
 
 
 def cka(
@@ -102,7 +136,10 @@ def process_intermediate_repr(
         max_similarity_pt = max_similarity_pt.mean().item()
         # print(f"temp value: {max_simil_avg}")
 
-
+        svcca_sim = svcca_similarity(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
 
 
 
@@ -137,7 +174,8 @@ def process_intermediate_repr(
                 "cosine_similarity": torch.mean(cos_sim).item(),
                 "cka_similarity": cka_sim,
                 "max_similarity_tp": max_similarity_tp,
-                "max_similarity_pt": max_similarity_pt
+                "max_similarity_pt": max_similarity_pt,
+                "svcca_similarity": svcca_sim
             }
         )
 
@@ -215,13 +253,16 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             cka_values = [m["cka_similarity"] for m in measures]
             max_similarity_values_tp = [m["max_similarity_tp"] for m in measures]
             max_similarity_values_pt = [m["max_similarity_pt"] for m in measures]
+            svcca_values = [m["svcca_similarity"] for m in measures]
+
 
             avg_cosine = sum(cos_values) / len(cos_values)
             avg_cka = sum(cka_values) / len(cka_values)
             avg_max_similarity_tp = sum(max_similarity_values_tp) / len(max_similarity_values_tp)
             avg_max_similarity_pt = sum(max_similarity_values_pt) / len(max_similarity_values_pt)
+            avg_svcca = sum(svcca_values) / len(svcca_values)
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}"
+            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}"
             logger.info(info_str)
             print(info_str)
 
@@ -275,23 +316,12 @@ if __name__ == "__main__":
 
     print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
 
-    data1 = torch.rand(100, 1, 768)
-    data2 = torch.rand(100, 1, 768)
-
-    sim_identical = cka_batch(data1, data1)
-    sim_different = cka_batch(data1, data2)
-
-    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
-
-    data_m1 = torch.rand(100,768)
-    data_m2 = torch.rand(100,768)
-
-    sim_identical = cka_base(x=data_m1, y= data_m1, kernel="linear", unbiased=False, method="fro_norm")
-    sim_different = cka_base(x=data_m1, y=data_m2, kernel="linear", unbiased=False, method="fro_norm")
-
-    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
-
-    sim_identical = cka_custom(data_m1, data_m1)
-    sim_different = cka_custom(data_m1, data_m2)
-
-    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
+    svcca_sim_identical = svcca_similarity(
+        text_embedding=data1,
+        vision_embedding=data1
+    )
+    svcca_sim_different = svcca_similarity(
+        text_embedding=data1,
+        vision_embedding=data2
+    )
+    print(f"svcca sim identical: {svcca_sim_identical}, svcca sim different: {svcca_sim_different}")
