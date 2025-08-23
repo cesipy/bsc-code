@@ -90,6 +90,22 @@ def process_intermediate_repr(
             vision_embedding=representation["vision_embedding"]
         )
 
+        max_similarity_tp = max_similarity_token_patch(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
+        max_similarity_pt = max_similarity_patch_token(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
+        max_similarity_tp = max_similarity_tp.mean().item()
+        max_similarity_pt = max_similarity_pt.mean().item()
+        # print(f"temp value: {max_simil_avg}")
+
+
+
+
+
         if pooling_method == "cls":
             text_embedding = representation["text_embedding"][:, 0, :]
             vision_embedding = representation["vision_embedding"][:, 0, :]
@@ -120,6 +136,8 @@ def process_intermediate_repr(
                 "is_cross_attention": is_corss_attention,
                 "cosine_similarity": torch.mean(cos_sim).item(),
                 "cka_similarity": cka_sim,
+                "max_similarity_tp": max_similarity_tp,
+                "max_similarity_pt": max_similarity_pt
             }
         )
 
@@ -127,6 +145,37 @@ def process_intermediate_repr(
         # print(f"Layer: {layer}, Cross Attention: {is_corss_attention}, "
             #   f"Cosine Similarity: {cos_sim}")
     return layers_sims
+
+def max_similarity_token_patch(
+    text_embedding, # [bs, num_tokens, dim]
+    vision_embedding # [bs, num_patches+1, dim]
+    ):
+
+    text_embedding = text_embedding[:, 1:, :]  # [bs, num_tokens-1, dim]
+    vision_embedding = vision_embedding[:, 1:, :]  # [bs, num_patches, dim]
+
+    text_norm = nn.functional.normalize(text_embedding, dim=-1)
+    vision_norm = nn.functional.normalize(vision_embedding, dim=-1)
+
+    # pairwise similarities => matrix of similarities. here take the maximum for each token
+    # basically doing:
+    # sim_matrix[b, i, j] = text_norm[b, i, :] · vision_norm[b, j, :]
+    # = cosine_similarity(text_token_i, image_patch_j)
+    sim_matrix = torch.bmm(text_norm, vision_norm.transpose(1, 2))  # [bs, num_tokens-1, num_patches]
+
+    max_sims, _ = sim_matrix.max(dim=2)
+    return max_sims.mean(dim=1)
+
+def max_similarity_patch_token(
+    text_embedding,
+    vision_embedding,
+):
+    max_sims = max_similarity_token_patch(
+        text_embedding=vision_embedding,
+        vision_embedding=text_embedding
+    )
+
+    return max_sims
 
 
 
@@ -137,6 +186,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             "is_cross_attention": is_cross_attention,
             "cosine_similarity": float,
             "cka_similarity": float,
+            "max_similarity": float
         }
     """
 
@@ -163,11 +213,15 @@ def analyse(layer_similarities: list[dict], num_layers: int):
 
             cos_values = [m["cosine_similarity"] for m in measures]
             cka_values = [m["cka_similarity"] for m in measures]
+            max_similarity_values_tp = [m["max_similarity_tp"] for m in measures]
+            max_similarity_values_pt = [m["max_similarity_pt"] for m in measures]
 
             avg_cosine = sum(cos_values) / len(cos_values)
             avg_cka = sum(cka_values) / len(cka_values)
+            avg_max_similarity_tp = sum(max_similarity_values_tp) / len(max_similarity_values_tp)
+            avg_max_similarity_pt = sum(max_similarity_values_pt) / len(max_similarity_values_pt)
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}"
+            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}"
             logger.info(info_str)
             print(info_str)
 

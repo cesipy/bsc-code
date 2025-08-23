@@ -18,7 +18,7 @@ PREPROCESSED_PATH = "res/preprocessed.pkl"      # not yet used, used to store pr
 TRAIN_TEST_RATIO = 0.8
 
 if machine == "remote":
-    BATCH_SIZE = 32
+    BATCH_SIZE = 40
     EPOCHS = 10         # TODO: not yet used
 else:
     BATCH_SIZE = 32
@@ -28,8 +28,8 @@ TOKENIZER_MAX_LEN = 197
 
 
 FC_HIDDEN_DIM = 512       # what hidden size in fc head
-DEPTH = 6            # how many co-attn layers in transformer
-CROSS_ATTENTION_LAYERS = [1,2,3,4,5,6]      # first and 3rd layer are coattn
+DEPTH = 4            # how many co-attn layers in transformer
+CROSS_ATTENTION_LAYERS = [1,3]      # first and 3rd layer are coattn
 
 
 VIT_MODEL_NAME = "vit_base_patch16_224"

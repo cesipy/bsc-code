@@ -72,19 +72,21 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
     train_data = train_data_list[:train_idx]
     val_data   = train_data_list[train_idx:]
-    # train_data = train_data_list
-    # val_data = val_data_list
+
+    # train_data = train_data[:1000]
+    # val_data = val_data[:400]
 
 
     if machine == "remote":
-        bs = 96    # obout 23.3gb vrman
-        bs_alignment_analysis = 40
+        bs = 48   # obout 23.3gb vrman
+        bs_alignment_analysis = 32
     else:
         bs = 32
         bs_alignment_analysis = 6
 
     config.learning_rate = 2e-6
     print(bs)
+    print(f"bs_alignment_analysis: {bs_alignment_analysis}")
 
     transform_hm = transforms.Compose([
 

@@ -29,6 +29,8 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modul
 
 logger = Logger()
 
+machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
+
 @utils.memory_cleanup
 def pretain():
     logger.info("starting pretraining")
@@ -39,7 +41,7 @@ def pretain():
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    # data_list = data_list[:10_000]
+    data_list = data_list[:10_000]
     # validation_list = validation_list[:1_000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -195,7 +197,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path, max_number=300_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:100_000]
+    data_list = data_list[:300_000]
     # validation_list = validation_list[:1000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -220,6 +222,16 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
 
     print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
 
+    if machine == "remote":
+        bs = 96    # obout 23.3gb vrman
+        bs_alignment_analysis = 32
+
+    else:
+        bs = 32
+        bs_alignment_analysis = 6
+
+
+
     config = ViLBERTConfig(
         pretraining_tasks=tasks[:]
     )
@@ -229,10 +241,11 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     trainer = PretrainingTrainer(
         model=model,
         config=config,
+        tasks=tasks,
     )
 
     hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
-        batch_size=4,
+        batch_size=bs_alignment_analysis,
         num_workers=4,
         pin_memory=False,
         prefetch_factor=4
