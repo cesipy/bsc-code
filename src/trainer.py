@@ -72,11 +72,21 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.train()
 
 
+def alignment_loss_cosine(text_emb, vision_emb):
+    cosine_sim = torch.nn.functional.cosine_similarity(text_emb, vision_emb, dim=1)
+
+    return -cosine_sim.mean()
 
 
 
 class Trainer():
-    def __init__(self, model: ViLBERT, config: ViLBERTConfig):
+    def __init__(
+        self,
+        model: ViLBERT,
+        config: ViLBERTConfig,
+        use_contrastive_loss:bool=False,
+        use_cosine_loss:bool=False,
+        ):
         self.lr = config.learning_rate
         self.model = model
         self.config = config
@@ -87,10 +97,18 @@ class Trainer():
             lr=self.lr,
             weight_decay=0.01           #TODO: make weight decay configurable in config
         )
+        assert (use_contrastive_loss and use_cosine_loss) == False, "can only use one of the two losses at once"
 
         self.loss_fn = nn.BCEWithLogitsLoss()
+        self.info_nce = InfoNCE()
+        self.cosine_loss = alignment_loss_cosine
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = self.model.to(self.device)
+
+        self.use_contrastive_loss = use_contrastive_loss
+        self.use_cosine_loss = use_cosine_loss
+
+
 
 
 
@@ -112,22 +130,74 @@ class Trainer():
             image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
 
-            preds = self.model(
-                text_input_ids= text["input_ids"],
-                text_attention_mask= text["attention_mask"],
-                text_token_type_ids= text.get("token_type_ids", None),
-                image_pixel_values= image["pixel_values"],
-                image_attention_mask= image.get("attention_mask", None),
-            )
-            preds = preds.squeeze()
-            label = label.float()
+            if self.use_contrastive_loss:
 
-            # print(f"shape preds: {preds.shape}, shape label: {label.shape}")
+                preds, text_embedding, vision_embedding = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                    output_invididual_embeddings=True
+                )
 
-            loss = self.loss_fn(preds, label)
-            loss.backward()
-            self.optimizer.step()
-            total_loss += loss.item()
+                preds = preds.squeeze()
+                label = label.float()
+
+                loss_info = self.info_nce(text_embedding, vision_embedding)
+                loss_normal = self.loss_fn(preds, label)
+
+                loss = loss_normal + 0.3 * loss_info   # with info nce
+                loss.backward()
+                self.optimizer.step()
+                total_loss += loss.item()
+
+
+            elif self.use_cosine_loss:
+
+                preds, text_embedding, vision_embedding = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                    output_invididual_embeddings=True
+                )
+                preds = preds.squeeze()
+                label = label.float()
+
+                loss_cosine = self.cosine_loss(text_embedding, vision_embedding)
+                loss_normal = self.loss_fn(preds, label)
+
+                loss = loss_normal + 0.3 * loss_cosine  #cosine loss
+                loss.backward()
+                self.optimizer.step()
+                total_loss += loss.item()
+
+
+
+
+            else:       # normal loss, no contrastive, no infonce loss term
+
+                preds = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                )
+
+
+                preds = preds.squeeze()
+                label = label.float()
+
+                loss_info = self.info_nce(text_embedding, vision_embedding)
+                loss_normal = self.loss_fn(preds, label)
+
+                loss = loss_normal
+                loss.backward()
+                self.optimizer.step()
+                total_loss += loss.item()
 
 
         return total_loss / num_batches

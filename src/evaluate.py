@@ -92,20 +92,20 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
 
         transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
 
-        # transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
-        # transforms.RandomAffine(
-        #     degrees=10,
-        #     translate=(0.05, 0.05),
-        #     scale=(0.95, 1.05),
-        #     shear=2
-        # ),
-        # transforms.RandomApply([
-        #     transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
-        # ], p=0.2),
+        transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
+        transforms.RandomAffine(
+            degrees=10,
+            translate=(0.05, 0.05),
+            scale=(0.95, 1.05),
+            shear=2
+        ),
+        transforms.RandomApply([
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
+        ], p=0.2),
 
-        # transforms.RandomGrayscale(p=0.1),
-        # transforms.RandomHorizontalFlip(p=0.2),
-        # transforms.RandomErasing(),
+        transforms.RandomGrayscale(p=0.1),
+        transforms.RandomHorizontalFlip(p=0.2),
+        transforms.RandomErasing(),
 
     ])
 
@@ -146,7 +146,12 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         prefetch_factor=4,
     )
 
-    trainer = Trainer(model, config)
+    trainer = Trainer(
+        model,
+        config,
+        use_contrastive_loss=True,
+        use_cosine_loss=False,
+        )
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
@@ -263,7 +268,12 @@ def test_on_hm():
         num_samples=1000,       # how many samples to do the alignment eval on
     )
 
-    trainer = Trainer(model, config)
+    trainer = Trainer(
+        model,
+        config,
+        use_contrastive_loss=True,
+        # use_cosine_loss=True,
+        )
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,

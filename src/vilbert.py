@@ -153,7 +153,8 @@ class ViLBERT(nn.Module):
         image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
-        save_intermediate_representations=False
+        save_intermediate_representations=False,
+        output_invididual_embeddings=False,   # for analysation
     ):
 
         if save_intermediate_representations:
@@ -188,6 +189,9 @@ class ViLBERT(nn.Module):
 
         if save_intermediate_representations:
             return out, intermediate_representations
+
+        if output_invididual_embeddings:
+            return out, text_embedding, image_embedding
 
         return out
 
