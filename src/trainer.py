@@ -107,6 +107,10 @@ class Trainer():
 
         self.use_contrastive_loss = use_contrastive_loss
         self.use_cosine_loss = use_cosine_loss
+        if self.use_contrastive_loss or self.use_cosine_loss:
+            info_str = f"using contrastive loss: {self.use_contrastive_loss}, using cosine loss: {self.use_cosine_loss}"
+            print(info_str)
+            self.logger.info(info_str)
 
 
 
@@ -190,8 +194,6 @@ class Trainer():
 
                 preds = preds.squeeze()
                 label = label.float()
-
-                loss_info = self.info_nce(text_embedding, vision_embedding)
                 loss_normal = self.loss_fn(preds, label)
 
                 loss = loss_normal
@@ -360,6 +362,7 @@ class PretrainingTrainer:
         self.loss_fn_mlm = nn.CrossEntropyLoss()
         # self.loss_fn_mim = utils.InfoNCE(temperature=0.07)
         self.loss_fn_mim = InfoNCE()
+        self.loss_info_nce = InfoNCE()
 
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
         self.config = config
@@ -408,6 +411,7 @@ class PretrainingTrainer:
         total_preds = 0
         correct_preds = 0
 
+
         with torch.no_grad():
             for batch in dataloader:
                 num_batches += 1
@@ -430,9 +434,11 @@ class PretrainingTrainer:
 
                 preds = torch.sigmoid(prediction_logits)
                 preds = (preds > 0.5).float()  # Convert to binary
+
                 correct_preds += (preds == label).sum().item()
                 total_preds   += label.size(0)
                 total_loss += loss.item()
+
 
         if total_preds == 0:
             acc = 0
@@ -558,6 +564,46 @@ class PretrainingTrainer:
         self.scaler.update()
 
         return loss.item()
+    # def train_epoch_prediction_batch(self, batch):
+    #     """trains only one batch"""
+
+    #     tasks = ["alignment_prediction"]
+
+    #     self.optimizer.zero_grad()
+
+    #     # handle data here
+    #     current_task = batch["task"]
+    #     text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+    #     image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+    #     label = batch["label"].to(self.device).float()
+    #     label = label.unsqueeze(1)
+
+    #     with torch.amp.autocast(device_type=self.device):
+    #         #TODO fix tasks management. now is hardcoded
+    #         text_embedding, image_embedding = self.model.forward_pretrain(
+    #             text_input_ids=text["input_ids"],
+    #             text_attention_mask=text["attention_mask"],
+    #             text_token_type_ids=text.get("token_type_ids", None),
+    #             image_pixel_values=image["pixel_values"],
+    #             image_attention_mask=image.get("attention_mask", None),
+    #             tasks=tasks
+    #         )
+
+    #         # print(prediciton_logits.shape, label.shape)
+    #         # both have shape [batch_size, 1]
+
+    #         loss = self.loss_info_nce(text_embedding, image_embedding)
+
+
+
+    #     # from karpathy video,
+    #     # https://www.youtube.com/watch?v=l8pRSuU81PU
+    #     scaled_loss = self.scaler.scale(loss)
+    #     scaled_loss.backward()
+    #     self.scaler.step(self.optimizer)
+    #     self.scaler.update()
+
+    #     return loss.item()
 
     def train_epoch_mlm_batch(self, batch):
         """trains only one batch"""
@@ -799,16 +845,16 @@ class PretrainingTrainer:
             validation_losses_mim.append(v_loss_mim)
 
 
-            if hm_dataloader is not None and cc_dataloader is not None:
-                info_str = "alignment for hateful memes:"
-                print(info_str)
-                self.logger.info(info_str)
-                analyse_alignment(hm_dataloader, self.model)
+            # if hm_dataloader is not None and cc_dataloader is not None:
+            #     info_str = "alignment for hateful memes:"
+            #     print(info_str)
+            #     self.logger.info(info_str)
+            #     analyse_alignment(hm_dataloader, self.model)
 
-                info_str = "alignment for conceptual captions:"
-                print(info_str)
-                self.logger.info(info_str)
-                analyse_alignment(cc_dataloader, self.model)
+            #     info_str = "alignment for conceptual captions:"
+            #     print(info_str)
+            #     self.logger.info(info_str)
+            #     analyse_alignment(cc_dataloader, self.model)
 
 
         utils.plot_losses(

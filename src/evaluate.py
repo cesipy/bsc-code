@@ -155,7 +155,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
-        epochs=5,
+        epochs=9,
         hm_dataloader=hm_dataloader,
         cc_dataloader=cc_dataloader
     )

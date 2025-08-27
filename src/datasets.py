@@ -563,9 +563,28 @@ class PretrainDatasetAP(Dataset):
 
                 text = self.data[random_idx][2]  # get text from random index
                 label = 0
+            else:
+                label = 1
 
         img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
+
+        if random.random() <0.35:
+            transform = torchvision.transforms.Compose(
+                [
+                # transforms.RandomResizedCrop(224, scale=(0.6, 1.0)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.2),
+                transforms.RandomGrayscale(p=0.2),
+                transforms.RandomApply([
+                    transforms.GaussianBlur(3, sigma=(0.1, 2.0))
+                    ], p=0.3),
+                ]
+            )
+
+            img_tensor = img_embeddings["pixel_values"].squeeze(0)
+            img_tensor = transform(img_tensor)
+            img_embeddings["pixel_values"] = img_tensor.unsqueeze(0)
 
         if img_embeddings is None or text_embeddings is None:
             # this should not happen anymore, as downloading conc.capt. checks for faulty imgs

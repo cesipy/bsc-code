@@ -348,6 +348,8 @@ class ViLBERT(nn.Module):
         output_hidden_states=False,
         tasks:list[str]= None,      #TODO: make tasks an enunm
     ):
+
+        assert len(tasks) == 1
         if "mlm" in tasks:
             # text_embedding_tensor = self.__forward_masked_text(
             #     ...
@@ -404,6 +406,7 @@ class ViLBERT(nn.Module):
                 output_hidden_states=output_hidden_states,
                 extract_cls=True, # only cls needed. nothing else
             )
+            # return text_embedding, image_embedding
             shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
             alignment_logits = self.alignment_fc(shared_embedding)
             return alignment_logits

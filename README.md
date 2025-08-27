@@ -11,8 +11,6 @@ I'm currently working on it, so it is not yet complete.
 - [ ] different batchsizes for tasks
 	- maybe too difficult to implement!
 - [ ] is residual handling in crossattention correct?
-- [x] evaluate functino for measuring avg alignment measures.
-- [x] complete pipeline for running experiments
 - [ ] other datasets implement
 	- [ ] find alignment datasets in literature
 
@@ -22,10 +20,25 @@ I'm currently working on it, so it is not yet complete.
 	- [ ] wasserstein distance
 	- [x] svcca
 	- [ ] sae (maybe)
-- [x] hateful memes downsize to 224
-- [x] unify the alignment measurements
+
 - [ ] pytorch hooks for intermediate layers
 	- quite hard to implement, plus there is not much documentation on this topic.
+
+- [ ] fix problem with ap pretraining only - has really bad performance, slightly worse than guessing!
+	- 2025-08-23 22:35:30 - INFO  - trainer.py:train:691 - Epoch 4/4,
+	```
+	train loss MLM: 0.0000,
+	test loss MLM: 10.5104,
+	train loss AP: 0.6946,
+	test loss AP: 0.6946,
+	accuracy AP: 0.4986
+	train loss MIM: 0.0000,
+	test loss MIM: 8.8669
+	```
+
+- [ ] investigating platonic representation hypothesis:
+	- simply concat represetnations of bert + vit: use as baseline.
+	
 
 
 
@@ -44,6 +57,11 @@ I'm currently working on it, so it is not yet complete.
 
 - [x] better config handling
 - [x] infonce review
+
+- [x] evaluate functino for measuring avg alignment measures.
+- [x] complete pipeline for running experiments
+- [x] hateful memes downsize to 224
+- [x] unify the alignment measurements
 
 ## ViLBERT
 original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
@@ -100,6 +118,22 @@ dataset returned from dataloader/dataset:
 
 
 ## Results
+
+## 24.08
+pretraining with ap alone does not work. over 300k samples and 4 epochs it does not learn anything:
+
+```bash
+2025-08-23 22:35:30 - INFO  - trainer.py:train:691 - Epoch 4/4,
+	train loss MLM: 0.0000,
+	test loss MLM: 10.5104,
+	train loss AP: 0.6946,
+	test loss AP: 0.6946,
+	accuracy AP: 0.4986
+	train loss MIM: 0.0000,
+	test loss MIM: 8.8669
+```
+
+Suspicion: AP alone is too hard to train for. needs the other pretraining tasks!
 
 ## 22.08
 ```bash
