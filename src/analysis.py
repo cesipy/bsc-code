@@ -1,13 +1,93 @@
-import torch; from torch import nn
+import torch; from torch import nn; from torch.utils.data import DataLoader
 from ckatorch.core import cka_batch, cka_base
 import numpy as np
 import cca_core
+from vilbert import ViLBERT
+
 
 from config import *
 import utils
 from logger import Logger
 
 logger = Logger()
+
+
+# def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
+
+#     model.eval()
+#     device = torch.cuda.is_available()
+
+#     measure_per_layer = {}
+#     for i in range(model.depth):
+#         measure_per_layer[i] = {
+#             "text_embeddings": [],
+#             "vision_embeddings": [],
+#             "is_cross_attention": None,
+#             "layer": i
+#         }
+
+#     with torch.no_grad():
+#         for batch in dataloader:
+
+#             text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+#             image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+#             label = batch["label"].to(device)
+
+#             # print(f"img shape: {image['pixel_values'].shape}, ")
+
+#             preds, intermediate_representations = model(
+#                 text_input_ids=text["input_ids"],
+#                 text_attention_mask=text["attention_mask"],
+#                 text_token_type_ids=text.get("token_type_ids", None),
+#                 image_pixel_values=image["pixel_values"],
+#                 image_attention_mask=image.get("attention_mask", None),
+#                 save_intermediate_representations=True
+#             )
+
+#             #generate dummy reprs
+#             # intermediate_representations = [
+#             #     {
+#             #         "text_embedding": torch.randn(16, 197, 768),
+#             #         "vision_embedding": torch.randn(16, 197, 768),
+#             #         "is_cross_attention": i in [0, 2],
+#             #         "layer": i
+#             #     } for i in range(4)
+#             # ]
+
+#             # shape: [bs, num_tokens, dim]
+
+#             for repr_dict in intermediate_representations:
+#                 repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
+#                 repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
+
+
+#             for repr_dict in intermediate_representations:
+#                 layer = repr_dict["layer"]
+#                 measure_per_layer[layer]["text_embeddings"].append(repr_dict["text_embedding"])
+#                 measure_per_layer[layer]["vision_embeddings"].append(repr_dict["vision_embedding"])
+#                 measure_per_layer[layer]["is_cross_attention"] = repr_dict["is_cross_attention"]
+
+#             if len(measure_per_layer[0]["text_embeddings"]) % 10 == 0:
+#                 torch.cuda.empty_cache()
+#                 break
+
+#     for layer in measure_per_layer.keys():
+#         measure_per_layer[layer]["text_embeddings"] = torch.cat(measure_per_layer[layer]["text_embeddings"], dim=0)
+#         measure_per_layer[layer]["vision_embeddings"] = torch.cat(measure_per_layer[layer]["vision_embeddings"], dim=0)
+#         print(f"layer {layer}, text shape: {measure_per_layer[layer]['text_embeddings'].shape}, vision shape: {measure_per_layer[layer]['vision_embeddings'].shape}")
+
+#         cka_measure = cka(
+#             text_embedding=measure_per_layer[layer]["text_embeddings"],
+#             vision_embedding=measure_per_layer[layer]["vision_embeddings"]
+#         )
+
+#         print(f"layer {layer}, CKA measure: {cka_measure}")
+
+
+
+
+
+#     model.train()
 
 
 def cosine_similarity_indv(
@@ -170,6 +250,9 @@ def process_intermediate_repr(
         max_similarity_pt = max_similarity_pt.mean().item()
         # print(f"temp value: {max_simil_avg}")
 
+        # currently not working?
+        # #TODO: FIX
+        # svcca_sim = 0.0
         svcca_sim = svcca_similarity(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]

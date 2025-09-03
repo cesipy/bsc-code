@@ -19,6 +19,8 @@ from info_nce import InfoNCE, info_nce
 
 
 
+
+
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.eval()
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -345,7 +347,12 @@ class PretrainingTrainer:
         self,
         model: ViLBERT,
         config: ViLBERTConfig,
-        tasks: list[Task] = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]
+        use_contrastive_ap:bool,
+        tasks: list[Task] = [
+            Task.ALIGNMENT_PREDICTION,
+            Task.MASKED_LM,
+            Task.MASKED_IM
+        ],
     ):
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
@@ -357,6 +364,7 @@ class PretrainingTrainer:
         self.tasks = tasks
 
         # self.model = torch.compile(self.model)
+        self.use_contrastive_ap = use_contrastive_ap
 
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
@@ -421,7 +429,7 @@ class PretrainingTrainer:
                 image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
                 label = batch["label"].to(self.device)
 
-                prediction_logits = self.model.forward_pretrain(
+                text_embedding, image_embedding = self.model.forward_pretrain(
                     text_input_ids=text["input_ids"],
                     text_attention_mask=text["attention_mask"],
                     text_token_type_ids=text.get("token_type_ids", None),
@@ -430,14 +438,35 @@ class PretrainingTrainer:
                     tasks=["alignment_prediction"]
                 )
                 label = label.float().unsqueeze(1)
-                loss = self.loss_fn_alignment(prediction_logits, label)
+                if self.use_contrastive_ap:
 
-                preds = torch.sigmoid(prediction_logits)
-                preds = (preds > 0.5).float()  # Convert to binary
+                    loss = self.loss_info_nce(text_embedding, image_embedding)
 
-                correct_preds += (preds == label).sum().item()
-                total_preds   += label.size(0)
-                total_loss += loss.item()
+                    similarities = torch.mm(
+                        torch.nn.functional.normalize(text_embedding, p=2, dim=1),
+                        torch.nn.functional.normalize(image_embedding, p=2, dim=1).T
+                    )
+
+                    # Correct predictions are on the diagonal
+                    predicted = similarities.argmax(dim=1)
+                    target = torch.arange(len(similarities), device=self.device)
+
+                    correct_preds += (predicted == target).sum().item()
+                    total_preds += len(similarities)
+                    total_loss += loss.item()
+                else:
+                    shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+                    prediction_logits = self.model.alignment_fc(shared_embedding)
+                    loss = self.loss_fn_alignment(prediction_logits, label)
+
+                    preds = torch.sigmoid(prediction_logits)
+                    preds = (preds > 0.5).float()  # Convert to binary
+
+                    correct_preds += (preds == label).sum().item()
+                    total_preds   += label.size(0)
+                    total_loss += loss.item()
+
+
 
 
         if total_preds == 0:
@@ -525,6 +554,8 @@ class PretrainingTrainer:
         return total_loss / num_batches
 
 
+
+
     def train_epoch_prediction_batch(self, batch):
         """trains only one batch"""
 
@@ -541,7 +572,7 @@ class PretrainingTrainer:
 
         with torch.amp.autocast(device_type=self.device):
             #TODO fix tasks management. now is hardcoded
-            prediciton_logits = self.model.forward_pretrain(
+            text_embedding, image_embedding = self.model.forward_pretrain(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -552,8 +583,14 @@ class PretrainingTrainer:
 
             # print(prediciton_logits.shape, label.shape)
             # both have shape [batch_size, 1]
+            if self.use_contrastive_ap:
+                loss = self.loss_info_nce(text_embedding, image_embedding)
 
-            loss = self.loss_fn_alignment(prediciton_logits, label)
+            else:
+                # both embeddings are only cls, so shape is [bs, dim]
+                shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+                prediction_logits = self.model.alignment_fc(shared_embedding)
+                loss = self.loss_fn_alignment(prediction_logits, label)
 
 
         # from karpathy video,
@@ -564,46 +601,6 @@ class PretrainingTrainer:
         self.scaler.update()
 
         return loss.item()
-    # def train_epoch_prediction_batch(self, batch):
-    #     """trains only one batch"""
-
-    #     tasks = ["alignment_prediction"]
-
-    #     self.optimizer.zero_grad()
-
-    #     # handle data here
-    #     current_task = batch["task"]
-    #     text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
-    #     image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
-    #     label = batch["label"].to(self.device).float()
-    #     label = label.unsqueeze(1)
-
-    #     with torch.amp.autocast(device_type=self.device):
-    #         #TODO fix tasks management. now is hardcoded
-    #         text_embedding, image_embedding = self.model.forward_pretrain(
-    #             text_input_ids=text["input_ids"],
-    #             text_attention_mask=text["attention_mask"],
-    #             text_token_type_ids=text.get("token_type_ids", None),
-    #             image_pixel_values=image["pixel_values"],
-    #             image_attention_mask=image.get("attention_mask", None),
-    #             tasks=tasks
-    #         )
-
-    #         # print(prediciton_logits.shape, label.shape)
-    #         # both have shape [batch_size, 1]
-
-    #         loss = self.loss_info_nce(text_embedding, image_embedding)
-
-
-
-    #     # from karpathy video,
-    #     # https://www.youtube.com/watch?v=l8pRSuU81PU
-    #     scaled_loss = self.scaler.scale(loss)
-    #     scaled_loss.backward()
-    #     self.scaler.step(self.optimizer)
-    #     self.scaler.update()
-
-    #     return loss.item()
 
     def train_epoch_mlm_batch(self, batch):
         """trains only one batch"""
@@ -845,16 +842,16 @@ class PretrainingTrainer:
             validation_losses_mim.append(v_loss_mim)
 
 
-            # if hm_dataloader is not None and cc_dataloader is not None:
-            #     info_str = "alignment for hateful memes:"
-            #     print(info_str)
-            #     self.logger.info(info_str)
-            #     analyse_alignment(hm_dataloader, self.model)
+            if hm_dataloader is not None and cc_dataloader is not None:
+                info_str = "alignment for hateful memes:"
+                print(info_str)
+                self.logger.info(info_str)
+                analyse_alignment(hm_dataloader, self.model)
 
-            #     info_str = "alignment for conceptual captions:"
-            #     print(info_str)
-            #     self.logger.info(info_str)
-            #     analyse_alignment(cc_dataloader, self.model)
+                info_str = "alignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+                analyse_alignment(cc_dataloader, self.model)
 
 
         utils.plot_losses(

@@ -10,7 +10,7 @@ VOCAB_SIZE    = 30522
 NUM_HIDDEN_LAYERS = 12
 NUM_ATTENTION_HEADS = 12
 DROPOUT_PROB        = 0.4
-LEARNING_RATE       = 3e-5
+LEARNING_RATE       = 3e-6
 
 # data specific
 IMG_SIZE = (224, 224)
@@ -18,7 +18,7 @@ PREPROCESSED_PATH = "res/preprocessed.pkl"      # not yet used, used to store pr
 TRAIN_TEST_RATIO = 0.8
 
 if machine == "remote":
-    BATCH_SIZE = 40
+    BATCH_SIZE = 48
     EPOCHS = 10         # TODO: not yet used
 else:
     BATCH_SIZE = 32
