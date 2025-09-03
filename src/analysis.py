@@ -90,6 +90,52 @@ logger = Logger()
 #     model.train()
 
 
+
+# simpler version
+def mutual_knn_alignment(
+    Z1: torch.Tensor,
+    Z2: torch.Tensor,
+    k: int = 10
+):
+    """
+    computes the mutual k-NN alignment metric as described in
+    "Understanding the Emergence of Multimodal Representation Alignment".
+
+    Args:
+        Z1, Z2: [n_samples, embedding_dim] tensors
+        k: number of nearest neighbors
+
+    """
+    assert Z1.shape[0] == Z2.shape[0]
+
+    n_samples = Z1.shape[0]
+
+    # Compute pairwise distances
+    dists1 = torch.cdist(Z1, Z1)  # [n, n]
+    dists2 = torch.cdist(Z2, Z2)  # [n, n]
+
+    # Find k nearest neighbors (excluding self), genai gave me this function
+    _, neighbors1 = torch.topk(dists1, k + 1, largest=False, dim=1)
+    _, neighbors2 = torch.topk(dists2, k + 1, largest=False, dim=1)
+
+    #rm self
+    neighbors1 = neighbors1[:, 1:]  # [n, k]
+    neighbors2 = neighbors2[:, 1:]  # [n, k]
+
+    total_mutual = 0
+    for i in range(n_samples):
+        nn1_i = set(neighbors1[i].cpu().numpy())
+        nn2_i = set(neighbors2[i].cpu().numpy())
+
+        # nn1_i \cap nn2_i
+        mutual_count = len(nn1_i.intersection(nn2_i))
+        total_mutual += mutual_count
+
+
+    align_mknn = total_mutual / (n_samples * k)
+    return align_mknn
+
+
 def cosine_similarity_indv(
     text_embedding:torch.Tensor,
     vision_embedding: torch.Tensor
@@ -233,21 +279,21 @@ def process_intermediate_repr(
         # print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
 
 
-        cka_sim = cka(
-            text_embedding=representation["text_embedding"],
-            vision_embedding=representation["vision_embedding"]
-        )
+        # cka_sim = cka(
+        #     text_embedding=representation["text_embedding"],
+        #     vision_embedding=representation["vision_embedding"]
+        # )
 
-        max_similarity_tp = max_similarity_token_patch(
-            text_embedding=representation["text_embedding"],
-            vision_embedding=representation["vision_embedding"]
-        )
-        max_similarity_pt = max_similarity_patch_token(
-            text_embedding=representation["text_embedding"],
-            vision_embedding=representation["vision_embedding"]
-        )
-        max_similarity_tp = max_similarity_tp.mean().item()
-        max_similarity_pt = max_similarity_pt.mean().item()
+        # max_similarity_tp = max_similarity_token_patch(
+        #     text_embedding=representation["text_embedding"],
+        #     vision_embedding=representation["vision_embedding"]
+        # )
+        # max_similarity_pt = max_similarity_patch_token(
+        #     text_embedding=representation["text_embedding"],
+        #     vision_embedding=representation["vision_embedding"]
+        # )
+        # max_similarity_tp = max_similarity_tp.mean().item()
+        # max_similarity_pt = max_similarity_pt.mean().item()
         # print(f"temp value: {max_simil_avg}")
 
         # currently not working?
@@ -257,6 +303,11 @@ def process_intermediate_repr(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
         )
+
+        cka_sim = 0.0
+        max_similarity_tp = 0.0
+        max_similarity_pt = 0.0
+        svcca_sim = 0.0
 
 
 
@@ -279,15 +330,21 @@ def process_intermediate_repr(
         is_corss_attention = representation["is_cross_attention"]
         layer = representation["layer"]
 
+
         cos_sim = cosine_similarity_batch(
             text_embedding=text_embedding_sample,
             vision_embedding=vision_embedding_sample
         )
 
-        mutual_nearest_neighbor_alignment_score = mutual_nearest_neighbor_alignment(
-            text_embeds=text_embedding,
-            vision_embeds=vision_embedding,
-            k=5
+        # mutual_nearest_neighbor_alignment_score = mutual_nearest_neighbor_alignment(
+        #     text_embeds=text_embedding,
+        #     vision_embeds=vision_embedding,
+        #     k=5
+        # )
+        mutual_nearest_neighbor_alignment_score = mutual_knn_alignment(
+            Z1=text_embedding,
+            Z2=vision_embedding,
+            k=10 # As used in the paper for their experiments
         )
         # print(f"mutual nearest neighbor alignment score: {mutual_nearest_neighbor_alignment_score}")
 
