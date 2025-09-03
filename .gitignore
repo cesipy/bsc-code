@@ -12,3 +12,4 @@ logs
 res/training_losses.png
 res/data/conceptual-captions/Train_GCC-training.tsv
 res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv
+res/plots/training_losses*

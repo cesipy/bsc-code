@@ -76,6 +76,7 @@ class ViLBERT(nn.Module):
 
         # cross_attention_layers = [0, 2]     # starts with 0, not 1!
         cross_attention_layers = config.cross_attention_layers
+        self.cross_attention_layers = cross_attention_layers
 
         self.attention_layer = Attention_Block(
             dim=self.config.embedding_dim,
@@ -406,10 +407,10 @@ class ViLBERT(nn.Module):
                 output_hidden_states=output_hidden_states,
                 extract_cls=True, # only cls needed. nothing else
             )
-            # return text_embedding, image_embedding
-            shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-            alignment_logits = self.alignment_fc(shared_embedding)
-            return alignment_logits
+            return text_embedding, image_embedding
+            # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+            # alignment_logits = self.alignment_fc(shared_embedding)
+            # return alignment_logits
 
     @classmethod
     def from_pretrained_checkpoint(cls, checkpoint_path, device='cuda'):

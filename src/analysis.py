@@ -1,13 +1,247 @@
-import torch; from torch import nn
+import torch; from torch import nn; from torch.utils.data import DataLoader
 from ckatorch.core import cka_batch, cka_base
 import numpy as np
 import cca_core
+from vilbert import ViLBERT
+
+import time
+
 
 from config import *
 import utils
 from logger import Logger
 
 logger = Logger()
+
+
+# def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
+
+#     model.eval()
+#     device = torch.cuda.is_available()
+
+#     measure_per_layer = {}
+#     for i in range(model.depth):
+#         measure_per_layer[i] = {
+#             "text_embeddings": [],
+#             "vision_embeddings": [],
+#             "is_cross_attention": None,
+#             "layer": i
+#         }
+
+#     with torch.no_grad():
+#         for batch in dataloader:
+
+#             text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+#             image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+#             label = batch["label"].to(device)
+
+#             # print(f"img shape: {image['pixel_values'].shape}, ")
+
+#             preds, intermediate_representations = model(
+#                 text_input_ids=text["input_ids"],
+#                 text_attention_mask=text["attention_mask"],
+#                 text_token_type_ids=text.get("token_type_ids", None),
+#                 image_pixel_values=image["pixel_values"],
+#                 image_attention_mask=image.get("attention_mask", None),
+#                 save_intermediate_representations=True
+#             )
+
+#             #generate dummy reprs
+#             # intermediate_representations = [
+#             #     {
+#             #         "text_embedding": torch.randn(16, 197, 768),
+#             #         "vision_embedding": torch.randn(16, 197, 768),
+#             #         "is_cross_attention": i in [0, 2],
+#             #         "layer": i
+#             #     } for i in range(4)
+#             # ]
+
+#             # shape: [bs, num_tokens, dim]
+
+#             for repr_dict in intermediate_representations:
+#                 repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
+#                 repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
+
+
+#             for repr_dict in intermediate_representations:
+#                 layer = repr_dict["layer"]
+#                 measure_per_layer[layer]["text_embeddings"].append(repr_dict["text_embedding"])
+#                 measure_per_layer[layer]["vision_embeddings"].append(repr_dict["vision_embedding"])
+#                 measure_per_layer[layer]["is_cross_attention"] = repr_dict["is_cross_attention"]
+
+#             if len(measure_per_layer[0]["text_embeddings"]) % 10 == 0:
+#                 torch.cuda.empty_cache()
+#                 break
+
+#     for layer in measure_per_layer.keys():
+#         measure_per_layer[layer]["text_embeddings"] = torch.cat(measure_per_layer[layer]["text_embeddings"], dim=0)
+#         measure_per_layer[layer]["vision_embeddings"] = torch.cat(measure_per_layer[layer]["vision_embeddings"], dim=0)
+#         print(f"layer {layer}, text shape: {measure_per_layer[layer]['text_embeddings'].shape}, vision shape: {measure_per_layer[layer]['vision_embeddings'].shape}")
+
+#         cka_measure = cka(
+#             text_embedding=measure_per_layer[layer]["text_embeddings"],
+#             vision_embedding=measure_per_layer[layer]["vision_embeddings"]
+#         )
+
+#         print(f"layer {layer}, CKA measure: {cka_measure}")
+
+
+
+
+
+#     model.train()
+
+def mutual_knn_alignment(
+    Z1: torch.Tensor,
+    Z2: torch.Tensor,
+    k: int = 10
+):
+    # Z is matrix, each row is one sample
+    def knn(row: int, Z, k):
+        # print(f"shape: {Z[row].unspeeze(0).shape}")
+
+        # get knns for row in Z
+        distances = torch.cdist(Z[row].unsqueeze(0), Z)
+        # print(f"distances shape: {distances.shape}")
+        knns_vals, knns_inds = torch.topk(distances, k=k+1, largest=False)  # include self
+        # print(f"knn indices shape: {knns_inds.shape}")
+        return knns_inds[0, 1:]
+
+    def align(Z1, Z2, k):
+        # a(i,j) = 1[j in knn(i, Z1) and i in knn(j, Z2); and i != j]
+        counter = 0
+        for i in range(Z1.shape[0]):
+            knns_i_z1 = set(knn(i, Z1, k).cpu().numpy())  # explicit .cpu()
+            for j in range(Z2.shape[0]):
+                if i != j:
+                    knns_j_z2 = set(knn(j, Z2, k).cpu().numpy())  # explicit .cpu()
+                    if j in knns_i_z1 and i in knns_j_z2:
+                        counter += 1
+        return counter
+
+    mknn = align(Z1, Z2, k) / ((align(Z1, Z1, k) * align(Z2, Z2, k)) ** 0.5)
+    return mknn
+
+# genai came up with the gpu optimized version of it
+def mutual_knn_alignment_gpu(
+    Z1: torch.Tensor,
+    Z2: torch.Tensor,
+    k: int = 10
+):
+
+    n = Z1.shape[0]
+
+    def align_gpu(Z1, Z2, k):
+        # Precompute all k-NN indices at once
+        dists1 = torch.cdist(Z1, Z1)  # [n, n]
+        dists2 = torch.cdist(Z2, Z2)  # [n, n]
+
+        # Get k+1 nearest (including self), then remove self
+        _, knn1 = torch.topk(dists1, k + 1, largest=False, dim=1)  # [n, k+1]
+        _, knn2 = torch.topk(dists2, k + 1, largest=False, dim=1)  # [n, k+1]
+
+        knn1 = knn1[:, 1:]  # [n, k] - remove self
+        knn2 = knn2[:, 1:]  # [n, k] - remove self
+
+        # Create masks for the conditions: j in knn(i, Z1) and i in knn(j, Z2)
+        total = 0
+        for i in range(n):
+            for j in range(n):
+                if i != j:
+                    # Check if j in knn(i, Z1)
+                    j_in_knn_i = (knn1[i] == j).any()
+                    # Check if i in knn(j, Z2)
+                    i_in_knn_j = (knn2[j] == i).any()
+
+                    if j_in_knn_i and i_in_knn_j:
+                        total += 1
+
+        return total
+
+    mknn = align_gpu(Z1, Z2, k) / ((align_gpu(Z1, Z1, k) * align_gpu(Z2, Z2, k)) ** 0.5)
+    return mknn
+
+# even morew sophisticated version works! from genai
+def mutual_knn_alignment_gpu_advanced(
+    Z1: torch.Tensor,
+    Z2: torch.Tensor,
+    k: int = 10
+):
+    def align_gpu_vectorized(Z1, Z2, k):
+        n = Z1.shape[0]
+
+        # Precompute all k-NN indices
+        dists1 = torch.cdist(Z1, Z1)
+        dists2 = torch.cdist(Z2, Z2)
+
+        _, knn1 = torch.topk(dists1, k + 1, largest=False, dim=1)  # [n, k+1]
+        _, knn2 = torch.topk(dists2, k + 1, largest=False, dim=1)  # [n, k+1]
+
+        knn1 = knn1[:, 1:]  # [n, k] - remove self
+        knn2 = knn2[:, 1:]  # [n, k] - remove self
+
+        # Create boolean masks entirely on GPU
+        # For each i,j: is j in knn(i, Z1)?
+        mask1 = (knn1.unsqueeze(2) == torch.arange(n, device=Z1.device).unsqueeze(0).unsqueeze(0)).any(dim=1)  # [n, n]
+
+        # For each i,j: is i in knn(j, Z2)?
+        mask2 = (knn2.unsqueeze(2) == torch.arange(n, device=Z1.device).unsqueeze(0).unsqueeze(0)).any(dim=1)  # [n, n]
+
+        # Exclude diagonal (i != j)
+        eye_mask = ~torch.eye(n, dtype=torch.bool, device=Z1.device)
+
+        # Count mutual k-NN: j in knn(i,Z1) AND i in knn(j,Z2) AND i!=j
+        mutual_mask = mask1 & mask2.T & eye_mask
+
+        return mutual_mask.sum().item()
+
+    mknn = align_gpu_vectorized(Z1, Z2, k) / ((align_gpu_vectorized(Z1, Z1, k) * align_gpu_vectorized(Z2, Z2, k)) ** 0.5)
+    return mknn
+
+
+# simpler version
+def mutual_knn_alignment_simple(
+    Z1: torch.Tensor,
+    Z2: torch.Tensor,
+    k: int = 10
+):
+    """
+    computes the mutual k-NN alignment metric as described in
+    "Understanding the Emergence of Multimodal Representation Alignment".
+
+    Args:
+        Z1, Z2: [n_samples, embedding_dim] tensors
+        k: number of nearest neighbors
+
+    """
+    assert Z1.shape[0] == Z2.shape[0]
+
+    n_samples = Z1.shape[0]
+
+    # Compute pairwise distances
+    dists1 = torch.cdist(Z1, Z1)  # [n, n]
+    dists2 = torch.cdist(Z2, Z2)  # [n, n]
+
+    # Find k nearest neighbors (excluding self), genai gave me this function
+    _, neighbors1 = torch.topk(dists1, k + 1, largest=False, dim=1)
+    _, neighbors2 = torch.topk(dists2, k + 1, largest=False, dim=1)
+
+    #rm self
+    neighbors1 = neighbors1[:, 1:]  # [n, k]
+    neighbors2 = neighbors2[:, 1:]  # [n, k]
+
+    total_mutual = 0
+    for i in range(n_samples):
+        nn1_i = set(neighbors1[i].cpu().numpy())
+        nn2_i = set(neighbors2[i].cpu().numpy())
+
+        # nn1_i \cap nn2_i
+        mutual_count = len(nn1_i.intersection(nn2_i))
+        total_mutual += mutual_count
+
+
+    align_mknn = total_mutual / (n_samples * k)
+    return align_mknn
 
 
 def cosine_similarity_indv(
@@ -170,10 +404,18 @@ def process_intermediate_repr(
         max_similarity_pt = max_similarity_pt.mean().item()
         # print(f"temp value: {max_simil_avg}")
 
+        # currently not working?
+        # #TODO: FIX
+        # svcca_sim = 0.0
         svcca_sim = svcca_similarity(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
         )
+
+        # cka_sim = 0.0
+        # max_similarity_tp = 0.0
+        # max_similarity_pt = 0.0
+        # svcca_sim = 0.0
 
 
 
@@ -196,17 +438,13 @@ def process_intermediate_repr(
         is_corss_attention = representation["is_cross_attention"]
         layer = representation["layer"]
 
+
         cos_sim = cosine_similarity_batch(
             text_embedding=text_embedding_sample,
             vision_embedding=vision_embedding_sample
         )
 
-        mutual_nearest_neighbor_alignment_score = mutual_nearest_neighbor_alignment(
-            text_embeds=text_embedding,
-            vision_embeds=vision_embedding,
-            k=5
-        )
-        # print(f"mutual nearest neighbor alignment score: {mutual_nearest_neighbor_alignment_score}")
+
 
 
         layers_sims.append(
@@ -218,7 +456,6 @@ def process_intermediate_repr(
                 "max_similarity_tp": max_similarity_tp,
                 "max_similarity_pt": max_similarity_pt,
                 "svcca_similarity": svcca_sim,
-                "mutual_nearest_neighbor_alignment": mutual_nearest_neighbor_alignment_score
             }
         )
 
@@ -260,7 +497,7 @@ def max_similarity_patch_token(
 
 
 
-def analyse(layer_similarities: list[dict], num_layers: int):
+def analyse(layer_similarities: list[dict], num_layers: int, mknn_values:dict):
     """input format:
         {
             "layer": layer,
@@ -269,13 +506,20 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             "cka_similarity": float,
             "max_similarity": float
         }
+
+        mknn_values:
+        {
+            "i": mknn-value,
+        }
+
     """
 
     layers = {}
     for i in range(num_layers):
         layers[f"layer{i}"] = {
             "is_cross_attention": False,
-            "similarity_measures": []
+            "similarity_measures": [],
+            "full_epoch_measures": mknn_values[i]
         }
 
     for similarity_measure in layer_similarities:
@@ -289,6 +533,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
     for layer_name in layers:
         is_cross_attention = layers[layer_name]["is_cross_attention"]
         measures = layers[layer_name]["similarity_measures"]
+        full_epoch_measure = layers[layer_name]["full_epoch_measures"]
 
         if measures:
 
@@ -297,7 +542,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             max_similarity_values_tp = [m["max_similarity_tp"] for m in measures]
             max_similarity_values_pt = [m["max_similarity_pt"] for m in measures]
             svcca_values = [m["svcca_similarity"] for m in measures]
-            mutual_nn_values = [m["mutual_nearest_neighbor_alignment"] for m in measures]
+
 
 
             avg_cosine = sum(cos_values) / len(cos_values)
@@ -305,9 +550,9 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             avg_max_similarity_tp = sum(max_similarity_values_tp) / len(max_similarity_values_tp)
             avg_max_similarity_pt = sum(max_similarity_values_pt) / len(max_similarity_values_pt)
             avg_svcca = sum(svcca_values) / len(svcca_values)
-            avg_mutual_nn = sum(mutual_nn_values) / len(mutual_nn_values)
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}, mutual_nn={avg_mutual_nn:.4f}"
+
+            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}, mknn_full_epoch={full_epoch_measure:.4f}"
             logger.info(info_str)
             print(info_str)
 
@@ -352,21 +597,49 @@ def cka_custom(X, Y):
 
 
 if __name__ == "__main__":
-    data1 = torch.rand(10, 192, 768)
-    data2 = torch.rand(10, 192,768)
+    # data1 = torch.rand( 250, 768)
+    # data2 = torch.rand( 250,768)
+    # start = time.time()
+    # mknn = mutual_knn_alignment(Z1=data1, Z2=data2, k=5)
+    # end = time.time()
+    # diff_cpu = end - start
 
-    sim_identical =cka(data1, data1)
-    sim_different = cka(data1, data2)
+    # start = time.time()
+    # mknn_gpu = mutual_knn_alignment_gpu(Z1=data1, Z2=data2, k=5)
+    # end = time.time()
+    # diff_gpu = end - start
+
+    # print(f"mknn: {mknn}, mknn_gpu: {mknn_gpu}, diff = {mknn-mknn_gpu}")
+    # print(f"cpu time: {diff_cpu}, gpu time: {diff_gpu}")
+
+    # mknn_sim = mutual_knn_alignment(Z1=data1, Z2=data1, k=5)
+    # mknn_sim_gpu = mutual_knn_alignment_gpu(Z1=data1, Z2=data1, k=5)
+    # print(f"mknn identical: {mknn_sim}, mknn_gpu identical: {mknn_sim_gpu}, diff = {mknn_sim-mknn_sim_gpu}")
+
+    data1 = torch.rand( 10000, 768)
+    data2 = torch.rand( 10000,768)
+    start = time.time()
+    mknn_gpu = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data2, k=5)
+    end = time.time()
+    diff_gpu = end - start
+
+    print(f"mknn_gpu_advanced: {mknn_gpu}, time: {diff_gpu}")
+
+    mknn_ident = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data1, k=5)
+    print(f"mknn_gpu_advanced identical: {mknn_ident}")
+
+    # sim_identical =cka(data1, data1)
+    # sim_different = cka(data1, data2)
 
 
-    print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
+    # print(f"sim indentical: {sim_identical}, sim different: {sim_different}")
 
-    svcca_sim_identical = svcca_similarity(
-        text_embedding=data1,
-        vision_embedding=data1
-    )
-    svcca_sim_different = svcca_similarity(
-        text_embedding=data1,
-        vision_embedding=data2
-    )
-    print(f"svcca sim identical: {svcca_sim_identical}, svcca sim different: {svcca_sim_different}")
+    # svcca_sim_identical = svcca_similarity(
+    #     text_embedding=data1,
+    #     vision_embedding=data1
+    # )
+    # svcca_sim_different = svcca_similarity(
+    #     text_embedding=data1,
+    #     vision_embedding=data2
+    # )
+    # print(f"svcca sim identical: {svcca_sim_identical}, svcca sim different: {svcca_sim_different}")

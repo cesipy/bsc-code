@@ -29,117 +29,9 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modul
 
 logger = Logger()
 
+USE_CONTRASTIVE_LOSS=True
 machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 
-@utils.memory_cleanup
-def pretain():
-    logger.info("starting pretraining")
-    epochs = 4
-    num_workers = 10
-    prefetch= 4
-    path = "res/data/conceptual-captions/train.csv"
-    val_path = "res/data/conceptual-captions/validation.csv"
-    data_list = datasets.generate_data_list_pretrain(path=path)
-    validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:10_000]
-    # validation_list = validation_list[:1_000]
-
-    # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
-    # train_data = data_list[:train_idx]
-    # val_data   = data_list[train_idx:]
-    train_data = data_list
-    val_data   = validation_list
-
-    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-    preprocessing_prediction_alignment = False
-    train_dataset_ap = PretrainDatasetAP(
-        train_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        preprocessing_prediction_alignment=preprocessing_prediction_alignment
-    )
-    val_dataset_ap   = PretrainDatasetAP(
-        val_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        preprocessing_prediction_alignment=preprocessing_prediction_alignment
-    )
-
-    train_dataset_mlm = PretrainDatasetMLM(
-        train_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-    )
-
-    val_dataset_mlm   = PretrainDatasetMLM(
-        val_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-    )
-
-
-    train_loader_ap = DataLoader(
-        dataset=train_dataset_ap,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        prefetch_factor=prefetch
-    )
-    val_loader_ap = DataLoader(
-        dataset=val_dataset_ap,
-        batch_size=BATCH_SIZE,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        prefetch_factor=prefetch
-    )
-
-    train_loader_mlm = DataLoader(
-        dataset=train_dataset_mlm,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        prefetch_factor=prefetch
-    )
-    val_loader_mlm = DataLoader(
-        dataset=val_dataset_mlm,
-        batch_size=BATCH_SIZE,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True,
-        persistent_workers=True,
-        prefetch_factor=prefetch
-    )
-
-    model = ViLBERT()
-    utils.params_summary(model=model)
-
-    trainer = PretrainingTrainer(
-        model=model,
-        config=ViLBERTConfig(),
-    )
-
-    trainer.train(
-        train_dataloaderAP=train_loader_ap,
-        test_dataloaderAP=val_loader_ap,
-        train_dataloaderMLM=train_loader_mlm,
-        test_dataloaderMLM=val_loader_mlm,
-        epochs=epochs,
-        train_only_ap=False
-    )
-
-    del model, trainer, train_dataset_ap, val_dataset_ap, train_dataset_mlm, val_dataset_mlm
-    del train_loader_ap, val_loader_ap, train_loader_mlm, val_loader_mlm
-    torch.cuda.empty_cache()
-    gc_collected = gc.collect()
-    print(f"gc collected items: {gc_collected}")
-    logger.info("pretraining finished, cleaning up memory")
 
 def train_and_eval_on_downstream_task(pretrained_model_path:str):
     if pretrained_model_path==None or not os.path.exists(pretrained_model_path) :
@@ -195,16 +87,16 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     prefetch= 4
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
-    data_list = datasets.generate_data_list_pretrain(path=path, max_number=300_000)
+    data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:300_000]
+    data_list = data_list[:70_000]
     # validation_list = validation_list[:1000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
     train_data = data_list
-    val_data   = validation_list
+    val_data   = validation_list[:10000]
 
     print(len(train_data), len(val_data))
 
@@ -217,38 +109,44 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         num_workers=num_workers,
         prefetch=prefetch,
         persistent_workers=False,
-        pin_memory=False
+        pin_memory=False,
+        use_contrastive_ap=USE_CONTRASTIVE_LOSS
     )
 
     print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
 
     if machine == "remote":
-        bs = 96    # obout 23.3gb vrman
+        bs = 80    # obout 23.3gb vrman
         bs_alignment_analysis = 32
 
     else:
         bs = 32
         bs_alignment_analysis = 6
 
-
+    print(f"batchsize: {bs}, bs-analysis: {bs_alignment_analysis}")
 
     config = ViLBERTConfig(
         pretraining_tasks=tasks[:]
     )
 
     model = ViLBERT(config=config)
+    # utils.freeze_all_layers(model.bert)
+    # utils.freeze_all_layers(model.vit)
     utils.params_summary(model=model)
     trainer = PretrainingTrainer(
         model=model,
         config=config,
         tasks=tasks,
+        use_contrastive_ap=USE_CONTRASTIVE_LOSS
     )
+
 
     hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
         batch_size=bs_alignment_analysis,
         num_workers=4,
         pin_memory=False,
-        prefetch_factor=4
+        prefetch_factor=4,
+        num_samples=1000
     )
 
     trainer.train(

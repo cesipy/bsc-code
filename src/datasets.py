@@ -127,6 +127,7 @@ def get_dataloaders(
     prefetch,
     persistent_workers,
     pin_memory=True,
+    use_contrastive_ap: bool=False
     ):
     """
     Returns: (
@@ -163,6 +164,7 @@ def get_dataloaders(
         tokenizer=tokenizer,
         image_processor=image_processor,
         preprocessing_prediction_alignment=False,
+        use_contrastive_ap_loss=use_contrastive_ap
     )
 
 
@@ -410,6 +412,7 @@ class PretrainDatasetAP(Dataset):
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor,
         preprocessing_prediction_alignment: bool,    # whether to generate the dataset at first, or at runtime
+        use_contrastive_ap_loss: bool=False
         ):
         self.transform = None
         self.tokenizer = tokenizer
@@ -417,7 +420,7 @@ class PretrainDatasetAP(Dataset):
         self.invalid_image_counter = 0
 
         self.preprocessing_prediction_alignment = preprocessing_prediction_alignment
-
+        self.use_contrastive_ap_loss = use_contrastive_ap_loss
         self.data = self.__generate_pretrain_dataset(data)
         #TODO
         # self.data = self.exclude_invald_photos(self.data)
@@ -553,7 +556,7 @@ class PretrainDatasetAP(Dataset):
 
         assert task == Task.ALIGNMENT_PREDICTION, "something is completely wrong in the data processing step"
 
-        if not self.preprocessing_prediction_alignment:
+        if not self.preprocessing_prediction_alignment and not self.use_contrastive_ap_loss:
             if random.random() < 0.5:
 
                 # swap out text with some other caption
