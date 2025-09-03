@@ -30,7 +30,6 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modul
 logger = Logger()
 
 USE_CONTRASTIVE_LOSS=True
-
 machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 
 
@@ -88,16 +87,16 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     prefetch= 4
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
-    data_list = datasets.generate_data_list_pretrain(path=path, max_number=20_000)
+    data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:10_000]
+    data_list = data_list[:70_000]
     # validation_list = validation_list[:1000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
     train_data = data_list
-    val_data   = validation_list
+    val_data   = validation_list[:10000]
 
     print(len(train_data), len(val_data))
 
@@ -117,19 +116,22 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
 
     if machine == "remote":
-        bs = 96    # obout 23.3gb vrman
+        bs = 80    # obout 23.3gb vrman
         bs_alignment_analysis = 32
 
     else:
         bs = 32
         bs_alignment_analysis = 6
 
+    print(f"batchsize: {bs}, bs-analysis: {bs_alignment_analysis}")
 
     config = ViLBERTConfig(
         pretraining_tasks=tasks[:]
     )
 
     model = ViLBERT(config=config)
+    # utils.freeze_all_layers(model.bert)
+    # utils.freeze_all_layers(model.vit)
     utils.params_summary(model=model)
     trainer = PretrainingTrainer(
         model=model,
@@ -138,8 +140,6 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         use_contrastive_ap=USE_CONTRASTIVE_LOSS
     )
 
-    utils.freeze_all_layers(model.bert)
-    utils.freeze_all_layers(model.vit)
 
     hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
         batch_size=bs_alignment_analysis,

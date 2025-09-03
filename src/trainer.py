@@ -23,11 +23,65 @@ from info_nce import InfoNCE, info_nce
 
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.eval()
+    with torch.no_grad():
+        torch.cuda.empty_cache()
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    layers = {}
+    for i in range(model.depth):
+        layers[i] = {
+            "text_embeddings": [],
+            "vision_embeddings": [],
+            "is_cross_attention": i in model.cross_attention_layers,
+            "layer": i
+        }
+
+    for i, batch in enumerate(tqdm(dataloader,total=len(dataloader))):
+        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+        label = batch["label"].to(device)
+
+        with torch.no_grad():
+            preds, intermediate_representations =model.forward(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                save_intermediate_representations=True
+            )
+
+            for repr_dict in intermediate_representations:
+                layer = repr_dict["layer"]
+                cls_text = repr_dict["text_embedding"][:, 0, :].detach().cpu()   # [bs, dim]
+                cls_vision = repr_dict["vision_embedding"][:, 0, :].detach().cpu() # [bs, dim]
+                layers[layer]["text_embeddings"].append(cls_text)
+                layers[layer]["vision_embeddings"].append(cls_vision)
+
+            del intermediate_representations
+            del text
+            del image
+            del preds
+
+    mknn_values = {}
+    for i in range(model.depth):
+        layers[i]["text_embeddings"] = torch.cat(layers[i]["text_embeddings"], dim=0)
+        layers[i]["vision_embeddings"] = torch.cat(layers[i]["vision_embeddings"], dim=0)
+
+        mknn = analysis.mutual_knn_alignment_gpu_advanced(
+            Z1=layers[i]["text_embeddings"],
+            Z2=layers[i]["vision_embeddings"],
+            k=10
+        )
+        # print(f"Layer {i} MKNN alignment: {mknn:.4f}")
+        mknn_values[i] = mknn
+
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+
 
     layer_sims = []
     with torch.no_grad():
-        for i, batch in enumerate(dataloader):
+        for i, batch in enumerate(tqdm(dataloader,total=len(dataloader))):
 
             text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
             image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
@@ -65,17 +119,30 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
                 pooling_method="cls",
             )
 
+            del intermediate_representations
+            del text
+            del image
+
             layer_sims.extend(current_layer_sims)
 
             if i % 10 == 0:
                 torch.cuda.empty_cache()
 
-    analysis.analyse(layer_similarities=layer_sims, num_layers=model.depth)
+    analysis.analyse(
+        layer_similarities=layer_sims,
+        num_layers=model.depth,
+        mknn_values=mknn_values)
     model.train()
+
+    with torch.no_grad():
+        torch.cuda.empty_cache()
 
 
 def alignment_loss_cosine(text_emb, vision_emb):
-    cosine_sim = torch.nn.functional.cosine_similarity(text_emb, vision_emb, dim=1)
+    cosine_sim = torch.nn.functional.cosine_similarity(
+        text_emb,
+        vision_emb, dim=1
+        )
 
     return -cosine_sim.mean()
 

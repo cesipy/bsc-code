@@ -76,6 +76,7 @@ class ViLBERT(nn.Module):
 
         # cross_attention_layers = [0, 2]     # starts with 0, not 1!
         cross_attention_layers = config.cross_attention_layers
+        self.cross_attention_layers = cross_attention_layers
 
         self.attention_layer = Attention_Block(
             dim=self.config.embedding_dim,

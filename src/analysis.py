@@ -387,21 +387,21 @@ def process_intermediate_repr(
         # print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
 
 
-        # cka_sim = cka(
-        #     text_embedding=representation["text_embedding"],
-        #     vision_embedding=representation["vision_embedding"]
-        # )
+        cka_sim = cka(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
 
-        # max_similarity_tp = max_similarity_token_patch(
-        #     text_embedding=representation["text_embedding"],
-        #     vision_embedding=representation["vision_embedding"]
-        # )
-        # max_similarity_pt = max_similarity_patch_token(
-        #     text_embedding=representation["text_embedding"],
-        #     vision_embedding=representation["vision_embedding"]
-        # )
-        # max_similarity_tp = max_similarity_tp.mean().item()
-        # max_similarity_pt = max_similarity_pt.mean().item()
+        max_similarity_tp = max_similarity_token_patch(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
+        max_similarity_pt = max_similarity_patch_token(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
+        max_similarity_tp = max_similarity_tp.mean().item()
+        max_similarity_pt = max_similarity_pt.mean().item()
         # print(f"temp value: {max_simil_avg}")
 
         # currently not working?
@@ -412,10 +412,10 @@ def process_intermediate_repr(
             vision_embedding=representation["vision_embedding"]
         )
 
-        cka_sim = 0.0
-        max_similarity_tp = 0.0
-        max_similarity_pt = 0.0
-        svcca_sim = 0.0
+        # cka_sim = 0.0
+        # max_similarity_tp = 0.0
+        # max_similarity_pt = 0.0
+        # svcca_sim = 0.0
 
 
 
@@ -444,17 +444,7 @@ def process_intermediate_repr(
             vision_embedding=vision_embedding_sample
         )
 
-        # mutual_nearest_neighbor_alignment_score = mutual_nearest_neighbor_alignment(
-        #     text_embeds=text_embedding,
-        #     vision_embeds=vision_embedding,
-        #     k=5
-        # )
-        mutual_nearest_neighbor_alignment_score = mutual_knn_alignment_gpu_advanced(
-            Z1=text_embedding,
-            Z2=vision_embedding,
-            k=10 # As used in the paper for their experiments
-        )
-        # print(f"mutual nearest neighbor alignment score: {mutual_nearest_neighbor_alignment_score}")
+
 
 
         layers_sims.append(
@@ -466,7 +456,6 @@ def process_intermediate_repr(
                 "max_similarity_tp": max_similarity_tp,
                 "max_similarity_pt": max_similarity_pt,
                 "svcca_similarity": svcca_sim,
-                "mutual_nearest_neighbor_alignment": mutual_nearest_neighbor_alignment_score
             }
         )
 
@@ -508,7 +497,7 @@ def max_similarity_patch_token(
 
 
 
-def analyse(layer_similarities: list[dict], num_layers: int):
+def analyse(layer_similarities: list[dict], num_layers: int, mknn_values:dict):
     """input format:
         {
             "layer": layer,
@@ -517,13 +506,20 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             "cka_similarity": float,
             "max_similarity": float
         }
+
+        mknn_values:
+        {
+            "i": mknn-value,
+        }
+
     """
 
     layers = {}
     for i in range(num_layers):
         layers[f"layer{i}"] = {
             "is_cross_attention": False,
-            "similarity_measures": []
+            "similarity_measures": [],
+            "full_epoch_measures": mknn_values[i]
         }
 
     for similarity_measure in layer_similarities:
@@ -537,6 +533,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
     for layer_name in layers:
         is_cross_attention = layers[layer_name]["is_cross_attention"]
         measures = layers[layer_name]["similarity_measures"]
+        full_epoch_measure = layers[layer_name]["full_epoch_measures"]
 
         if measures:
 
@@ -545,7 +542,7 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             max_similarity_values_tp = [m["max_similarity_tp"] for m in measures]
             max_similarity_values_pt = [m["max_similarity_pt"] for m in measures]
             svcca_values = [m["svcca_similarity"] for m in measures]
-            mutual_nn_values = [m["mutual_nearest_neighbor_alignment"] for m in measures]
+
 
 
             avg_cosine = sum(cos_values) / len(cos_values)
@@ -553,9 +550,9 @@ def analyse(layer_similarities: list[dict], num_layers: int):
             avg_max_similarity_tp = sum(max_similarity_values_tp) / len(max_similarity_values_tp)
             avg_max_similarity_pt = sum(max_similarity_values_pt) / len(max_similarity_values_pt)
             avg_svcca = sum(svcca_values) / len(svcca_values)
-            avg_mutual_nn = sum(mutual_nn_values) / len(mutual_nn_values)
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}, mutual_nn={avg_mutual_nn:.4f}"
+
+            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}, mknn_full_epoch={full_epoch_measure:.4f}"
             logger.info(info_str)
             print(info_str)
 
@@ -627,6 +624,9 @@ if __name__ == "__main__":
     diff_gpu = end - start
 
     print(f"mknn_gpu_advanced: {mknn_gpu}, time: {diff_gpu}")
+
+    mknn_ident = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data1, k=5)
+    print(f"mknn_gpu_advanced identical: {mknn_ident}")
 
     # sim_identical =cka(data1, data1)
     # sim_different = cka(data1, data2)
