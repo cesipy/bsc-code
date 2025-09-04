@@ -78,8 +78,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
 
 
     if machine == "remote":
-        bs = 48   # obout 23.3gb vrman
-        bs_alignment_analysis = 32
+        bs = 32   # obout 23.3gb vrman
+        bs_alignment_analysis = 16
     else:
         bs = 32
         bs_alignment_analysis = 48
@@ -149,7 +149,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     trainer = Trainer(
         model,
         config,
-        use_contrastive_loss=False,
+        use_contrastive_loss=True,
         use_cosine_loss=False,
         )
     trainer.train(
@@ -173,8 +173,8 @@ def test_on_hm():
     config = ViLBERTConfig()
     model = ViLBERT(config=config)
 
-    # utils.freeze_all_layers(model.vit)
-    # utils.freeze_all_layers(model.bert)
+    utils.freeze_all_layers(model.vit)
+    utils.freeze_all_layers(model.bert)
 
     path = "res/data/hateful_memes_data/train.jsonl"
     val_path = "res/data/hateful_memes_data/test.jsonl"

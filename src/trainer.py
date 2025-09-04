@@ -74,7 +74,7 @@ class Trainer():
         total_loss = 0
 
         num_batches = 0
-        for batch in data_loader:
+        for batch in tqdm(data_loader,total=len(data_loader), desc="training"):
             num_batches += 1
             self.optimizer.zero_grad()
 

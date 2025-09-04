@@ -18,48 +18,168 @@ from logger import Logger
 logger = Logger()
 
 def _visualize_cka(measure_per_layer: dict, num_layers: int):
-    #TODO: also vision-to-vision comparision, txt-2-txt comparison
 
-    cka_matrix = np.zeros((num_layers, num_layers))
+    cross_modal_matrix = np.zeros((num_layers, num_layers))
+    text_text_matrix = np.zeros((num_layers, num_layers))
+    vision_vision_matrix = np.zeros((num_layers, num_layers))
 
-    for i in range(num_layers):
+
+
+    for i in tqdm(range(num_layers), leave=False, desc="computing cka matrix"):
         for j in range(num_layers):
             current_text = measure_per_layer[i]["text_embeddings"]
             current_vision = measure_per_layer[j]["vision_embeddings"]
-
-            cka_ij = cka(
+            cross_modal_matrix[i,j] = cka(
                 text_embedding=current_text,
                 vision_embedding=current_vision
             )
-            cka_matrix[i,j] = cka_ij
 
-    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+            text_i = measure_per_layer[i]["text_embeddings"]
+            text_j = measure_per_layer[j]["text_embeddings"]
+            text_text_matrix[i,j] = cka(
+                text_embedding=text_i,
+                vision_embedding=text_j
+            )
 
+            vision_i = measure_per_layer[i]["vision_embeddings"]
+            vision_j = measure_per_layer[j]["vision_embeddings"]
+            vision_vision_matrix[i,j] = cka(
+                text_embedding=vision_i,
+                vision_embedding=vision_j
+            )
 
-    im = ax.imshow(cka_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
-    ax.set_xticks(range(num_layers))
-    ax.set_yticks(range(num_layers))
-    ax.set_xticklabels(range(num_layers))
-    ax.set_yticklabels(range(num_layers))
+    im1 = axes[0].imshow(cross_modal_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes[0].set_xticks(range(num_layers))
+    axes[0].set_yticks(range(num_layers))
+    axes[0].set_xticklabels(range(num_layers))
+    axes[0].set_yticklabels(range(num_layers))
+    axes[0].set_xlabel('Vision Layer', fontsize=12)
+    axes[0].set_ylabel('Text Layer', fontsize=12)
+    axes[0].set_title('Cross-Modal CKA', fontsize=14, pad=20)
+    axes[0].tick_params(labelsize=10)
 
-    ax.set_xlabel('Vision Layer', fontsize=12)
-    ax.set_ylabel('Text Layer', fontsize=12)
-    ax.set_title('Cross-Modal CKA', fontsize=14, pad=20)
+    im2 = axes[1].imshow(text_text_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes[1].set_xticks(range(num_layers))
+    axes[1].set_yticks(range(num_layers))
+    axes[1].set_xticklabels(range(num_layers))
+    axes[1].set_yticklabels(range(num_layers))
+    axes[1].set_xlabel('Text Layer', fontsize=12)
+    axes[1].set_ylabel('Text Layer', fontsize=12)
+    axes[1].set_title('Text Layer-to-Layer CKA', fontsize=14, pad=20)
+    axes[1].tick_params(labelsize=10)
 
+    im3 = axes[2].imshow(vision_vision_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes[2].set_xticks(range(num_layers))
+    axes[2].set_yticks(range(num_layers))
+    axes[2].set_xticklabels(range(num_layers))
+    axes[2].set_yticklabels(range(num_layers))
+    axes[2].set_xlabel('Vision Layer', fontsize=12)
+    axes[2].set_ylabel('Vision Layer', fontsize=12)
+    axes[2].set_title('Vision Layer-to-Layer CKA', fontsize=14, pad=20)
+    axes[2].tick_params(labelsize=10)
 
-    cbar = plt.colorbar(im, ax=ax, shrink=0.8)
-    cbar.set_label('CKA (Linear)', rotation=270, labelpad=15)
+    cbar1 = plt.colorbar(im1, ax=axes[0], shrink=0.8)
+    cbar1.set_label('CKA (Linear)', rotation=270, labelpad=15)
 
-    ax.tick_params(labelsize=10)
+    cbar2 = plt.colorbar(im2, ax=axes[1], shrink=0.8)
+    cbar2.set_label('CKA (Linear)', rotation=270, labelpad=15)
+
+    cbar3 = plt.colorbar(im3, ax=axes[2], shrink=0.8)
+    cbar3.set_label('CKA (Linear)', rotation=270, labelpad=15)
+
     plt.tight_layout()
 
+    timestamp = int(time.time())
+    filename = f"res/plots/all_cka_matrices_{timestamp}.png"
+    plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
+    print(f"All CKA matrices saved to {filename}")
+
+    plt.show()
+
+    return cross_modal_matrix, text_text_matrix, vision_vision_matrix
+
+def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10):
+
+    cross_modal_matrix = np.zeros((num_layers, num_layers))
+    text_text_matrix = np.zeros((num_layers, num_layers))
+    vision_vision_matrix = np.zeros((num_layers, num_layers))
+
+    for i in tqdm(range(num_layers), leave=False, desc="computing mknn matrix"):
+        for j in range(num_layers):
+            # Cross-modal (text layer i CLS vs vision layer j CLS)
+            text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
+            vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+            cross_modal_matrix[i,j] = mutual_knn_alignment_gpu_advanced(
+                Z1=text_cls, Z2=vision_cls, k=k
+            )
+
+            # Text-to-text
+            text_cls_i = measure_per_layer[i]["text_embeddings"][:, 0, :]
+            text_cls_j = measure_per_layer[j]["text_embeddings"][:, 0, :]
+            text_text_matrix[i,j] = mutual_knn_alignment_gpu_advanced(
+                Z1=text_cls_i, Z2=text_cls_j, k=k
+            )
+
+            # Vision-to-vision
+            vision_cls_i = measure_per_layer[i]["vision_embeddings"][:, 0, :]
+            vision_cls_j = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+            vision_vision_matrix[i,j] = mutual_knn_alignment_gpu_advanced(
+                Z1=vision_cls_i, Z2=vision_cls_j, k=k
+            )
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+    im1 = axes[0].imshow(cross_modal_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes[0].set_xticks(range(num_layers))
+    axes[0].set_yticks(range(num_layers))
+    axes[0].set_xticklabels(range(num_layers))
+    axes[0].set_yticklabels(range(num_layers))
+    axes[0].set_xlabel('Vision Layer', fontsize=12)
+    axes[0].set_ylabel('Text Layer', fontsize=12)
+    axes[0].set_title(f'Cross-Modal Mutual k-NN (k={k})', fontsize=14, pad=20)
+    axes[0].tick_params(labelsize=10)
+
+    im2 = axes[1].imshow(text_text_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes[1].set_xticks(range(num_layers))
+    axes[1].set_yticks(range(num_layers))
+    axes[1].set_xticklabels(range(num_layers))
+    axes[1].set_yticklabels(range(num_layers))
+    axes[1].set_xlabel('Text Layer', fontsize=12)
+    axes[1].set_ylabel('Text Layer', fontsize=12)
+    axes[1].set_title(f'Text Mutual k-NN (k={k})', fontsize=14, pad=20)
+    axes[1].tick_params(labelsize=10)
+
+    im3 = axes[2].imshow(vision_vision_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes[2].set_xticks(range(num_layers))
+    axes[2].set_yticks(range(num_layers))
+    axes[2].set_xticklabels(range(num_layers))
+    axes[2].set_yticklabels(range(num_layers))
+    axes[2].set_xlabel('Vision Layer', fontsize=12)
+    axes[2].set_ylabel('Vision Layer', fontsize=12)
+    axes[2].set_title(f'Vision Mutual k-NN (k={k})', fontsize=14, pad=20)
+    axes[2].tick_params(labelsize=10)
+
+    cbar1 = plt.colorbar(im1, ax=axes[0], shrink=0.8)
+    cbar1.set_label('Mutual k-NN', rotation=270, labelpad=15)
+
+    cbar2 = plt.colorbar(im2, ax=axes[1], shrink=0.8)
+    cbar2.set_label('Mutual k-NN', rotation=270, labelpad=15)
+
+    cbar3 = plt.colorbar(im3, ax=axes[2], shrink=0.8)
+    cbar3.set_label('Mutual k-NN', rotation=270, labelpad=15)
+
+    plt.tight_layout()
 
     timestamp = int(time.time())
-    filename = f"res/plots/cross_modal_cka_{timestamp}.png"
+    filename = f"res/plots/mutual_knn_matrices_{timestamp}.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
-    print(f"Cross-modal CKA matrix saved to {filename}")
+    print(f"Mutual k-NN matrices saved to {filename}")
 
+    plt.show()
+
+    return cross_modal_matrix, text_text_matrix, vision_vision_matrix
 
 
 def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
@@ -120,14 +240,16 @@ def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
                 measure_per_layer[layer]["vision_embeddings"].append(repr_dict["vision_embedding"])
                 measure_per_layer[layer]["is_cross_attention"] = repr_dict["is_cross_attention"]
 
-            if len(measure_per_layer[0]["text_embeddings"]) % 10 == 0:
+            del intermediate_representations, text, image, preds
+
+            if len(measure_per_layer[0]["text_embeddings"]) > 50:
                 torch.cuda.empty_cache()
                 break
 
     for layer in measure_per_layer.keys():
         measure_per_layer[layer]["text_embeddings"] = torch.cat(measure_per_layer[layer]["text_embeddings"], dim=0)
         measure_per_layer[layer]["vision_embeddings"] = torch.cat(measure_per_layer[layer]["vision_embeddings"], dim=0)
-        print(f"layer {layer}, text shape: {measure_per_layer[layer]['text_embeddings'].shape}, vision shape: {measure_per_layer[layer]['vision_embeddings'].shape}")
+        # print(f"layer {layer}, text shape: {measure_per_layer[layer]['text_embeddings'].shape}, vision shape: {measure_per_layer[layer]['vision_embeddings'].shape}")
 
     model.train()
     return measure_per_layer        # dict
@@ -139,6 +261,7 @@ def visualize_cka(
 
     measures_per_layer: dict = get_visualisation_data(dataloader, model)
     _visualize_cka(measures_per_layer, model.depth)
+    _visualize_mutual_knn(measures_per_layer, model.depth, k=10)
 
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.eval()

@@ -7,9 +7,11 @@ I'm currently working on it, so it is not yet complete.
 ## TODO
 - [ ] problem with contrastive term in pretraining: combined approach!
 - [ ] visualization of cka, mutual knns
-	- [ ] implement a data collection pipeline
+	- [x] implement a data collection pipeline
+		- [ ] improve memory with `del`- in original pipeline=> better CKA estimations
 
 	- [ ] visualization of all the other measueres
+		- [x] mknn
 - [ ] implement further datasets for alignment evaluation
 	- [ ] ms coco
 	- [ ] vqa
