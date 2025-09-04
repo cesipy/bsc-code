@@ -8,6 +8,10 @@ python src/evaluate.py --path res/checkpoints/pretrained_epoch1_task123.pt
 sleep 5s
 python src/evaluate.py --path res/checkpoints/pretrained_epoch4_task123.pt
 
+python src/evaluate.py --path res/checkpoints/pretrained_epoch1_task123.pt --use-constrastive
+sleep 5s
+python src/evaluate.py --path res/checkpoints/pretrained_epoch4_task123.pt --use-constrastive
+
 
 # python src/evaluate.py # path is none per default.
 sleep 5s

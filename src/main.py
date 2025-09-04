@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="torch.nn.modul
 
 logger = Logger()
 
-USE_CONTRASTIVE_LOSS=True
+USE_CONTRASTIVE_LOSS=False
 machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 
 
@@ -87,7 +87,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     prefetch= 4
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
-    data_list = datasets.generate_data_list_pretrain(path=path, max_number=500_000)
+    data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
     data_list = data_list[:70_000]
     # validation_list = validation_list[:1000]
@@ -96,7 +96,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
     train_data = data_list
-    val_data   = validation_list[:500_000]
+    val_data   = validation_list
 
     print(len(train_data), len(val_data))
 
@@ -116,8 +116,8 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
 
     if machine == "remote":
-        bs = 80    # obout 23.3gb vrman
-        bs_alignment_analysis = 32
+        bs = 8    # obout 23.3gb vrman #TODO: is not even used??
+        bs_alignment_analysis = 16
 
     else:
         bs = 32
@@ -146,7 +146,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         num_workers=4,
         pin_memory=False,
         prefetch_factor=4,
-        num_samples=1000
+        num_samples=1500
     )
 
     trainer.train(

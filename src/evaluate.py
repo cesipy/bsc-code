@@ -35,7 +35,7 @@ machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 logger = Logger()
 
 @utils.memory_cleanup
-def train_and_eval_on_downstream_task(pretrained_model_path:str):
+def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastive:Optional[bool]=False):
     if pretrained_model_path==None or not os.path.exists(pretrained_model_path) :
         # use fresh vilbert
         info_str = f"Pretrained model path {pretrained_model_path} does not exist, using fresh model."
@@ -52,6 +52,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         print(info_str)
         logger.info(info_str)
 
+    if not use_constrastive:
+        use_constrastive=False
     # utils.freeze_all_layers(model.vit)
     # utils.freeze_all_layers(model.bert)
 
@@ -145,11 +147,13 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         pin_memory=False,
         prefetch_factor=4,
     )
-
+    info_str = f"using contrastive: {use_constrastive}"
+    print(info_str)
+    logger.info(info_str)
     trainer = Trainer(
         model,
         config,
-        use_contrastive_loss=True,
+        use_contrastive_loss=use_constrastive,
         use_cosine_loss=False,
         )
     trainer.train(
@@ -406,17 +410,22 @@ if __name__ == "__main__":
         p = argparse.ArgumentParser(description="train on hateful memes")
         p.add_argument("--path", type=str, default=None,
                     help="Path to pretrained model checkpoint (optional)")
+        p.add_argument("--use-constrastive", action="store_true",)
         p.add_argument("--test", action="store_true",
                        help="only test if it is running with small subsetof training")
 
         arg = p.parse_args()
         is_testing = arg.test
         pretrained_model_path = arg.path
+        use_constrastive = arg.use_constrastive
 
         if is_testing:
             test_on_hm()
         else:
-            train_and_eval_on_downstream_task(pretrained_model_path=pretrained_model_path)
+            train_and_eval_on_downstream_task(
+                pretrained_model_path=pretrained_model_path,
+                use_constrastive=use_constrastive
+            )
 
         # test_visualization()
     except Exception as e:

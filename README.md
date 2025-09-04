@@ -5,10 +5,12 @@ I'm currently working on it, so it is not yet complete.
 
 
 ## TODO
+- [ ] implement gradient accum.
 - [ ] problem with contrastive term in pretraining: combined approach!
 - [ ] visualization of cka, mutual knns
 	- [x] implement a data collection pipeline
 		- [ ] improve memory with `del`- in original pipeline=> better CKA estimations
+
 
 	- [ ] visualization of all the other measueres
 		- [x] mknn
@@ -378,9 +380,9 @@ problem here: way bigger loss on other tasks  => contrastive term in ap is too s
 
 #### plots on this issue:
 <figure>
-	<img src="./res/plots/training_losses-1756934554.png" width=700><br>
+	<img src="./res/markdown_res/training_losses-1756934554.png" width=700><br>
 	vs. <br>
-	<img src="./res/plots/training_losses-1755450957.png" width=700><br>
+	<img src="./res/markdown_res/training_losses-1755450957.png" width=700><br>
 
 
 </figure>
