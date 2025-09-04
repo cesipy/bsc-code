@@ -295,17 +295,21 @@ def svcca_similarity(
     vision_input = vision_embedding_numpy.reshape(-1, vision_embedding_numpy.shape[-1])
     vision_input = vision_input.transpose()  # [dim, patches*bs]
 
-    # print(f"reshaped text input shape: {text_input.shape}")
-    result = cca_core.get_cca_similarity(
-        text_input,
-        vision_input,
-        verbose=False
-    )
+    try:
+        # print(f"reshaped text input shape: {text_input.shape}")
+        result = cca_core.get_cca_similarity(
+            text_input,
+            vision_input,
+            verbose=False
+        )
 
-    # single value result
-    # from https://github.com/google/svcca/blob/master/tutorials/001_Introduction.ipynb
-    result = np.mean(result["cca_coef1"])
-    return result
+        # single value result
+        # from https://github.com/google/svcca/blob/master/tutorials/001_Introduction.ipynb
+        result = np.mean(result["cca_coef1"])
+        return result
+    except np.linalg.LinAlgError as e:
+        print(f"LinAlgError during SVCCA computation: {e}")
+        return 0.0
 
 def mutual_nearest_neighbor_alignment(text_embeds, vision_embeds, k=5):
     # this measurement is from the paper
@@ -406,11 +410,11 @@ def process_intermediate_repr(
 
         # currently not working?
         # #TODO: FIX
-        # svcca_sim = 0.0
-        svcca_sim = svcca_similarity(
-            text_embedding=representation["text_embedding"],
-            vision_embedding=representation["vision_embedding"]
-        )
+        svcca_sim = 0.0
+        # svcca_sim = svcca_similarity(
+        #     text_embedding=representation["text_embedding"],
+        #     vision_embedding=representation["vision_embedding"]
+        # )
 
         # cka_sim = 0.0
         # max_similarity_tp = 0.0

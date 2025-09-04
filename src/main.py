@@ -87,7 +87,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     prefetch= 4
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
-    data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
+    data_list = datasets.generate_data_list_pretrain(path=path, max_number=500_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
     data_list = data_list[:70_000]
     # validation_list = validation_list[:1000]
@@ -96,7 +96,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
     train_data = data_list
-    val_data   = validation_list[:10000]
+    val_data   = validation_list[:500_000]
 
     print(len(train_data), len(val_data))
 
