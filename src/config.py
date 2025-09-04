@@ -24,6 +24,11 @@ else:
     BATCH_SIZE = 32
     EPOCHS = 10
 
+
+# for the src/evaluate.py part; finetunes on hateful memes or mmimdb
+DOWNSTREAM_EPOCHS = 5
+DOWNSTREAM_LR     = 1e-6
+
 TOKENIZER_MAX_LEN = 197
 
 

@@ -1,95 +1,260 @@
+import time
+
 import torch; from torch import nn; from torch.utils.data import DataLoader
 from ckatorch.core import cka_batch, cka_base
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from tqdm import tqdm
+
+
 import cca_core
 from vilbert import ViLBERT
-
-import time
-
-
 from config import *
 import utils
 from logger import Logger
 
 logger = Logger()
 
+def _visualize_cka(measure_per_layer: dict, num_layers: int):
+    #TODO: also vision-to-vision comparision, txt-2-txt comparison
 
-# def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
+    cka_matrix = np.zeros((num_layers, num_layers))
 
-#     model.eval()
-#     device = torch.cuda.is_available()
+    for i in range(num_layers):
+        for j in range(num_layers):
+            current_text = measure_per_layer[i]["text_embeddings"]
+            current_vision = measure_per_layer[j]["vision_embeddings"]
 
-#     measure_per_layer = {}
-#     for i in range(model.depth):
-#         measure_per_layer[i] = {
-#             "text_embeddings": [],
-#             "vision_embeddings": [],
-#             "is_cross_attention": None,
-#             "layer": i
-#         }
+            cka_ij = cka(
+                text_embedding=current_text,
+                vision_embedding=current_vision
+            )
+            cka_matrix[i,j] = cka_ij
 
-#     with torch.no_grad():
-#         for batch in dataloader:
-
-#             text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
-#             image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
-#             label = batch["label"].to(device)
-
-#             # print(f"img shape: {image['pixel_values'].shape}, ")
-
-#             preds, intermediate_representations = model(
-#                 text_input_ids=text["input_ids"],
-#                 text_attention_mask=text["attention_mask"],
-#                 text_token_type_ids=text.get("token_type_ids", None),
-#                 image_pixel_values=image["pixel_values"],
-#                 image_attention_mask=image.get("attention_mask", None),
-#                 save_intermediate_representations=True
-#             )
-
-#             #generate dummy reprs
-#             # intermediate_representations = [
-#             #     {
-#             #         "text_embedding": torch.randn(16, 197, 768),
-#             #         "vision_embedding": torch.randn(16, 197, 768),
-#             #         "is_cross_attention": i in [0, 2],
-#             #         "layer": i
-#             #     } for i in range(4)
-#             # ]
-
-#             # shape: [bs, num_tokens, dim]
-
-#             for repr_dict in intermediate_representations:
-#                 repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
-#                 repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
 
 
-#             for repr_dict in intermediate_representations:
-#                 layer = repr_dict["layer"]
-#                 measure_per_layer[layer]["text_embeddings"].append(repr_dict["text_embedding"])
-#                 measure_per_layer[layer]["vision_embeddings"].append(repr_dict["vision_embedding"])
-#                 measure_per_layer[layer]["is_cross_attention"] = repr_dict["is_cross_attention"]
+    im = ax.imshow(cka_matrix, cmap='magma', vmin=0, vmax=1, aspect='equal')
 
-#             if len(measure_per_layer[0]["text_embeddings"]) % 10 == 0:
-#                 torch.cuda.empty_cache()
-#                 break
+    ax.set_xticks(range(num_layers))
+    ax.set_yticks(range(num_layers))
+    ax.set_xticklabels(range(num_layers))
+    ax.set_yticklabels(range(num_layers))
 
-#     for layer in measure_per_layer.keys():
-#         measure_per_layer[layer]["text_embeddings"] = torch.cat(measure_per_layer[layer]["text_embeddings"], dim=0)
-#         measure_per_layer[layer]["vision_embeddings"] = torch.cat(measure_per_layer[layer]["vision_embeddings"], dim=0)
-#         print(f"layer {layer}, text shape: {measure_per_layer[layer]['text_embeddings'].shape}, vision shape: {measure_per_layer[layer]['vision_embeddings'].shape}")
+    ax.set_xlabel('Vision Layer', fontsize=12)
+    ax.set_ylabel('Text Layer', fontsize=12)
+    ax.set_title('Cross-Modal CKA', fontsize=14, pad=20)
 
-#         cka_measure = cka(
-#             text_embedding=measure_per_layer[layer]["text_embeddings"],
-#             vision_embedding=measure_per_layer[layer]["vision_embeddings"]
-#         )
 
-#         print(f"layer {layer}, CKA measure: {cka_measure}")
+    cbar = plt.colorbar(im, ax=ax, shrink=0.8)
+    cbar.set_label('CKA (Linear)', rotation=270, labelpad=15)
+
+    ax.tick_params(labelsize=10)
+    plt.tight_layout()
+
+
+    timestamp = int(time.time())
+    filename = f"res/plots/cross_modal_cka_{timestamp}.png"
+    plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
+    print(f"Cross-modal CKA matrix saved to {filename}")
 
 
 
+def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
+
+    model.eval()
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    measure_per_layer = {}
+    for i in range(model.depth):
+        measure_per_layer[i] = {
+            "text_embeddings": [],
+            "vision_embeddings": [],
+            "is_cross_attention": None,
+            "layer": i
+        }
+
+    with torch.no_grad():
+        for batch in dataloader:
+
+            text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+            image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+            label = batch["label"].to(device)
+
+            # print(f"img shape: {image['pixel_values'].shape}, ")
+
+            preds, intermediate_representations = model(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                save_intermediate_representations=True
+            )
+
+            #generate dummy reprs
+            # intermediate_representations = [
+            #     {
+            #         "text_embedding": torch.randn(16, 197, 768),
+            #         "vision_embedding": torch.randn(16, 197, 768),
+            #         "is_cross_attention": i in [0, 2],
+            #         "layer": i
+            #     } for i in range(4)
+            # ]
+
+            # shape: [bs, num_tokens, dim]
+
+            for repr_dict in intermediate_representations:
+                repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
+                repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
 
 
-#     model.train()
+            for repr_dict in intermediate_representations:
+                layer = repr_dict["layer"]
+                measure_per_layer[layer]["text_embeddings"].append(repr_dict["text_embedding"])
+                measure_per_layer[layer]["vision_embeddings"].append(repr_dict["vision_embedding"])
+                measure_per_layer[layer]["is_cross_attention"] = repr_dict["is_cross_attention"]
+
+            if len(measure_per_layer[0]["text_embeddings"]) % 10 == 0:
+                torch.cuda.empty_cache()
+                break
+
+    for layer in measure_per_layer.keys():
+        measure_per_layer[layer]["text_embeddings"] = torch.cat(measure_per_layer[layer]["text_embeddings"], dim=0)
+        measure_per_layer[layer]["vision_embeddings"] = torch.cat(measure_per_layer[layer]["vision_embeddings"], dim=0)
+        print(f"layer {layer}, text shape: {measure_per_layer[layer]['text_embeddings'].shape}, vision shape: {measure_per_layer[layer]['vision_embeddings'].shape}")
+
+    model.train()
+    return measure_per_layer        # dict
+
+def visualize_cka(
+    dataloader: DataLoader,
+    model: ViLBERT
+    ):
+
+    measures_per_layer: dict = get_visualisation_data(dataloader, model)
+    _visualize_cka(measures_per_layer, model.depth)
+
+def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
+    model.eval()
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    layers = {}
+    for i in range(model.depth):
+        layers[i] = {
+            "text_embeddings": [],
+            "vision_embeddings": [],
+            "is_cross_attention": i in model.cross_attention_layers,
+            "layer": i
+        }
+
+    for i, batch in enumerate(dataloader):
+        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+        label = batch["label"].to(device)
+
+        with torch.no_grad():
+            preds, intermediate_representations =model.forward(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                save_intermediate_representations=True
+            )
+
+            for repr_dict in intermediate_representations:
+                layer = repr_dict["layer"]
+                cls_text = repr_dict["text_embedding"][:, 0, :].detach().cpu()   # [bs, dim]
+                cls_vision = repr_dict["vision_embedding"][:, 0, :].detach().cpu() # [bs, dim]
+                layers[layer]["text_embeddings"].append(cls_text)
+                layers[layer]["vision_embeddings"].append(cls_vision)
+
+            del intermediate_representations
+            del text
+            del image
+            del preds
+
+    mknn_values = {}
+    for i in range(model.depth):
+        layers[i]["text_embeddings"] = torch.cat(layers[i]["text_embeddings"], dim=0)
+        layers[i]["vision_embeddings"] = torch.cat(layers[i]["vision_embeddings"], dim=0)
+
+        mknn = mutual_knn_alignment_gpu_advanced(
+            Z1=layers[i]["text_embeddings"],
+            Z2=layers[i]["vision_embeddings"],
+            k=10
+        )
+        # print(f"Layer {i} MKNN alignment: {mknn:.4f}")
+        mknn_values[i] = mknn
+
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+
+
+    layer_sims = []
+    with torch.no_grad():
+        for i, batch in enumerate(dataloader):
+
+            text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+            image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+            label = batch["label"].to(device)
+
+            # print(f"img shape: {image['pixel_values'].shape}, ")
+
+            preds, intermediate_representations = model(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                save_intermediate_representations=True
+            )
+
+            #generate dummy reprs
+            # intermediate_representations = [
+            #     {
+            #         "text_embedding": torch.randn(16, 197, 768),
+            #         "vision_embedding": torch.randn(16, 197, 768),
+            #         "is_cross_attention": i in [0, 2],
+            #         "layer": i
+            #     } for i in range(4)
+            # ]
+
+            for repr_dict in intermediate_representations:
+                repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
+                repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
+
+
+
+            current_layer_sims: list[dict] = process_intermediate_repr(
+                intermediate_reprs=intermediate_representations,
+                pooling_method="cls",
+            )
+
+            del intermediate_representations
+            del text
+            del image
+
+            layer_sims.extend(current_layer_sims)
+
+            if i % 10 == 0:
+                torch.cuda.empty_cache()
+
+    analyse(
+        layer_similarities=layer_sims,
+        num_layers=model.depth,
+        mknn_values=mknn_values)
+    model.train()
+
+    with torch.no_grad():
+        torch.cuda.empty_cache()
 
 def mutual_knn_alignment(
     Z1: torch.Tensor,

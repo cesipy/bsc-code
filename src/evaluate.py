@@ -84,7 +84,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
         bs = 32
         bs_alignment_analysis = 48
 
-    config.learning_rate = 2e-6
+    config.learning_rate = DOWNSTREAM_LR
     print(bs)
     print(f"bs_alignment_analysis: {bs_alignment_analysis}")
 
@@ -155,7 +155,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
-        epochs=9,
+        epochs=DOWNSTREAM_EPOCHS,
         hm_dataloader=hm_dataloader,
         cc_dataloader=cc_dataloader
     )

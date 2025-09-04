@@ -21,122 +21,6 @@ from info_nce import InfoNCE, info_nce
 
 
 
-def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
-    model.eval()
-    with torch.no_grad():
-        torch.cuda.empty_cache()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    layers = {}
-    for i in range(model.depth):
-        layers[i] = {
-            "text_embeddings": [],
-            "vision_embeddings": [],
-            "is_cross_attention": i in model.cross_attention_layers,
-            "layer": i
-        }
-
-    for i, batch in enumerate(tqdm(dataloader,total=len(dataloader))):
-        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
-        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
-        label = batch["label"].to(device)
-
-        with torch.no_grad():
-            preds, intermediate_representations =model.forward(
-                text_input_ids=text["input_ids"],
-                text_attention_mask=text["attention_mask"],
-                text_token_type_ids=text.get("token_type_ids", None),
-                image_pixel_values=image["pixel_values"],
-                image_attention_mask=image.get("attention_mask", None),
-                save_intermediate_representations=True
-            )
-
-            for repr_dict in intermediate_representations:
-                layer = repr_dict["layer"]
-                cls_text = repr_dict["text_embedding"][:, 0, :].detach().cpu()   # [bs, dim]
-                cls_vision = repr_dict["vision_embedding"][:, 0, :].detach().cpu() # [bs, dim]
-                layers[layer]["text_embeddings"].append(cls_text)
-                layers[layer]["vision_embeddings"].append(cls_vision)
-
-            del intermediate_representations
-            del text
-            del image
-            del preds
-
-    mknn_values = {}
-    for i in range(model.depth):
-        layers[i]["text_embeddings"] = torch.cat(layers[i]["text_embeddings"], dim=0)
-        layers[i]["vision_embeddings"] = torch.cat(layers[i]["vision_embeddings"], dim=0)
-
-        mknn = analysis.mutual_knn_alignment_gpu_advanced(
-            Z1=layers[i]["text_embeddings"],
-            Z2=layers[i]["vision_embeddings"],
-            k=10
-        )
-        # print(f"Layer {i} MKNN alignment: {mknn:.4f}")
-        mknn_values[i] = mknn
-
-    with torch.no_grad():
-        torch.cuda.empty_cache()
-
-
-    layer_sims = []
-    with torch.no_grad():
-        for i, batch in enumerate(tqdm(dataloader,total=len(dataloader))):
-
-            text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
-            image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
-            label = batch["label"].to(device)
-
-            # print(f"img shape: {image['pixel_values'].shape}, ")
-
-            preds, intermediate_representations = model(
-                text_input_ids=text["input_ids"],
-                text_attention_mask=text["attention_mask"],
-                text_token_type_ids=text.get("token_type_ids", None),
-                image_pixel_values=image["pixel_values"],
-                image_attention_mask=image.get("attention_mask", None),
-                save_intermediate_representations=True
-            )
-
-            #generate dummy reprs
-            # intermediate_representations = [
-            #     {
-            #         "text_embedding": torch.randn(16, 197, 768),
-            #         "vision_embedding": torch.randn(16, 197, 768),
-            #         "is_cross_attention": i in [0, 2],
-            #         "layer": i
-            #     } for i in range(4)
-            # ]
-
-            for repr_dict in intermediate_representations:
-                repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
-                repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
-
-
-
-            current_layer_sims: list[dict] = analysis.process_intermediate_repr(
-                intermediate_reprs=intermediate_representations,
-                pooling_method="cls",
-            )
-
-            del intermediate_representations
-            del text
-            del image
-
-            layer_sims.extend(current_layer_sims)
-
-            if i % 10 == 0:
-                torch.cuda.empty_cache()
-
-    analysis.analyse(
-        layer_similarities=layer_sims,
-        num_layers=model.depth,
-        mknn_values=mknn_values)
-    model.train()
-
-    with torch.no_grad():
-        torch.cuda.empty_cache()
-
 
 def alignment_loss_cosine(text_emb, vision_emb):
     cosine_sim = torch.nn.functional.cosine_similarity(
@@ -282,24 +166,27 @@ class Trainer():
         hm_dataloader: CustomDataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
+        analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
-        if hm_dataloader is not None and cc_dataloader is not None:
-                info_str = "\n\nbefore training, evaluating on uninitialized model"
-                print(info_str)
-                self.logger.info(info_str)
-                info_str = "alignment for hateful memes:"
-                print(info_str)
-                self.logger.info(info_str)
-                analyse_alignment(hm_dataloader, self.model)
+        # if hm_dataloader is not None and cc_dataloader is not None:
+        #         info_str = "\n\nbefore training, evaluating on uninitialized model"
+        #         print(info_str)
+        #         self.logger.info(info_str)
+        #         info_str = "alignment for hateful memes:"
+        #         print(info_str)
+        #         self.logger.info(info_str)
+        #         analysis.analyse_alignment(hm_dataloader, self.model)
 
-                info_str = "alignment for conceptual captions:"
-                print(info_str)
-                self.logger.info(info_str)
-                analyse_alignment(cc_dataloader, self.model)
+        #         info_str = "alignment for conceptual captions:"
+        #         print(info_str)
+        #         self.logger.info(info_str)
+        #         analysis.analyse_alignment(cc_dataloader, self.model)
 
-                info_str = "finished!" + "\n" + 20*"-"
-                print(info_str)
-                self.logger.info(info_str)
+        #         info_str = "finished!" + "\n" + 20*"-"
+        #         print(info_str)
+        #         self.logger.info(info_str)
+
+
 
         for epoch in range(epochs):
             train_loss = self.train_epoch(train_dataloader)
@@ -312,12 +199,14 @@ class Trainer():
                 info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
-                analyse_alignment(hm_dataloader, self.model)
+                analysis.analyse_alignment(hm_dataloader, self.model)
+                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
                 info_str = "alignment for conceptual captions:"
                 print(info_str)
                 self.logger.info(info_str)
-                analyse_alignment(cc_dataloader, self.model)
+                analysis.analyse_alignment(cc_dataloader, self.model)
+                analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
 
 
 
@@ -913,12 +802,12 @@ class PretrainingTrainer:
                 info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
-                analyse_alignment(hm_dataloader, self.model)
+                analysis.analyse_alignment(hm_dataloader, self.model)
 
                 info_str = "alignment for conceptual captions:"
                 print(info_str)
                 self.logger.info(info_str)
-                analyse_alignment(cc_dataloader, self.model)
+                analysis.analyse_alignment(cc_dataloader, self.model)
 
 
         utils.plot_losses(
