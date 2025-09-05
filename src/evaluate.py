@@ -145,7 +145,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         num_workers=4,
         pin_memory=False,
         prefetch_factor=4,
-        num_samples=1000
+        num_samples=4000
     )
     info_str = f"using contrastive: {use_constrastive}"
     print(info_str)

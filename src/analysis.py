@@ -32,8 +32,8 @@ def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 1
     for i in tqdm(range(num_layers), leave=False, desc="Computing Rank Sim & Procrustes"):
         for j in range(num_layers):
             # Extract the [CLS] token representations for text layer i and vision layer j
-            text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
-            vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+            text_cls = measure_per_layer[i]["text_embeddings"]
+            vision_cls = measure_per_layer[j]["vision_embeddings"]
 
             # Compute and store the metrics
             rank_sim_cross_modal[i, j] = measures.rank_similarity(
@@ -54,7 +54,7 @@ def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 1
     plt.colorbar(im1, ax=axes[0], shrink=0.8, label='Rank Similarity')
 
     # Orthogonal Procrustes Plot
-    im2 = axes[1].imshow(procrustes_dist_cross_modal, cmap='viridis_r', aspect='equal') # _r reverses colormap
+    im2 = axes[1].imshow(procrustes_dist_cross_modal, cmap='magma_r', aspect='equal') # _r reverses colormap
     axes[1].set_title('Cross-Modal Procrustes Distance')
     axes[1].set_xlabel('Vision Layer')
     axes[1].set_ylabel('Text Layer')
@@ -80,23 +80,23 @@ def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
     for i in tqdm(range(num_layers), leave=False, desc="computing neighborhood measures"):
         for j in range(num_layers):
             # Cross-modal (text layer i CLS vs vision layer j CLS)
-            text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
-            vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+            text_cls = measure_per_layer[i]["text_embeddings"]
+            vision_cls = measure_per_layer[j]["vision_embeddings"]
 
             jaccard_cross_modal[i,j] = measures.jaccard_similarity(
                 X=text_cls, Y=vision_cls, k=k
             )
             # text2text
-            text_cls_i = measure_per_layer[i]["text_embeddings"][:, 0, :]
-            text_cls_j = measure_per_layer[j]["text_embeddings"][:, 0, :]
+            text_cls_i = measure_per_layer[i]["text_embeddings"]
+            text_cls_j = measure_per_layer[j]["text_embeddings"]
 
             jaccard_text_text[i,j] = measures.jaccard_similarity(
                 X=text_cls_i, Y=text_cls_j, k=k
             )
 
             # vis2vis
-            vision_cls_i = measure_per_layer[i]["vision_embeddings"][:, 0, :]
-            vision_cls_j = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+            vision_cls_i = measure_per_layer[i]["vision_embeddings"]
+            vision_cls_j = measure_per_layer[j]["vision_embeddings"]
 
             jaccard_vision_vision[i,j] = measures.jaccard_similarity(
                 X=vision_cls_i, Y=vision_cls_j, k=k
@@ -251,22 +251,22 @@ def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10)
     for i in tqdm(range(num_layers), leave=False, desc="computing mknn matrix"):
         for j in range(num_layers):
             # Cross-modal (text layer i CLS vs vision layer j CLS)
-            text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
-            vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+            text_cls = measure_per_layer[i]["text_embeddings"]
+            vision_cls = measure_per_layer[j]["vision_embeddings"]
             cross_modal_matrix[i,j] = measures.mutual_knn_alignment_gpu_advanced(
                 Z1=text_cls, Z2=vision_cls, k=k
             )
 
             # Text-to-text
-            text_cls_i = measure_per_layer[i]["text_embeddings"][:, 0, :]
-            text_cls_j = measure_per_layer[j]["text_embeddings"][:, 0, :]
+            text_cls_i = measure_per_layer[i]["text_embeddings"]
+            text_cls_j = measure_per_layer[j]["text_embeddings"]
             text_text_matrix[i,j] = measures.mutual_knn_alignment_gpu_advanced(
                 Z1=text_cls_i, Z2=text_cls_j, k=k
             )
 
             # Vision-to-vision
-            vision_cls_i = measure_per_layer[i]["vision_embeddings"][:, 0, :]
-            vision_cls_j = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+            vision_cls_i = measure_per_layer[i]["vision_embeddings"]
+            vision_cls_j = measure_per_layer[j]["vision_embeddings"]
             vision_vision_matrix[i,j] = measures.mutual_knn_alignment_gpu_advanced(
                 Z1=vision_cls_i, Z2=vision_cls_j, k=k
             )
@@ -326,6 +326,8 @@ def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10)
 def get_visualisation_data(
     dataloader: DataLoader,
     model: ViLBERT,
+    num_samples:int,
+    cls_only:bool=False
     #TODO: how many samples to collec
     ):
 
@@ -343,6 +345,9 @@ def get_visualisation_data(
             "is_cross_attention": None,
             "layer": i
         }
+
+    batch_size = dataloader.batch_size
+    sample_counter  = 0
 
     with torch.no_grad():
         for batch in dataloader:
@@ -373,10 +378,14 @@ def get_visualisation_data(
             # ]
 
             # shape: [bs, num_tokens, dim]
-
-            for repr_dict in intermediate_representations:
-                repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
-                repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
+            if cls_only:
+                for repr_dict in intermediate_representations:
+                    repr_dict["text_embedding"]= repr_dict["text_embedding"][:,0,:].detach().cpu()   # [bs,  dim]
+                    repr_dict["vision_embedding"] = repr_dict["vision_embedding"][:,0,:].detach().cpu()
+            else:
+                for repr_dict in intermediate_representations:
+                    repr_dict["text_embedding"] = repr_dict["text_embedding"].detach().cpu()
+                    repr_dict["vision_embedding"] = repr_dict["vision_embedding"].detach().cpu()
 
 
             for repr_dict in intermediate_representations:
@@ -387,8 +396,8 @@ def get_visualisation_data(
 
             del intermediate_representations, text, image, preds
 
-            if len(measure_per_layer[0]["text_embeddings"]) > 50:
-                torch.cuda.empty_cache()
+            sample_counter += batch_size
+            if sample_counter >= num_samples:
                 break
 
     for layer in measure_per_layer.keys():
@@ -405,11 +414,22 @@ def visualize_cka(
     model: ViLBERT
     ):
 
-    measures_per_layer: dict = get_visualisation_data(dataloader, model)
-    _visualize_new_measures(measures_per_layer, model.depth, k=10)
-    _visualize_jaccard(measures_per_layer, model.depth, k=10)
-    _visualize_cka(measures_per_layer, model.depth)
-    _visualize_mutual_knn(measures_per_layer, model.depth, k=10)
+    measures_per_layer_full_seq: dict = get_visualisation_data(
+        dataloader=dataloader,
+        model=model,
+        num_samples=200
+    )
+
+    measures_per_layer_cls: dict = get_visualisation_data(
+        dataloader=dataloader,
+        model=model,
+        num_samples=2000,
+        cls_only=True
+    )
+    _visualize_new_measures(measures_per_layer_cls, model.depth, k=10)
+    _visualize_jaccard(measures_per_layer_cls, model.depth, k=10)
+    _visualize_cka(measures_per_layer_full_seq, model.depth)
+    _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=10)
 
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.eval()
