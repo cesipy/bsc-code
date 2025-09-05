@@ -183,25 +183,28 @@ class Trainer():
             learning_rate=self.lr,
             min_lr_fraction=0.1,
         )
-        analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+        # analysis.analyse_alignment(dataloader=hm_dataloader, model=self.model)
+        # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
-        # if hm_dataloader is not None and cc_dataloader is not None:
-        #         info_str = "\n\nbefore training, evaluating on uninitialized model"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         info_str = "alignment for hateful memes:"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         analysis.analyse_alignment(hm_dataloader, self.model)
+        if hm_dataloader is not None and cc_dataloader is not None:
+                info_str = "\n\nbefore training, evaluating on uninitialized model"
+                print(info_str)
+                self.logger.info(info_str)
+                info_str = "alignment for hateful memes:"
+                print(info_str)
+                self.logger.info(info_str)
+                analysis.analyse_alignment(hm_dataloader, self.model)
 
-        #         info_str = "alignment for conceptual captions:"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         analysis.analyse_alignment(cc_dataloader, self.model)
+                info_str = "alignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+                analysis.analyse_alignment(cc_dataloader, self.model)
 
-        #         info_str = "finished!" + "\n" + 20*"-"
-        #         print(info_str)
-        #         self.logger.info(info_str)
+                info_str = "finished!" + "\n" + 20*"-"
+                print(info_str)
+                self.logger.info(info_str)
+
+                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
 
 
@@ -219,10 +222,10 @@ class Trainer():
                 analysis.analyse_alignment(hm_dataloader, self.model)
                 analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
-                info_str = "alignment for conceptual captions:"
-                print(info_str)
-                self.logger.info(info_str)
-                analysis.analyse_alignment(cc_dataloader, self.model)
+                # info_str = "alignment for conceptual captions:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # analysis.analyse_alignment(cc_dataloader, self.model)
                 # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
 
 

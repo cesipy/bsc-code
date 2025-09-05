@@ -17,6 +17,114 @@ from logger import Logger
 
 logger = Logger()
 
+
+def jaccard_similarity(
+    X: torch.Tensor,        # [n, d]
+    Y: torch.Tensor,
+    k: int = 10,
+):
+    n = X.shape[0]
+    assert Y.shape[0] == n
+
+    knns1 = pairwise_knn(X, k)   # [n, k]
+    knns2 = pairwise_knn(Y, k)   # [n, k]
+
+    sims = []
+
+    for i in range(n):
+        nearest_neighbors1 = set(knns1[i].cpu().numpy())
+        nearest_neighbors2 = set(knns2[i].cpu().numpy())
+
+        denom = len(nearest_neighbors1.intersection(nearest_neighbors2))
+        nom = len(nearest_neighbors1.union(nearest_neighbors2))
+
+        sim = 0.0
+        if nom > 0:
+            sim = denom / nom
+
+        sims.append(sim)
+
+    avg = sum(sims) / len(sims)
+    return avg
+
+
+
+def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
+
+    jaccard_cross_modal = np.zeros((num_layers, num_layers))
+    jaccard_text_text = np.zeros((num_layers, num_layers))
+    jaccard_vision_vision = np.zeros((num_layers, num_layers))
+
+
+
+    for i in tqdm(range(num_layers), leave=False, desc="computing neighborhood measures"):
+        for j in range(num_layers):
+            # Cross-modal (text layer i CLS vs vision layer j CLS)
+            text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
+            vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+
+            jaccard_cross_modal[i,j] = jaccard_similarity(
+                X=text_cls, Y=vision_cls, k=k
+            )
+            # text2text
+            text_cls_i = measure_per_layer[i]["text_embeddings"][:, 0, :]
+            text_cls_j = measure_per_layer[j]["text_embeddings"][:, 0, :]
+
+            jaccard_text_text[i,j] = jaccard_similarity(
+                X=text_cls_i, Y=text_cls_j, k=k
+            )
+
+            # vis2vis
+            vision_cls_i = measure_per_layer[i]["vision_embeddings"][:, 0, :]
+            vision_cls_j = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+
+            jaccard_vision_vision[i,j] = jaccard_similarity(
+                X=vision_cls_i, Y=vision_cls_j, k=k
+            )
+
+    # all the plotting from genai
+    fig1, axes1 = plt.subplots(1, 3, figsize=(18, 5))
+
+
+    # k-NN Jaccard Plot
+    im1 = axes1[0].imshow(jaccard_cross_modal, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes1[0].set_title(f'Cross-Modal k-NN Jaccard (k={k})', fontsize=14, pad=20)
+    axes1[0].set_xlabel('Vision Layer'); axes1[0].set_ylabel('Text Layer')
+
+    im2 = axes1[1].imshow(jaccard_text_text, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes1[1].set_title(f'Text k-NN Jaccard (k={k})', fontsize=14, pad=20)
+    axes1[1].set_xlabel('Text Layer'); axes1[1].set_ylabel('Text Layer')
+
+    im3 = axes1[2].imshow(jaccard_vision_vision, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes1[2].set_title(f'Vision k-NN Jaccard (k={k})', fontsize=14, pad=20)
+    axes1[2].set_xlabel('Vision Layer'); axes1[2].set_ylabel('Vision Layer')
+
+
+
+    # Add ticks and colorbars
+    for ax in axes1:
+        ax.set_xticks(range(num_layers)); ax.set_yticks(range(num_layers))
+        ax.set_xticklabels(range(num_layers)); ax.set_yticklabels(range(num_layers))
+
+
+    plt.colorbar(im1, ax=axes1[0], shrink=0.8, label='Jaccard Similarity')
+    plt.colorbar(im2, ax=axes1[1], shrink=0.8)
+    plt.colorbar(im3, ax=axes1[2], shrink=0.8)
+
+
+
+    plt.tight_layout()
+
+    # Save plots
+    timestamp = int(time.time())
+    fig1.savefig(f"res/plots/jaccard_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
+
+
+    plt.show()
+
+    return (jaccard_cross_modal, jaccard_text_text, jaccard_vision_vision,)
+
+
 def _visualize_cka(measure_per_layer: dict, num_layers: int):
 
     cross_modal_matrix = np.zeros((num_layers, num_layers))
@@ -33,6 +141,16 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
                 text_embedding=current_text,
                 vision_embedding=current_vision
             )
+            print(f"layer {i}-{j}, cka: {cross_modal_matrix[i,j]:.4f}")
+            # weird results, not sure if this impl is correct at all...
+            # cross_modal_matrix[i,j] = cka_base(
+            #     x=current_text.reshape(current_text.shape[0], -1),        #[batch_size, num_tokens * embedding_dim]
+            #     y=current_vision.reshape(current_vision.shape[0], -1),    #[batch_size, num_patches * embedding_dim]
+            #     # x=current_text.reshape(-1, current_text.shape[-1]),    # [batch*tokens, 768]
+            #     # y=current_vision.reshape(-1, current_vision.shape[-1]), # [batch*patches, 768]
+            #     kernel="rbf",
+            #     method="hsic"
+            # ).item()
 
             text_i = measure_per_layer[i]["text_embeddings"]
             text_j = measure_per_layer[j]["text_embeddings"]
@@ -40,6 +158,11 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
                 text_embedding=text_i,
                 vision_embedding=text_j
             )
+            # text_text_matrix[i,j] = cka_base(
+            #     x=text_i.reshape(text_i.shape[0], -1),
+            #     y=text_j.reshape(text_j.shape[0], -1),
+            #     kernel="rbf",
+            #     method="hsic")
 
             vision_i = measure_per_layer[i]["vision_embeddings"]
             vision_j = measure_per_layer[j]["vision_embeddings"]
@@ -94,7 +217,7 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
     timestamp = int(time.time())
     filename = f"res/plots/all_cka_matrices_{timestamp}.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
-    print(f"All CKA matrices saved to {filename}")
+
 
     plt.show()
 
@@ -175,7 +298,6 @@ def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10)
     timestamp = int(time.time())
     filename = f"res/plots/mutual_knn_matrices_{timestamp}.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
-    print(f"Mutual k-NN matrices saved to {filename}")
 
     plt.show()
 
@@ -242,7 +364,7 @@ def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
 
             del intermediate_representations, text, image, preds
 
-            if len(measure_per_layer[0]["text_embeddings"]) > 50:
+            if len(measure_per_layer[0]["text_embeddings"]) > 20:
                 torch.cuda.empty_cache()
                 break
 
@@ -251,6 +373,7 @@ def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
         measure_per_layer[layer]["vision_embeddings"] = torch.cat(measure_per_layer[layer]["vision_embeddings"], dim=0)
         # print(f"layer {layer}, text shape: {measure_per_layer[layer]['text_embeddings'].shape}, vision shape: {measure_per_layer[layer]['vision_embeddings'].shape}")
 
+    print(f"shape of collected visualization data: {measure_per_layer[0]['text_embeddings'].shape}, {measure_per_layer[0]['vision_embeddings'].shape}")
     model.train()
     return measure_per_layer        # dict
 
@@ -260,11 +383,13 @@ def visualize_cka(
     ):
 
     measures_per_layer: dict = get_visualisation_data(dataloader, model)
+    _visualize_jaccard(measures_per_layer, model.depth, k=10)
     _visualize_cka(measures_per_layer, model.depth)
     _visualize_mutual_knn(measures_per_layer, model.depth, k=10)
 
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.eval()
+
     with torch.no_grad():
         torch.cuda.empty_cache()
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -282,6 +407,9 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
         image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
         label = batch["label"].to(device)
 
+
+
+
         with torch.no_grad():
             preds, intermediate_representations =model.forward(
                 text_input_ids=text["input_ids"],
@@ -294,8 +422,8 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
             for repr_dict in intermediate_representations:
                 layer = repr_dict["layer"]
-                cls_text = repr_dict["text_embedding"][:, 0, :].detach().cpu()   # [bs, dim]
-                cls_vision = repr_dict["vision_embedding"][:, 0, :].detach().cpu() # [bs, dim]
+                cls_text = repr_dict["text_embedding"][:,0,:].detach().cpu()   # [bs, dim]
+                cls_vision = repr_dict["vision_embedding"][:,0,:].detach().cpu() # [bs, dim]
                 layers[layer]["text_embeddings"].append(cls_text)
                 layers[layer]["vision_embeddings"].append(cls_vision)
 
@@ -304,18 +432,53 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             del image
             del preds
 
+
+
     mknn_values = {}
+
     for i in range(model.depth):
         layers[i]["text_embeddings"] = torch.cat(layers[i]["text_embeddings"], dim=0)
         layers[i]["vision_embeddings"] = torch.cat(layers[i]["vision_embeddings"], dim=0)
+        current_text = layers[i]["text_embeddings"]
+        current_vision = layers[i]["vision_embeddings"]
 
-        mknn = mutual_knn_alignment_gpu_advanced(
-            Z1=layers[i]["text_embeddings"],
-            Z2=layers[i]["vision_embeddings"],
+        # cka_cls = cka_base(
+        #     x=text_cls,
+        #     y=vision_cls,
+        #     kernel="linear",
+        #     method="hsic"
+        # )
+        # device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # cka_seq = cka_base(
+        #     x=text_seq.to(device),
+        #     y=vision_seq.to(device),
+        #     kernel="linear",
+        #     method="hsic"
+        # ).cpu().item()
+        # print(f"Layer {i}: CKA (CLS) = {cka_cls:.4f}, CKA (Seq) = {cka_seq:.4f}")
+
+
+    #     # print(f"shape of cls: text {text_cls.shape}, vision {vision_cls.shape}")
+    #
+    #     # print(f"shape of full-seq: text {text_seq.shape}, vision {vision_seq.shape}")
+    #     mknn_seq = mutual_knn_alignment_gpu_advanced(
+    #         Z1=text_seq,
+    #         Z2=vision_seq,
+    #         k=10
+    #     )
+
+    #     print(f"Layer {i}: mKNN (CLS) = {mknn_cls:.4f}, mKNN (Seq) = {mknn_seq:.4f}")
+
+        mknn_cls = mutual_knn_alignment_gpu_advanced(
+            Z1=current_text,
+            Z2=current_vision,
             k=10
         )
-        # print(f"Layer {i} MKNN alignment: {mknn:.4f}")
-        mknn_values[i] = mknn
+
+        mknn_values[i] = mknn_cls
+
+
 
     with torch.no_grad():
         torch.cuda.empty_cache()
@@ -379,21 +542,32 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     with torch.no_grad():
         torch.cuda.empty_cache()
 
+def knn(row: int, Z, k):
+    # print(f"shape: {Z[row].unspeeze(0).shape}")
+
+    # get knns for row in Z
+    distances = torch.cdist(Z[row].unsqueeze(0), Z)
+    # print(f"distances shape: {distances.shape}")
+    knns_vals, knns_inds = torch.topk(distances, k=k+1, largest=False)  # include self
+    # print(f"knn indices shape: {knns_inds.shape}")
+    return knns_inds[0, 1:]
+
+def pairwise_knn(
+    X: torch.tensor,
+    k:int
+):
+    distances = torch.cdist(X, X)
+
+    # self is included
+    knns_vals, knns_inds = torch.topk(distances, k=k+1, largest=False, dim=1)
+    return knns_inds[:, 1:]  # remove self
+
 def mutual_knn_alignment(
     Z1: torch.Tensor,
     Z2: torch.Tensor,
     k: int = 10
 ):
     # Z is matrix, each row is one sample
-    def knn(row: int, Z, k):
-        # print(f"shape: {Z[row].unspeeze(0).shape}")
-
-        # get knns for row in Z
-        distances = torch.cdist(Z[row].unsqueeze(0), Z)
-        # print(f"distances shape: {distances.shape}")
-        knns_vals, knns_inds = torch.topk(distances, k=k+1, largest=False)  # include self
-        # print(f"knn indices shape: {knns_inds.shape}")
-        return knns_inds[0, 1:]
 
     def align(Z1, Z2, k):
         # a(i,j) = 1[j in knn(i, Z1) and i in knn(j, Z2); and i != j]
@@ -910,19 +1084,36 @@ if __name__ == "__main__":
 
     data1 = torch.rand( 10000, 768)
     data2 = torch.rand( 10000,768)
-    start = time.time()
-    mknn_gpu = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data2, k=5)
-    end = time.time()
-    diff_gpu = end - start
 
-    print(f"mknn_gpu_advanced: {mknn_gpu}, time: {diff_gpu}")
-    mknn_simple = mutual_knn_alignment_simple(Z1=data1, Z2=data2, k=5)
-    print(f"mknn_simple: {mknn_simple}, diff = {mknn_gpu - mknn_simple}")
+    cka_identical = cka_base(
+        x=data1,
+        y=data1,
+        kernel="linear",         # Use linear kernel (standard for CKA)
+        unbiased=False,          # Use biased version (standard)
+        method="fro_norm"        # Use Frobenius norm method
+    )
+    cka_different = cka_base(
+        x=data1,
+        y=data2,
+        kernel="linear",         # Use linear kernel (standard for CKA)
+        unbiased=False,          # Use biased version (standard)
+        method="fro_norm"        # Use Frobenius norm method
+    )
+    print("shape:", data1.shape, data2.shape)
+    print(f"cka identical: {cka_identical}, cka different: {cka_different}")
+    # start = time.time()
+    # mknn_gpu = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data2, k=5)
+    # end = time.time()
+    # diff_gpu = end - start
 
-    mknn_ident = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data1, k=5)
-    print(f"mknn_gpu_advanced identical: {mknn_ident}")
-    mknn_simple_ident = mutual_knn_alignment_simple(Z1=data1, Z2=data1, k=5)
-    print(f"mknn_simple identical: {mknn_simple_ident}, diff = {mknn_ident - mknn_simple_ident}")
+    # print(f"mknn_gpu_advanced: {mknn_gpu}, time: {diff_gpu}")
+    # mknn_simple = mutual_knn_alignment_simple(Z1=data1, Z2=data2, k=5)
+    # print(f"mknn_simple: {mknn_simple}, diff = {mknn_gpu - mknn_simple}")
+
+    # mknn_ident = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data1, k=5)
+    # print(f"mknn_gpu_advanced identical: {mknn_ident}")
+    # mknn_simple_ident = mutual_knn_alignment_simple(Z1=data1, Z2=data1, k=5)
+    # print(f"mknn_simple identical: {mknn_simple_ident}, diff = {mknn_ident - mknn_simple_ident}")
 
     # sim_identical =cka(data1, data1)
     # sim_different = cka(data1, data2)

@@ -79,16 +79,14 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
     # val_data = val_data[:400]
 
 
+    # for alignment analysis
     if machine == "remote":
-        bs = 32   # obout 23.3gb vrman
         bs_alignment_analysis = 16
     else:
-        bs = 32
         bs_alignment_analysis = 48
 
     config.learning_rate = DOWNSTREAM_LR
-    print(bs)
-    print(f"bs_alignment_analysis: {bs_alignment_analysis}")
+    print(f"bs_alignment_analysis: {bs_alignment_analysis}, batchsize: {BATCH_SIZE}")
 
     transform_hm = transforms.Compose([
 
@@ -126,7 +124,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=bs,
+        batch_size=BATCH_SIZE,
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
@@ -134,7 +132,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=bs,
+        batch_size=BATCH_SIZE,
         shuffle=False,
         num_workers=num_workers,
         pin_memory=pin_memory,
