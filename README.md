@@ -5,7 +5,7 @@ I'm currently working on it, so it is not yet complete.
 
 
 ## TODO
-- [ ] implement gradient accum.
+- [x] implement gradient accum.
 - [ ] problem with contrastive term in pretraining: combined approach!
 - [ ] visualization of cka, mutual knns
 	- [x] implement a data collection pipeline
@@ -14,11 +14,12 @@ I'm currently working on it, so it is not yet complete.
 
 	- [ ] visualization of all the other measueres
 		- [x] mknn
+		- [ ] 
 - [ ] implement further datasets for alignment evaluation
 	- [ ] ms coco
 	- [ ] vqa
 	- [ ] mm-imbd
-- [ ] cosine scheduler
+- [x] cosine scheduler
 - [ ] add dropout in attention
 - [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
 - [ ] visualization of pretraining tasks - like acc, loss, etc

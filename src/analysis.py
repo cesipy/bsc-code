@@ -916,9 +916,13 @@ if __name__ == "__main__":
     diff_gpu = end - start
 
     print(f"mknn_gpu_advanced: {mknn_gpu}, time: {diff_gpu}")
+    mknn_simple = mutual_knn_alignment_simple(Z1=data1, Z2=data2, k=5)
+    print(f"mknn_simple: {mknn_simple}, diff = {mknn_gpu - mknn_simple}")
 
     mknn_ident = mutual_knn_alignment_gpu_advanced(Z1=data1, Z2=data1, k=5)
     print(f"mknn_gpu_advanced identical: {mknn_ident}")
+    mknn_simple_ident = mutual_knn_alignment_simple(Z1=data1, Z2=data1, k=5)
+    print(f"mknn_simple identical: {mknn_simple_ident}, diff = {mknn_ident - mknn_simple_ident}")
 
     # sim_identical =cka(data1, data1)
     # sim_different = cka(data1, data2)

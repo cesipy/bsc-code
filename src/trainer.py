@@ -20,8 +20,6 @@ from info_nce import InfoNCE, info_nce
 
 
 
-
-
 def alignment_loss_cosine(text_emb, vision_emb):
     cosine_sim = torch.nn.functional.cosine_similarity(
         text_emb,
@@ -45,6 +43,8 @@ class Trainer():
         self.model = model
         self.config = config
         self.logger = Logger()
+
+        self.scheduler = None
 
         self.optimizer = torch.optim.AdamW(
             self.model.parameters(),
@@ -154,6 +154,9 @@ class Trainer():
             loss.backward()
 
             if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(data_loader):
+                lr = self.scheduler.get_lr()
+                for param_group in self.optimizer.param_groups:
+                    param_group["lr"] = lr
 
                 self.optimizer.step()
                 self.optimizer.zero_grad()
@@ -172,6 +175,14 @@ class Trainer():
         hm_dataloader: CustomDataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
+
+        total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
+        self.scheduler = utils.Scheduler(
+            warmup_iterations=int(0.1 * float(total_training_steps)),
+            decay_iterations=int(0.9 * float(total_training_steps)),
+            learning_rate=self.lr,
+            min_lr_fraction=0.1,
+        )
         analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
         # if hm_dataloader is not None and cc_dataloader is not None:
@@ -778,21 +789,6 @@ class PretrainingTrainer:
             v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
             v_loss_mim = self.evaluate_mim(test_dataloaderMIM)
 
-            # if Task.ALIGNMENT_PREDICTION in tasks:
-            #     v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
-            # else:
-            #     v_loss_ap, acc = 0, 0
-
-            # if Task.MASKED_LM in tasks:
-            #     v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
-            # else:
-            #     v_loss_mlm = 0
-
-            # if Task.MASKED_IM in tasks:
-            #     v_loss_mim = self.evaluate_mim(test_dataloaderMIM)
-            # else:
-            #     v_loss_mim = 0
-            # print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
             info_str = (
                 f"Epoch {epoch+1}/{epochs}, "
                 f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "

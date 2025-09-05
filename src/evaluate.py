@@ -155,17 +155,19 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         config,
         use_contrastive_loss=use_constrastive,
         use_cosine_loss=False,
+        gradient_accumulation=GRADIENT_ACCUMULATION,
         )
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
         epochs=DOWNSTREAM_EPOCHS,
         hm_dataloader=hm_dataloader,
-        cc_dataloader=cc_dataloader
+        cc_dataloader=cc_dataloader,
     )
 
     del model, trainer, train_dataset, val_dataset, train_loader, val_loader
-    torch.cuda.empty_cache()
+    with torch.no_grad():
+        torch.cuda.empty_cache()
     gc.collect()
     logger.info("Training and evaluation on downstream task finished, cleaning up memory\n\n"+ 25*"-")
 
@@ -277,6 +279,7 @@ def test_on_hm():
         config,
         use_contrastive_loss=True,
         # use_cosine_loss=True,
+        gradient_accumulation=GRADIENT_ACCUMULATION,
         )
     trainer.train(
         train_dataloader=train_loader,
