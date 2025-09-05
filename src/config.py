@@ -22,13 +22,13 @@ if machine == "remote":
     GRADIENT_ACCUMULATION = 26  # simulated batches of 512, similar to the og vilbert paper
 else:
     BATCH_SIZE = 16
-    GRADIENT_ACCUMULATION = 64    # simulated batches of 128
+    GRADIENT_ACCUMULATION = 32    # simulated batches of 128
 
 EPOCHS = 10
 
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
 DOWNSTREAM_EPOCHS = 5
-DOWNSTREAM_LR     = 1e-5
+DOWNSTREAM_LR     = 2e-5
 
 TOKENIZER_MAX_LEN = 197
 

@@ -183,25 +183,28 @@ class Trainer():
             learning_rate=self.lr,
             min_lr_fraction=0.1,
         )
-        analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+        # analysis.analyse_alignment(dataloader=hm_dataloader, model=self.model)
+        # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
-        # if hm_dataloader is not None and cc_dataloader is not None:
-        #         info_str = "\n\nbefore training, evaluating on uninitialized model"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         info_str = "alignment for hateful memes:"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         analysis.analyse_alignment(hm_dataloader, self.model)
+        if hm_dataloader is not None and cc_dataloader is not None:
+                info_str = "\n\nbefore training, evaluating on uninitialized model"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # info_str = "alignment for hateful memes:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # analysis.analyse_alignment(hm_dataloader, self.model)
 
-        #         info_str = "alignment for conceptual captions:"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         analysis.analyse_alignment(cc_dataloader, self.model)
+                # info_str = "alignment for conceptual captions:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # analysis.analyse_alignment(cc_dataloader, self.model)
 
-        #         info_str = "finished!" + "\n" + 20*"-"
-        #         print(info_str)
-        #         self.logger.info(info_str)
+                # info_str = "finished!" + "\n" + 20*"-"
+                # print(info_str)
+                # self.logger.info(info_str)
+
+                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
 
 
@@ -219,10 +222,10 @@ class Trainer():
                 analysis.analyse_alignment(hm_dataloader, self.model)
                 analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
-                info_str = "alignment for conceptual captions:"
-                print(info_str)
-                self.logger.info(info_str)
-                analysis.analyse_alignment(cc_dataloader, self.model)
+                # info_str = "alignment for conceptual captions:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # analysis.analyse_alignment(cc_dataloader, self.model)
                 # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
 
 
@@ -349,6 +352,7 @@ class PretrainingTrainer:
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
         self.config = config
         self.logger = Logger()
+        self.scheduler = None
 
         self.gradient_accumulation = gradient_accumulation
 
@@ -704,6 +708,7 @@ class PretrainingTrainer:
         print(info_str)
         self.logger.info(info_str)
 
+
         for batch_indx, (batch_ap, batch_mlm, batch_mim) in enumerate(
             tqdm(
                 zip(dataloader_ap, dataloader_mlm, dataloader_mim),
@@ -711,10 +716,10 @@ class PretrainingTrainer:
                 )
             ):
 
+            # currently set to false, as no step should happen in batch
+            # too many steps and zeroing out!
             flag_optimizer=False
 
-            if (batch_indx+1) % self.gradient_accumulation == 0 or (batch_indx + 1) == total_batches:
-                flag_optimizer = True
 
             loss_ap = 0
             loss_mlm = 0
@@ -729,6 +734,16 @@ class PretrainingTrainer:
 
             if Task.MASKED_IM in tasks:
                 loss_mim = self.train_mim_batch(batch_mim, flag_optimizer=flag_optimizer)
+
+
+            if (batch_indx+1) % self.gradient_accumulation == 0 or (batch_indx + 1) == total_batches:
+                lr = self.scheduler.get_lr()
+                for param_group in self.optimizer.param_groups:
+                    param_group["lr"] = lr
+
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                self.optimizer.zero_grad()
 
             total_loss_ap += loss_ap
             total_loss_mlm += loss_mlm
@@ -776,6 +791,15 @@ class PretrainingTrainer:
         train_losses_mim = []
         validation_losses_mim = []
 
+        total_training_steps = epochs * len(train_dataloaderAP) // self.gradient_accumulation
+
+        self.scheduler = utils.Scheduler(
+            warmup_iterations=int(0.1 * float(total_training_steps)),
+            decay_iterations=int(0.9 * float(total_training_steps)),
+            learning_rate=self.config.learning_rate,
+            min_lr_fraction=0.1,
+
+        )
 
         for epoch in range(epochs):
             t_loss_ap, t_loss_mlm, t_loss_mim = self.train_epoch(

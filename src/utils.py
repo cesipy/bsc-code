@@ -140,7 +140,7 @@ def memory_cleanup(func):
                 gc.collect()
 
             if torch.cuda.is_available():
-                with torch.no_grad:
+                with torch.no_grad():
                     torch.cuda.empty_cache()
                     torch.cuda.synchronize()
 
