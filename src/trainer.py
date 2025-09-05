@@ -220,7 +220,7 @@ class Trainer():
                 print(info_str)
                 self.logger.info(info_str)
                 analysis.analyse_alignment(hm_dataloader, self.model)
-                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+                analysis.visuajlize_cka(dataloader=hm_dataloader, model=self.model)
 
                 # info_str = "alignment for conceptual captions:"
                 # print(info_str)

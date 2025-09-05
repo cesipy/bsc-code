@@ -14,38 +14,11 @@ from vilbert import ViLBERT
 from config import *
 import utils
 from logger import Logger
+import measures
 
 logger = Logger()
 
 
-def jaccard_similarity(
-    X: torch.Tensor,        # [n, d]
-    Y: torch.Tensor,
-    k: int = 10,
-):
-    n = X.shape[0]
-    assert Y.shape[0] == n
-
-    knns1 = pairwise_knn(X, k)   # [n, k]
-    knns2 = pairwise_knn(Y, k)   # [n, k]
-
-    sims = []
-
-    for i in range(n):
-        nearest_neighbors1 = set(knns1[i].cpu().numpy())
-        nearest_neighbors2 = set(knns2[i].cpu().numpy())
-
-        denom = len(nearest_neighbors1.intersection(nearest_neighbors2))
-        nom = len(nearest_neighbors1.union(nearest_neighbors2))
-
-        sim = 0.0
-        if nom > 0:
-            sim = denom / nom
-
-        sims.append(sim)
-
-    avg = sum(sims) / len(sims)
-    return avg
 
 
 
@@ -63,14 +36,14 @@ def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
             text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
             vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
 
-            jaccard_cross_modal[i,j] = jaccard_similarity(
+            jaccard_cross_modal[i,j] = measures.jaccard_similarity(
                 X=text_cls, Y=vision_cls, k=k
             )
             # text2text
             text_cls_i = measure_per_layer[i]["text_embeddings"][:, 0, :]
             text_cls_j = measure_per_layer[j]["text_embeddings"][:, 0, :]
 
-            jaccard_text_text[i,j] = jaccard_similarity(
+            jaccard_text_text[i,j] = measures.jaccard_similarity(
                 X=text_cls_i, Y=text_cls_j, k=k
             )
 
@@ -78,7 +51,7 @@ def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
             vision_cls_i = measure_per_layer[i]["vision_embeddings"][:, 0, :]
             vision_cls_j = measure_per_layer[j]["vision_embeddings"][:, 0, :]
 
-            jaccard_vision_vision[i,j] = jaccard_similarity(
+            jaccard_vision_vision[i,j] = measures.jaccard_similarity(
                 X=vision_cls_i, Y=vision_cls_j, k=k
             )
 
@@ -137,7 +110,7 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
         for j in range(num_layers):
             current_text = measure_per_layer[i]["text_embeddings"]
             current_vision = measure_per_layer[j]["vision_embeddings"]
-            cross_modal_matrix[i,j] = cka(
+            cross_modal_matrix[i,j] = measures.cka(
                 text_embedding=current_text,
                 vision_embedding=current_vision
             )
@@ -154,7 +127,7 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
 
             text_i = measure_per_layer[i]["text_embeddings"]
             text_j = measure_per_layer[j]["text_embeddings"]
-            text_text_matrix[i,j] = cka(
+            text_text_matrix[i,j] = measures.cka(
                 text_embedding=text_i,
                 vision_embedding=text_j
             )
@@ -166,7 +139,7 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
 
             vision_i = measure_per_layer[i]["vision_embeddings"]
             vision_j = measure_per_layer[j]["vision_embeddings"]
-            vision_vision_matrix[i,j] = cka(
+            vision_vision_matrix[i,j] = measures.cka(
                 text_embedding=vision_i,
                 vision_embedding=vision_j
             )
@@ -234,21 +207,21 @@ def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10)
             # Cross-modal (text layer i CLS vs vision layer j CLS)
             text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
             vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
-            cross_modal_matrix[i,j] = mutual_knn_alignment_gpu_advanced(
+            cross_modal_matrix[i,j] = measures.mutual_knn_alignment_gpu_advanced(
                 Z1=text_cls, Z2=vision_cls, k=k
             )
 
             # Text-to-text
             text_cls_i = measure_per_layer[i]["text_embeddings"][:, 0, :]
             text_cls_j = measure_per_layer[j]["text_embeddings"][:, 0, :]
-            text_text_matrix[i,j] = mutual_knn_alignment_gpu_advanced(
+            text_text_matrix[i,j] = measures.mutual_knn_alignment_gpu_advanced(
                 Z1=text_cls_i, Z2=text_cls_j, k=k
             )
 
             # Vision-to-vision
             vision_cls_i = measure_per_layer[i]["vision_embeddings"][:, 0, :]
             vision_cls_j = measure_per_layer[j]["vision_embeddings"][:, 0, :]
-            vision_vision_matrix[i,j] = mutual_knn_alignment_gpu_advanced(
+            vision_vision_matrix[i,j] = measures.mutual_knn_alignment_gpu_advanced(
                 Z1=vision_cls_i, Z2=vision_cls_j, k=k
             )
 
@@ -470,7 +443,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
     #     print(f"Layer {i}: mKNN (CLS) = {mknn_cls:.4f}, mKNN (Seq) = {mknn_seq:.4f}")
 
-        mknn_cls = mutual_knn_alignment_gpu_advanced(
+        mknn_cls = measures.mutual_knn_alignment_gpu_advanced(
             Z1=current_text,
             Z2=current_vision,
             k=10
@@ -542,292 +515,12 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     with torch.no_grad():
         torch.cuda.empty_cache()
 
-def knn(row: int, Z, k):
-    # print(f"shape: {Z[row].unspeeze(0).shape}")
 
-    # get knns for row in Z
-    distances = torch.cdist(Z[row].unsqueeze(0), Z)
-    # print(f"distances shape: {distances.shape}")
-    knns_vals, knns_inds = torch.topk(distances, k=k+1, largest=False)  # include self
-    # print(f"knn indices shape: {knns_inds.shape}")
-    return knns_inds[0, 1:]
 
-def pairwise_knn(
-    X: torch.tensor,
-    k:int
-):
-    distances = torch.cdist(X, X)
 
-    # self is included
-    knns_vals, knns_inds = torch.topk(distances, k=k+1, largest=False, dim=1)
-    return knns_inds[:, 1:]  # remove self
 
-def mutual_knn_alignment(
-    Z1: torch.Tensor,
-    Z2: torch.Tensor,
-    k: int = 10
-):
-    # Z is matrix, each row is one sample
 
-    def align(Z1, Z2, k):
-        # a(i,j) = 1[j in knn(i, Z1) and i in knn(j, Z2); and i != j]
-        counter = 0
-        for i in range(Z1.shape[0]):
-            knns_i_z1 = set(knn(i, Z1, k).cpu().numpy())  # explicit .cpu()
-            for j in range(Z2.shape[0]):
-                if i != j:
-                    knns_j_z2 = set(knn(j, Z2, k).cpu().numpy())  # explicit .cpu()
-                    if j in knns_i_z1 and i in knns_j_z2:
-                        counter += 1
-        return counter
 
-    mknn = align(Z1, Z2, k) / ((align(Z1, Z1, k) * align(Z2, Z2, k)) ** 0.5)
-    return mknn
-
-# genai came up with the gpu optimized version of it
-def mutual_knn_alignment_gpu(
-    Z1: torch.Tensor,
-    Z2: torch.Tensor,
-    k: int = 10
-):
-
-    n = Z1.shape[0]
-
-    def align_gpu(Z1, Z2, k):
-        # Precompute all k-NN indices at once
-        dists1 = torch.cdist(Z1, Z1)  # [n, n]
-        dists2 = torch.cdist(Z2, Z2)  # [n, n]
-
-        # Get k+1 nearest (including self), then remove self
-        _, knn1 = torch.topk(dists1, k + 1, largest=False, dim=1)  # [n, k+1]
-        _, knn2 = torch.topk(dists2, k + 1, largest=False, dim=1)  # [n, k+1]
-
-        knn1 = knn1[:, 1:]  # [n, k] - remove self
-        knn2 = knn2[:, 1:]  # [n, k] - remove self
-
-        # Create masks for the conditions: j in knn(i, Z1) and i in knn(j, Z2)
-        total = 0
-        for i in range(n):
-            for j in range(n):
-                if i != j:
-                    # Check if j in knn(i, Z1)
-                    j_in_knn_i = (knn1[i] == j).any()
-                    # Check if i in knn(j, Z2)
-                    i_in_knn_j = (knn2[j] == i).any()
-
-                    if j_in_knn_i and i_in_knn_j:
-                        total += 1
-
-        return total
-
-    mknn = align_gpu(Z1, Z2, k) / ((align_gpu(Z1, Z1, k) * align_gpu(Z2, Z2, k)) ** 0.5)
-    return mknn
-
-# even morew sophisticated version works! from genai
-def mutual_knn_alignment_gpu_advanced(
-    Z1: torch.Tensor,
-    Z2: torch.Tensor,
-    k: int = 10
-):
-    def align_gpu_vectorized(Z1, Z2, k):
-        n = Z1.shape[0]
-
-        # Precompute all k-NN indices
-        dists1 = torch.cdist(Z1, Z1)
-        dists2 = torch.cdist(Z2, Z2)
-
-        _, knn1 = torch.topk(dists1, k + 1, largest=False, dim=1)  # [n, k+1]
-        _, knn2 = torch.topk(dists2, k + 1, largest=False, dim=1)  # [n, k+1]
-
-        knn1 = knn1[:, 1:]  # [n, k] - remove self
-        knn2 = knn2[:, 1:]  # [n, k] - remove self
-
-        # Create boolean masks entirely on GPU
-        # For each i,j: is j in knn(i, Z1)?
-        mask1 = (knn1.unsqueeze(2) == torch.arange(n, device=Z1.device).unsqueeze(0).unsqueeze(0)).any(dim=1)  # [n, n]
-
-        # For each i,j: is i in knn(j, Z2)?
-        mask2 = (knn2.unsqueeze(2) == torch.arange(n, device=Z1.device).unsqueeze(0).unsqueeze(0)).any(dim=1)  # [n, n]
-
-        # Exclude diagonal (i != j)
-        eye_mask = ~torch.eye(n, dtype=torch.bool, device=Z1.device)
-
-        # Count mutual k-NN: j in knn(i,Z1) AND i in knn(j,Z2) AND i!=j
-        mutual_mask = mask1 & mask2.T & eye_mask
-
-        return mutual_mask.sum().item()
-
-    mknn = align_gpu_vectorized(Z1, Z2, k) / ((align_gpu_vectorized(Z1, Z1, k) * align_gpu_vectorized(Z2, Z2, k)) ** 0.5)
-    return mknn
-
-
-# simpler version
-def mutual_knn_alignment_simple(
-    Z1: torch.Tensor,
-    Z2: torch.Tensor,
-    k: int = 10
-):
-    """
-    computes the mutual k-NN alignment metric as described in
-    "Understanding the Emergence of Multimodal Representation Alignment".
-
-    Args:
-        Z1, Z2: [n_samples, embedding_dim] tensors
-        k: number of nearest neighbors
-
-    """
-    assert Z1.shape[0] == Z2.shape[0]
-
-    n_samples = Z1.shape[0]
-
-    # Compute pairwise distances
-    dists1 = torch.cdist(Z1, Z1)  # [n, n]
-    dists2 = torch.cdist(Z2, Z2)  # [n, n]
-
-    # Find k nearest neighbors (excluding self), genai gave me this function
-    _, neighbors1 = torch.topk(dists1, k + 1, largest=False, dim=1)
-    _, neighbors2 = torch.topk(dists2, k + 1, largest=False, dim=1)
-
-    #rm self
-    neighbors1 = neighbors1[:, 1:]  # [n, k]
-    neighbors2 = neighbors2[:, 1:]  # [n, k]
-
-    total_mutual = 0
-    for i in range(n_samples):
-        nn1_i = set(neighbors1[i].cpu().numpy())
-        nn2_i = set(neighbors2[i].cpu().numpy())
-
-        # nn1_i \cap nn2_i
-        mutual_count = len(nn1_i.intersection(nn2_i))
-        total_mutual += mutual_count
-
-
-    align_mknn = total_mutual / (n_samples * k)
-    return align_mknn
-
-
-def cosine_similarity_indv(
-    text_embedding:torch.Tensor,
-    vision_embedding: torch.Tensor
-) -> float:
-
-    norm_text_embedding = nn.functional.normalize(text_embedding, dim=-1)
-    norm_vision_embedding = nn.functional.normalize(vision_embedding, dim=-1)
-
-    # print(f"norm Text embedding shape: {norm_text_embedding.shape},Vision embedding shape: {norm_vision_embedding.shape}")
-
-    sim = torch.dot(norm_text_embedding, norm_vision_embedding)
-    return sim.item()
-
-def cosine_similarity_batch(
-    text_embedding: torch.Tensor,
-    vision_embedding: torch.Tensor
-) -> torch.Tensor:
-
-
-    # sim = torch.nn.functional.cosine_similarity(text_embedding, vision_embedding, dim=1)
-    # return sim
-
-    norm_text = nn.functional.normalize(text_embedding, dim=-1)
-    norm_vision = nn.functional.normalize(vision_embedding, dim=-1)
-
-
-    sim = torch.sum(norm_text * norm_vision, dim=-1)
-
-    return sim  # [bs] tensor of similarities
-
-def svcca_similarity(
-    text_embedding: torch.Tensor,
-    vision_embedding: torch.Tensor
-):
-
-    text_embedding_numpy = text_embedding.detach().cpu().numpy()
-    vision_embedding_numpy = vision_embedding.detach().cpu().numpy()
-
-    # print(f"text embedding shape: {text_embedding_numpy.shape}, vision embedding shape: {vision_embedding_numpy.shape}")
-
-
-    #cca processing needs numpy input, numpy is different to tensors
-    # needs shape [dim, tokens * bs]
-    # each row: one feature dimension; dim[i]
-    # each column: one datapoint/token/patch
-
-    text_input = text_embedding_numpy.reshape(-1, text_embedding_numpy.shape[-1])
-    text_input = text_input.transpose()     # [dim, tokens*bs]
-    vision_input = vision_embedding_numpy.reshape(-1, vision_embedding_numpy.shape[-1])
-    vision_input = vision_input.transpose()  # [dim, patches*bs]
-
-    try:
-        # print(f"reshaped text input shape: {text_input.shape}")
-        result = cca_core.get_cca_similarity(
-            text_input,
-            vision_input,
-            verbose=False
-        )
-
-        # single value result
-        # from https://github.com/google/svcca/blob/master/tutorials/001_Introduction.ipynb
-        result = np.mean(result["cca_coef1"])
-        return result
-    except np.linalg.LinAlgError as e:
-        print(f"LinAlgError during SVCCA computation: {e}")
-        return 0.0
-
-def mutual_nearest_neighbor_alignment(text_embeds, vision_embeds, k=5):
-    # this measurement is from the paper
-    # The Platonic Representation Hypothesis
-    # where they got values of about 0.16. theoretically the range of this measurement is 0 to 1.
-    # but they also noted, that their alignment score was increasing, but not even near the top value of 1.
-    batch_size = text_embeds.shape[0]
-
-    text_dists = torch.cdist(text_embeds, text_embeds)
-    vision_dists = torch.cdist(vision_embeds, vision_embeds)
-
-    # largest=False => exclude self
-    _, text_neighbors = text_dists.topk(k+1, largest=False)
-    _, vision_neighbors = vision_dists.topk(k+1, largest=False)
-
-
-
-    #remove self (index 0) from neighbors
-    text_neighbors = text_neighbors[:, 1:]  # [batch_size, k]
-    vision_neighbors = vision_neighbors[:, 1:]  # [batch_size, k]
-
-    # was manually counting, genai gave me this more efficient method
-    total_overlap = 0
-    for i in range(batch_size):
-        # Use torch operations to count intersections
-        text_nn = text_neighbors[i]  # [k]
-        vision_nn = vision_neighbors[i]  # [k]
-
-        # Count how many elements in text_nn are also in vision_nn
-        overlap = torch.isin(text_nn, vision_nn).sum().item()
-        total_overlap += overlap
-
-    return total_overlap / (batch_size * k)
-
-def cka(
-    text_embedding: torch.Tensor,
-    vision_embedding: torch.Tensor
-) -> float:
-    """
-    Compute Centered Kernel Alignment (CKA) between two representations.
-
-    Args:
-        text_embedding:  shape [batch_size, embedding_dim]
-        vision_embedding: shape [batch_size, embedding_dim]
-
-    """
-    cka_score = cka_batch(text_embedding, vision_embedding)   # needs shape [bs, tokens, dim], but i have different tokens
-    # => i could pad tokenizer to 197?
-    # cka_score = cka_base(
-    #     x=text_embedding,
-    #     y=vision_embedding,
-    #     kernel="linear",         # Use linear kernel (standard for CKA)
-    #     unbiased=False,          # Use biased version (standard)
-    #     method="fro_norm"        # Use Frobenius norm method
-    # )
-    return cka_score.item()
 
 def process_intermediate_repr(
     intermediate_reprs: list[dict],
@@ -853,16 +546,16 @@ def process_intermediate_repr(
         # print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
 
 
-        cka_sim = cka(
+        cka_sim = measures.cka(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
         )
 
-        max_similarity_tp = max_similarity_token_patch(
+        max_similarity_tp = measures.max_similarity_token_patch(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
         )
-        max_similarity_pt = max_similarity_patch_token(
+        max_similarity_pt = measures.max_similarity_patch_token(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
         )
@@ -873,7 +566,7 @@ def process_intermediate_repr(
         # currently not working?
         # #TODO: FIX
         svcca_sim = 0.0
-        # svcca_sim = svcca_similarity(
+        # svcca_sim = measures.svcca_similarity(
         #     text_embedding=representation["text_embedding"],
         #     vision_embedding=representation["vision_embedding"]
         # )
@@ -905,7 +598,7 @@ def process_intermediate_repr(
         layer = representation["layer"]
 
 
-        cos_sim = cosine_similarity_batch(
+        cos_sim = measures.cosine_similarity_batch(
             text_embedding=text_embedding_sample,
             vision_embedding=vision_embedding_sample
         )
@@ -930,36 +623,6 @@ def process_intermediate_repr(
             #   f"Cosine Similarity: {cos_sim}")
     return layers_sims
 
-def max_similarity_token_patch(
-    text_embedding, # [bs, num_tokens, dim]
-    vision_embedding # [bs, num_patches+1, dim]
-    ):
-
-    text_embedding = text_embedding[:, 1:, :]  # [bs, num_tokens-1, dim]
-    vision_embedding = vision_embedding[:, 1:, :]  # [bs, num_patches, dim]
-
-    text_norm = nn.functional.normalize(text_embedding, dim=-1)
-    vision_norm = nn.functional.normalize(vision_embedding, dim=-1)
-
-    # pairwise similarities => matrix of similarities. here take the maximum for each token
-    # basically doing:
-    # sim_matrix[b, i, j] = text_norm[b, i, :] · vision_norm[b, j, :]
-    # = cosine_similarity(text_token_i, image_patch_j)
-    sim_matrix = torch.bmm(text_norm, vision_norm.transpose(1, 2))  # [bs, num_tokens-1, num_patches]
-
-    max_sims, _ = sim_matrix.max(dim=2)
-    return max_sims.mean(dim=1)
-
-def max_similarity_patch_token(
-    text_embedding,
-    vision_embedding,
-):
-    max_sims = max_similarity_token_patch(
-        text_embedding=vision_embedding,
-        vision_embedding=text_embedding
-    )
-
-    return max_sims
 
 
 
