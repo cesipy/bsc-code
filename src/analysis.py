@@ -36,10 +36,10 @@ def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 1
             vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
 
             # Compute and store the metrics
-            rank_sim_cross_modal[i, j] = rank_similarity(
+            rank_sim_cross_modal[i, j] = measures.rank_similarity(
                 X=text_cls, Y=vision_cls, k=k
             )
-            procrustes_dist_cross_modal[i, j] = orthogonal_procrustes_distance(
+            procrustes_dist_cross_modal[i, j] = measures.orthogonal_procrustes_distance(
                 X=text_cls, Y=vision_cls
             )
 
@@ -509,13 +509,6 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             X=current_text,
             Y=current_vision,
         )
-
-        ranked_simpl = measures.rank_similarity_t(
-            X=current_text,
-            Y=current_vision,
-            k=10
-        )
-        print(f"diff: {ranked-ranked_simpl}")
 
         mknn_values[i] = mknn_cls
         rank_values[i] = ranked
