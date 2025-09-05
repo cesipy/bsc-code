@@ -4,8 +4,11 @@ import numpy as np
 from ckatorch.core import cka_base, cka_batch
 import cca_core
 
+
 #----------
 #utils
+
+
 
 def knn(row: int, Z, k):
     # print(f"shape: {Z[row].unspeeze(0).shape}")
@@ -30,6 +33,106 @@ def pairwise_knn(
 
 #--------
 #measures
+
+def rank_similarity(
+    X: torch.Tensor,        # [n, d]
+    Y: torch.Tensor,        # [n, d]
+    k: int = 10
+) -> float:
+    """
+    Computes Rank Similarity, which measures the order of common neighbors.
+    was optimized by genAI
+    #TODO: is it really correct implementation; currently only for testing
+    """
+    n = X.shape[0]
+
+    dists_X = torch.cdist(X, X)
+    dists_Y = torch.cdist(Y, Y)
+
+    # Get the indices of all other points sorted by distance (ascending)
+    # ranks_X[i] contains indices of points sorted by distance to point i
+    sorted_indices_X = torch.argsort(dists_X, dim=1)
+    sorted_indices_Y = torch.argsort(dists_Y, dim=1)
+
+    # Create a map from index to rank for efficient lookup
+    # rank_map_X[i, j] will give the rank of point j in the neighborhood of point i
+    rank_map_X = torch.zeros_like(sorted_indices_X)
+    rank_map_Y = torch.zeros_like(sorted_indices_Y)
+
+    # Populate the rank maps
+    # This is an efficient way to get rank_of(j) for a given i
+    ar = torch.arange(n, device=X.device)
+    rank_map_X[ar, sorted_indices_X] = ar.unsqueeze(0).T
+    rank_map_Y[ar, sorted_indices_Y] = ar.unsqueeze(0).T
+
+    # Get the top k neighbors (excluding self, which is at rank 0)
+    neighbors_X = sorted_indices_X[:, 1:k+1]
+    neighbors_Y = sorted_indices_Y[:, 1:k+1]
+
+    # --- Calculate instance-wise similarity ---
+    instance_similarities = []
+    for i in range(n):
+        # Find the intersection of the neighbor sets
+        set_X = set(neighbors_X[i].cpu().numpy())
+        set_Y = set(neighbors_Y[i].cpu().numpy())
+        common_neighbors = list(set_X.intersection(set_Y))
+
+        if not common_neighbors:
+            instance_similarities.append(0.0)
+            continue
+
+        # Calculate the score for the current instance i
+        score_i = 0.0
+        for j in common_neighbors:
+            # Ranks are 1-based in the paper's formula
+            rank_in_X = rank_map_X[i, j].item() + 1
+            rank_in_Y = rank_map_Y[i, j].item() + 1
+
+            # Formula term from the paper
+            term = 2 / ( (1 + abs(rank_in_X - rank_in_Y)) * (rank_in_X + rank_in_Y) )
+            score_i += term
+
+        # --- Normalization factor ---
+        K = len(common_neighbors)
+        # v_max is the sum of 1/rank for the top K ranks
+        v_max = sum(1.0 / r for r in range(1, K + 1))
+
+        normalized_score = score_i / v_max if v_max > 0 else 0.0
+        instance_similarities.append(normalized_score)
+
+    # The final measure is the average over all instances
+    return sum(instance_similarities) / n
+
+
+def orthogonal_procrustes_distance(
+    X: torch.Tensor,
+    Y: torch.Tensor
+) -> float:
+
+    # formula: (|R|_F^2 + |S|_F^2 - 2*|R^T S|_*)^1/2
+
+    assert X.shape == Y.shape
+
+    X_centered = X - X.mean(dim=0, keepdim=True)
+    Y_centered = Y - Y.mean(dim=0, keepdim=True)
+
+    # |R|_F^2
+    # squared frobenius norms
+    norm_X_sq = torch.linalg.norm(X_centered, 'fro')**2
+    norm_Y_sq = torch.linalg.norm(Y_centered, 'fro')**2
+
+    # noclear norm
+    # ||R^T S||_*
+    M = Y_centered.T @ X_centered
+    singular_values = torch.linalg.svdvals(M)
+    nuclear_norm = torch.sum(singular_values)
+
+    # formula 15 from paper similarity of neural networks: a survey
+    distance_sq = norm_X_sq + norm_Y_sq - 2 * nuclear_norm
+
+    distance = torch.sqrt(torch.clamp(distance_sq, min=0.0))
+
+    return distance.item()
 
 def jaccard_similarity(
     X: torch.Tensor,        # [n, d]

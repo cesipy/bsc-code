@@ -21,6 +21,53 @@ logger = Logger()
 
 
 
+def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 10):
+    """
+    Creates and saves heatmaps for Rank Similarity and Orthogonal Procrustes.
+    """
+    # Create empty matrices to store the results
+    rank_sim_cross_modal = np.zeros((num_layers, num_layers))
+    procrustes_dist_cross_modal = np.zeros((num_layers, num_layers))
+
+    for i in tqdm(range(num_layers), leave=False, desc="Computing Rank Sim & Procrustes"):
+        for j in range(num_layers):
+            # Extract the [CLS] token representations for text layer i and vision layer j
+            text_cls = measure_per_layer[i]["text_embeddings"][:, 0, :]
+            vision_cls = measure_per_layer[j]["vision_embeddings"][:, 0, :]
+
+            # Compute and store the metrics
+            rank_sim_cross_modal[i, j] = rank_similarity(
+                X=text_cls, Y=vision_cls, k=k
+            )
+            procrustes_dist_cross_modal[i, j] = orthogonal_procrustes_distance(
+                X=text_cls, Y=vision_cls
+            )
+
+    # --- Plotting ---
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Rank Similarity Plot
+    im1 = axes[0].imshow(rank_sim_cross_modal, cmap='magma', vmin=0, vmax=1, aspect='equal')
+    axes[0].set_title(f'Cross-Modal Rank Similarity (k={k})')
+    axes[0].set_xlabel('Vision Layer')
+    axes[0].set_ylabel('Text Layer')
+    plt.colorbar(im1, ax=axes[0], shrink=0.8, label='Rank Similarity')
+
+    # Orthogonal Procrustes Plot
+    im2 = axes[1].imshow(procrustes_dist_cross_modal, cmap='viridis_r', aspect='equal') # _r reverses colormap
+    axes[1].set_title('Cross-Modal Procrustes Distance')
+    axes[1].set_xlabel('Vision Layer')
+    axes[1].set_ylabel('Text Layer')
+    plt.colorbar(im2, ax=axes[1], shrink=0.8, label='Distance (Lower is Better)')
+
+    for ax in axes:
+        ax.set_xticks(range(num_layers))
+        ax.set_yticks(range(num_layers))
+
+    plt.tight_layout()
+    timestamp = int(time.time())
+    fig.savefig(f"res/plots/new_measures_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
+    plt.show()
 
 def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
 
@@ -97,7 +144,6 @@ def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
 
     return (jaccard_cross_modal, jaccard_text_text, jaccard_vision_vision,)
 
-
 def _visualize_cka(measure_per_layer: dict, num_layers: int):
 
     cross_modal_matrix = np.zeros((num_layers, num_layers))
@@ -114,7 +160,7 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
                 text_embedding=current_text,
                 vision_embedding=current_vision
             )
-            print(f"layer {i}-{j}, cka: {cross_modal_matrix[i,j]:.4f}")
+            # print(f"layer {i}-{j}, cka: {cross_modal_matrix[i,j]:.4f}")
             # weird results, not sure if this impl is correct at all...
             # cross_modal_matrix[i,j] = cka_base(
             #     x=current_text.reshape(current_text.shape[0], -1),        #[batch_size, num_tokens * embedding_dim]
@@ -277,7 +323,11 @@ def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10)
     return cross_modal_matrix, text_text_matrix, vision_vision_matrix
 
 
-def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
+def get_visualisation_data(
+    dataloader: DataLoader,
+    model: ViLBERT,
+    #TODO: how many samples to collec
+    ):
 
     model.eval()
     with torch.no_grad():
@@ -337,7 +387,7 @@ def get_visualisation_data(dataloader: DataLoader, model: ViLBERT):
 
             del intermediate_representations, text, image, preds
 
-            if len(measure_per_layer[0]["text_embeddings"]) > 20:
+            if len(measure_per_layer[0]["text_embeddings"]) > 50:
                 torch.cuda.empty_cache()
                 break
 
@@ -356,6 +406,7 @@ def visualize_cka(
     ):
 
     measures_per_layer: dict = get_visualisation_data(dataloader, model)
+    _visualize_new_measures(measures_per_layer, model.depth, k=10)
     _visualize_jaccard(measures_per_layer, model.depth, k=10)
     _visualize_cka(measures_per_layer, model.depth)
     _visualize_mutual_knn(measures_per_layer, model.depth, k=10)
@@ -408,6 +459,8 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
 
     mknn_values = {}
+    rank_values = {}
+    procrustes_values = {}
 
     for i in range(model.depth):
         layers[i]["text_embeddings"] = torch.cat(layers[i]["text_embeddings"], dim=0)
@@ -448,8 +501,25 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             Z2=current_vision,
             k=10
         )
+        ranked = measures.rank_similarity(
+            X=current_text,
+            Y=current_vision,
+            k=10)
+        procrustes = measures.orthogonal_procrustes_distance(
+            X=current_text,
+            Y=current_vision,
+        )
+
+        ranked_simpl = measures.rank_similarity_t(
+            X=current_text,
+            Y=current_vision,
+            k=10
+        )
+        print(f"diff: {ranked-ranked_simpl}")
 
         mknn_values[i] = mknn_cls
+        rank_values[i] = ranked
+        procrustes_values[i] = procrustes
 
 
 
@@ -509,7 +579,10 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     analyse(
         layer_similarities=layer_sims,
         num_layers=model.depth,
-        mknn_values=mknn_values)
+        mknn_values=mknn_values,
+        rank_values=rank_values,
+        procrustes_values=procrustes_values,
+    )
     model.train()
 
     with torch.no_grad():
@@ -626,7 +699,13 @@ def process_intermediate_repr(
 
 
 
-def analyse(layer_similarities: list[dict], num_layers: int, mknn_values:dict):
+def analyse(
+    layer_similarities: list[dict],
+    num_layers: int,
+    mknn_values:dict,
+    rank_values:dict,
+    procrustes_values:dict,
+):
     """input format:
         {
             "layer": layer,
@@ -641,6 +720,8 @@ def analyse(layer_similarities: list[dict], num_layers: int, mknn_values:dict):
             "i": mknn-value,
         }
 
+        same for the others
+
     """
 
     layers = {}
@@ -648,7 +729,9 @@ def analyse(layer_similarities: list[dict], num_layers: int, mknn_values:dict):
         layers[f"layer{i}"] = {
             "is_cross_attention": False,
             "similarity_measures": [],
-            "full_epoch_measures": mknn_values[i]
+            "full_epoch_measures": mknn_values[i],
+            "rank_measures": rank_values[i],
+            "procrustes_measures": procrustes_values[i],
         }
 
     for similarity_measure in layer_similarities:
@@ -663,6 +746,8 @@ def analyse(layer_similarities: list[dict], num_layers: int, mknn_values:dict):
         is_cross_attention = layers[layer_name]["is_cross_attention"]
         measures = layers[layer_name]["similarity_measures"]
         full_epoch_measure = layers[layer_name]["full_epoch_measures"]
+        rank_measure = layers[layer_name]["rank_measures"]
+        procrustes_measure = layers[layer_name]["procrustes_measures"]
 
         if measures:
 
@@ -681,9 +766,21 @@ def analyse(layer_similarities: list[dict], num_layers: int, mknn_values:dict):
             avg_svcca = sum(svcca_values) / len(svcca_values)
 
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): cosine={avg_cosine:.4f}, CKA={avg_cka:.4f}, max_sim_tp={avg_max_similarity_tp:.4f}, max_sim_pt={avg_max_similarity_pt:.4f}, SVCCA={avg_svcca:.4f}, mknn_full_epoch={full_epoch_measure:.4f}"
-            logger.info(info_str)
+            metrics = {
+                "cosine": avg_cosine,
+                "CKA": avg_cka,
+                "max_sim_tp": avg_max_similarity_tp,
+                "max_sim_pt": avg_max_similarity_pt,
+                "SVCCA": avg_svcca,
+                "mknn_full_epoch": full_epoch_measure,
+                "rank_full_epoch": rank_measure,
+                "procrustes_full_epoch": procrustes_measure
+            }
+
+            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
+                    ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
             print(info_str)
+            logger.info(info_str)
 
 def cka_custom(X, Y):
     """

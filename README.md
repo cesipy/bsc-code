@@ -5,6 +5,196 @@ I'm currently working on it, so it is not yet complete.
 
 
 ## TODO
+- [ ] check if cka is right..
+	- [ ] try with bigger bs for the data collection
+- [ ] add parameter how many samples to collect for visualization
+	- [ ] more runs and avg out
+- [ ] comparison of full-seq to cls.
+	- [ ] training seemed to be more centered towards cls token alignment
+	<details>
+	Pretrained model path None does not exist, using fresh model.
+	trainable params: 338879292/338879292
+	dirname:  res/data/hateful_memes_data
+	bs_alignment_analysis: 48, batchsize: 16
+	dirname:  res/data/hateful_memes_data
+	using contrastive: False
+	full dataset analysis
+	Layer 0: mKNN (CLS) = 0.0618, kNN Jaccard (CLS) = 0.0098
+	Layer 1: mKNN (CLS) = 0.1248, kNN Jaccard (CLS) = 0.0224
+	Layer 2: mKNN (CLS) = 0.1191, kNN Jaccard (CLS) = 0.0229
+	Layer 3: mKNN (CLS) = 0.1842, kNN Jaccard (CLS) = 0.0378
+	Layer 4: mKNN (CLS) = 0.1761, kNN Jaccard (CLS) = 0.0375
+	Layer 5: mKNN (CLS) = 0.1742, kNN Jaccard (CLS) = 0.0369
+	Layer 6: mKNN (CLS) = 0.2388, kNN Jaccard (CLS) = 0.0548
+	Layer 7: mKNN (CLS) = 0.2247, kNN Jaccard (CLS) = 0.0535
+	analysis with only 3*48 samples, full seq
+	temp cls shape: torch.Size([144, 768])
+	Layer 0: mKNN (CLS) = 0.2149, mKNN (Seq) = 0.1407
+	Layer 1: mKNN (CLS) = 0.3194, mKNN (Seq) = 0.1425
+	Layer 2: mKNN (CLS) = 0.3397, mKNN (Seq) = 0.1429
+	Layer 3: mKNN (CLS) = 0.4071, mKNN (Seq) = 0.1440
+	Layer 4: mKNN (CLS) = 0.3802, mKNN (Seq) = 0.1448
+	Layer 5: mKNN (CLS) = 0.3813, mKNN (Seq) = 0.1448
+	Layer 6: mKNN (CLS) = 0.4701, mKNN (Seq) = 0.1457
+	Layer 7: mKNN (CLS) = 0.4415, mKNN (Seq) = 0.1456
+	Layer 0: kNN Jaccard (CLS) = 0.0423, kNN Jaccard (Seq) = 0.0511
+	Layer 1: kNN Jaccard (CLS) = 0.0678, kNN Jaccard (Seq) = 0.0520
+	Layer 2: kNN Jaccard (CLS) = 0.0784, kNN Jaccard (Seq) = 0.0522
+	Layer 3: kNN Jaccard (CLS) = 0.1020, kNN Jaccard (Seq) = 0.0526
+	Layer 4: kNN Jaccard (CLS) = 0.1006, kNN Jaccard (Seq) = 0.0528
+	Layer 5: kNN Jaccard (CLS) = 0.1015, kNN Jaccard (Seq) = 0.0528
+	Layer 6: kNN Jaccard (CLS) = 0.1347, kNN Jaccard (Seq) = 0.0530
+	Layer 7: kNN Jaccard (CLS) = 0.1352, kNN Jaccard (Seq) = 0.0529
+	layer layer0 (co-attn-False): cosine=-0.0129, CKA=0.0651, max_sim_tp=0.0714, max_sim_pt=0.0520, SVCCA=0.0000, mknn_full_epoch=0.2149
+	layer layer1 (co-attn-True): cosine=-0.0035, CKA=0.0649, max_sim_tp=0.0593, max_sim_pt=0.0475, SVCCA=0.0000, mknn_full_epoch=0.3194
+	layer layer2 (co-attn-False): cosine=-0.0095, CKA=0.0639, max_sim_tp=0.0593, max_sim_pt=0.0467, SVCCA=0.0000, mknn_full_epoch=0.3397
+	layer layer3 (co-attn-True): cosine=-0.0030, CKA=0.0637, max_sim_tp=0.0705, max_sim_pt=0.0508, SVCCA=0.0000, mknn_full_epoch=0.4071
+	layer layer4 (co-attn-False): cosine=0.0014, CKA=0.0633, max_sim_tp=0.0654, max_sim_pt=0.0465, SVCCA=0.0000, mknn_full_epoch=0.3802
+	layer layer5 (co-attn-False): cosine=0.0125, CKA=0.0636, max_sim_tp=0.0773, max_sim_pt=0.0544, SVCCA=0.0000, mknn_full_epoch=0.3813
+	layer layer6 (co-attn-True): cosine=0.0120, CKA=0.0646, max_sim_tp=0.0598, max_sim_pt=0.0417, SVCCA=0.0000, mknn_full_epoch=0.4701
+	layer layer7 (co-attn-False): cosine=0.0078, CKA=0.0646, max_sim_tp=0.0510, max_sim_pt=0.0401, SVCCA=0.0000, mknn_full_epoch=0.4415
+	simulated batchsize: 512, actual batchsize: 16
+	training: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 425/425 [04:08<00:00,  1.71it/s]
+	Epoch 1/5, train loss: 0.6735, test loss: 0.6320,  accuracy: 0.6312
+	alignment for hateful memes:
+	full dataset analysis
+	Layer 0: mKNN (CLS) = 0.0552, kNN Jaccard (CLS) = 0.0103
+	Layer 1: mKNN (CLS) = 0.0961, kNN Jaccard (CLS) = 0.0181
+	Layer 2: mKNN (CLS) = 0.0915, kNN Jaccard (CLS) = 0.0189
+	Layer 3: mKNN (CLS) = 0.1386, kNN Jaccard (CLS) = 0.0296
+	Layer 4: mKNN (CLS) = 0.1346, kNN Jaccard (CLS) = 0.0303
+	Layer 5: mKNN (CLS) = 0.1393, kNN Jaccard (CLS) = 0.0300
+	Layer 6: mKNN (CLS) = 0.2014, kNN Jaccard (CLS) = 0.0467
+	Layer 7: mKNN (CLS) = 0.1975, kNN Jaccard (CLS) = 0.0442
+	analysis with only 3*48 samples, full seq
+	temp cls shape: torch.Size([144, 768])
+	Layer 0: mKNN (CLS) = 0.2080, mKNN (Seq) = 0.1367
+	Layer 1: mKNN (CLS) = 0.2836, mKNN (Seq) = 0.1386
+	Layer 2: mKNN (CLS) = 0.2784, mKNN (Seq) = 0.1391
+	Layer 3: mKNN (CLS) = 0.3123, mKNN (Seq) = 0.1399
+	Layer 4: mKNN (CLS) = 0.3362, mKNN (Seq) = 0.1405
+	Layer 5: mKNN (CLS) = 0.3417, mKNN (Seq) = 0.1402
+	Layer 6: mKNN (CLS) = 0.3828, mKNN (Seq) = 0.1412
+	Layer 7: mKNN (CLS) = 0.3897, mKNN (Seq) = 0.1409
+	Layer 0: kNN Jaccard (CLS) = 0.0500, kNN Jaccard (Seq) = 0.0503
+	Layer 1: kNN Jaccard (CLS) = 0.0657, kNN Jaccard (Seq) = 0.0510
+	Layer 2: kNN Jaccard (CLS) = 0.0742, kNN Jaccard (Seq) = 0.0511
+	Layer 3: kNN Jaccard (CLS) = 0.0890, kNN Jaccard (Seq) = 0.0513
+	Layer 4: kNN Jaccard (CLS) = 0.0932, kNN Jaccard (Seq) = 0.0515
+	Layer 5: kNN Jaccard (CLS) = 0.0921, kNN Jaccard (Seq) = 0.0514
+	Layer 6: kNN Jaccard (CLS) = 0.1145, kNN Jaccard (Seq) = 0.0517
+	Layer 7: kNN Jaccard (CLS) = 0.1149, kNN Jaccard (Seq) = 0.0515
+	layer layer0 (co-attn-False): cosine=0.0220, CKA=0.0765, max_sim_tp=0.0902, max_sim_pt=0.0668, SVCCA=0.0000, mknn_full_epoch=0.2080
+	layer layer1 (co-attn-True): cosine=0.0351, CKA=0.0761, max_sim_tp=0.0802, max_sim_pt=0.0645, SVCCA=0.0000, mknn_full_epoch=0.2836
+	layer layer2 (co-attn-False): cosine=0.0332, CKA=0.0761, max_sim_tp=0.0761, max_sim_pt=0.0604, SVCCA=0.0000, mknn_full_epoch=0.2784
+	layer layer3 (co-attn-True): cosine=0.0372, CKA=0.0761, max_sim_tp=0.0790, max_sim_pt=0.0629, SVCCA=0.0000, mknn_full_epoch=0.3123
+	layer layer4 (co-attn-False): cosine=0.0382, CKA=0.0755, max_sim_tp=0.0734, max_sim_pt=0.0588, SVCCA=0.0000, mknn_full_epoch=0.3362
+	layer layer5 (co-attn-False): cosine=0.0369, CKA=0.0749, max_sim_tp=0.0704, max_sim_pt=0.0523, SVCCA=0.0000, mknn_full_epoch=0.3417
+	layer layer6 (co-attn-True): cosine=0.0250, CKA=0.0761, max_sim_tp=0.0480, max_sim_pt=0.0335, SVCCA=0.0000, mknn_full_epoch=0.3828
+	layer layer7 (co-attn-False): cosine=0.0289, CKA=0.0761, max_sim_tp=0.0476, max_sim_pt=0.0370, SVCCA=0.0000, mknn_full_epoch=0.3897
+	simulated batchsize: 512, actual batchsize: 16
+	training: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 425/425 [04:08<00:00,  1.71it/s]
+	Epoch 2/5, train loss: 0.6036, test loss: 0.6351,  accuracy: 0.7047
+	alignment for hateful memes:
+	full dataset analysis
+	Layer 0: mKNN (CLS) = 0.0645, kNN Jaccard (CLS) = 0.0109
+	Layer 1: mKNN (CLS) = 0.1367, kNN Jaccard (CLS) = 0.0254
+	Layer 2: mKNN (CLS) = 0.1343, kNN Jaccard (CLS) = 0.0247
+	Layer 3: mKNN (CLS) = 0.2355, kNN Jaccard (CLS) = 0.0496
+	Layer 4: mKNN (CLS) = 0.2308, kNN Jaccard (CLS) = 0.0503
+	Layer 5: mKNN (CLS) = 0.2441, kNN Jaccard (CLS) = 0.0494
+	Layer 6: mKNN (CLS) = 0.3614, kNN Jaccard (CLS) = 0.0801
+	Layer 7: mKNN (CLS) = 0.3594, kNN Jaccard (CLS) = 0.0791
+	analysis with only 3*48 samples, full seq
+	temp cls shape: torch.Size([144, 768])
+	Layer 0: mKNN (CLS) = 0.1991, mKNN (Seq) = 0.1560
+	Layer 1: mKNN (CLS) = 0.3219, mKNN (Seq) = 0.1566
+	Layer 2: mKNN (CLS) = 0.3021, mKNN (Seq) = 0.1570
+	Layer 3: mKNN (CLS) = 0.4582, mKNN (Seq) = 0.1578
+	Layer 4: mKNN (CLS) = 0.4597, mKNN (Seq) = 0.1573
+	Layer 5: mKNN (CLS) = 0.4579, mKNN (Seq) = 0.1574
+	Layer 6: mKNN (CLS) = 0.6115, mKNN (Seq) = 0.1585
+	Layer 7: mKNN (CLS) = 0.5915, mKNN (Seq) = 0.1579
+	Layer 0: kNN Jaccard (CLS) = 0.0522, kNN Jaccard (Seq) = 0.0569
+	Layer 1: kNN Jaccard (CLS) = 0.0845, kNN Jaccard (Seq) = 0.0572
+	Layer 2: kNN Jaccard (CLS) = 0.0908, kNN Jaccard (Seq) = 0.0574
+	Layer 3: kNN Jaccard (CLS) = 0.1468, kNN Jaccard (Seq) = 0.0576
+	Layer 4: kNN Jaccard (CLS) = 0.1426, kNN Jaccard (Seq) = 0.0573
+	Layer 5: kNN Jaccard (CLS) = 0.1361, kNN Jaccard (Seq) = 0.0573
+	Layer 6: kNN Jaccard (CLS) = 0.2053, kNN Jaccard (Seq) = 0.0578
+	Layer 7: kNN Jaccard (CLS) = 0.1973, kNN Jaccard (Seq) = 0.0573
+	layer layer0 (co-attn-False): cosine=0.0176, CKA=0.0849, max_sim_tp=0.0789, max_sim_pt=0.0550, SVCCA=0.0000, mknn_full_epoch=0.1991
+	layer layer1 (co-attn-True): cosine=0.0225, CKA=0.0840, max_sim_tp=0.0700, max_sim_pt=0.0559, SVCCA=0.0000, mknn_full_epoch=0.3219
+	layer layer2 (co-attn-False): cosine=0.0013, CKA=0.0832, max_sim_tp=0.0570, max_sim_pt=0.0456, SVCCA=0.0000, mknn_full_epoch=0.3021
+	layer layer3 (co-attn-True): cosine=0.0001, CKA=0.0832, max_sim_tp=0.0568, max_sim_pt=0.0439, SVCCA=0.0000, mknn_full_epoch=0.4582
+	layer layer4 (co-attn-False): cosine=0.0110, CKA=0.0817, max_sim_tp=0.0545, max_sim_pt=0.0432, SVCCA=0.0000, mknn_full_epoch=0.4597
+	layer layer5 (co-attn-False): cosine=0.0090, CKA=0.0812, max_sim_tp=0.0507, max_sim_pt=0.0370, SVCCA=0.0000, mknn_full_epoch=0.4579
+	layer layer6 (co-attn-True): cosine=-0.0032, CKA=0.0813, max_sim_tp=0.0291, max_sim_pt=0.0205, SVCCA=0.0000, mknn_full_epoch=0.6115
+	layer layer7 (co-attn-False): cosine=-0.0116, CKA=0.0806, max_sim_tp=0.0196, max_sim_pt=0.0126, SVCCA=0.0000, mknn_full_epoch=0.5915
+	simulated batchsize: 512, actual batchsize: 16
+	training: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 425/425 [04:08<00:00,  1.71it/s]
+	Epoch 3/5, train loss: 0.5457, test loss: 0.5983,  accuracy: 0.7235
+	alignment for hateful memes:
+	full dataset analysis
+	Layer 0: mKNN (CLS) = 0.0583, kNN Jaccard (CLS) = 0.0102
+	Layer 1: mKNN (CLS) = 0.1261, kNN Jaccard (CLS) = 0.0239
+	Layer 2: mKNN (CLS) = 0.1277, kNN Jaccard (CLS) = 0.0250
+	Layer 3: mKNN (CLS) = 0.2253, kNN Jaccard (CLS) = 0.0523
+	Layer 4: mKNN (CLS) = 0.2257, kNN Jaccard (CLS) = 0.0513
+	Layer 5: mKNN (CLS) = 0.2243, kNN Jaccard (CLS) = 0.0521
+	Layer 6: mKNN (CLS) = 0.3351, kNN Jaccard (CLS) = 0.0839
+	Layer 7: mKNN (CLS) = 0.3249, kNN Jaccard (CLS) = 0.0802
+	analysis with only 3*48 samples, full seq
+	temp cls shape: torch.Size([144, 768])
+	Layer 0: mKNN (CLS) = 0.1456, mKNN (Seq) = 0.1484
+	Layer 1: mKNN (CLS) = 0.2567, mKNN (Seq) = 0.1492
+	Layer 2: mKNN (CLS) = 0.2607, mKNN (Seq) = 0.1493
+	Layer 3: mKNN (CLS) = 0.3794, mKNN (Seq) = 0.1501
+	Layer 4: mKNN (CLS) = 0.4068, mKNN (Seq) = 0.1500
+	Layer 5: mKNN (CLS) = 0.4069, mKNN (Seq) = 0.1497
+	Layer 6: mKNN (CLS) = 0.5212, mKNN (Seq) = 0.1504
+	Layer 7: mKNN (CLS) = 0.5408, mKNN (Seq) = 0.1504
+	Layer 0: kNN Jaccard (CLS) = 0.0317, kNN Jaccard (Seq) = 0.0549
+	Layer 1: kNN Jaccard (CLS) = 0.0614, kNN Jaccard (Seq) = 0.0551
+	Layer 2: kNN Jaccard (CLS) = 0.0630, kNN Jaccard (Seq) = 0.0552
+	Layer 3: kNN Jaccard (CLS) = 0.1130, kNN Jaccard (Seq) = 0.0555
+	Layer 4: kNN Jaccard (CLS) = 0.1189, kNN Jaccard (Seq) = 0.0554
+	Layer 5: kNN Jaccard (CLS) = 0.1166, kNN Jaccard (Seq) = 0.0552
+	Layer 6: kNN Jaccard (CLS) = 0.1638, kNN Jaccard (Seq) = 0.0554
+	Layer 7: kNN Jaccard (CLS) = 0.1654, kNN Jaccard (Seq) = 0.0552
+	layer layer0 (co-attn-False): cosine=0.0240, CKA=0.0838, max_sim_tp=0.0775, max_sim_pt=0.0560, SVCCA=0.0000, mknn_full_epoch=0.1456
+	layer layer1 (co-attn-True): cosine=0.0166, CKA=0.0828, max_sim_tp=0.0657, max_sim_pt=0.0543, SVCCA=0.0000, mknn_full_epoch=0.2567
+	layer layer2 (co-attn-False): cosine=-0.0042, CKA=0.0821, max_sim_tp=0.0534, max_sim_pt=0.0453, SVCCA=0.0000, mknn_full_epoch=0.2607
+	layer layer3 (co-attn-True): cosine=-0.0056, CKA=0.0821, max_sim_tp=0.0569, max_sim_pt=0.0442, SVCCA=0.0000, mknn_full_epoch=0.3794
+	layer layer4 (co-attn-False): cosine=-0.0046, CKA=0.0812, max_sim_tp=0.0482, max_sim_pt=0.0373, SVCCA=0.0000, mknn_full_epoch=0.4068
+	layer layer5 (co-attn-False): cosine=-0.0039, CKA=0.0808, max_sim_tp=0.0426, max_sim_pt=0.0317, SVCCA=0.0000, mknn_full_epoch=0.4069
+	layer layer6 (co-attn-True): cosine=-0.0124, CKA=0.0806, max_sim_tp=0.0222, max_sim_pt=0.0160, SVCCA=0.0000, mknn_full_epoch=0.5212
+	layer layer7 (co-attn-False): cosine=-0.0174, CKA=0.0802, max_sim_tp=0.0116, max_sim_pt=0.0073, SVCCA=0.0000, mknn_full_epoch=0.5408
+	simulated batchsize: 512, actual batchsize: 16
+	training: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 425/425 [04:08<00:00,  1.71it/s]
+	Epoch 4/5, train loss: 0.5127, test loss: 0.6305,  accuracy: 0.7253
+	alignment for hateful memes:
+	full dataset analysis
+	Layer 0: mKNN (CLS) = 0.0605, kNN Jaccard (CLS) = 0.0101
+	Layer 1: mKNN (CLS) = 0.1308, kNN Jaccard (CLS) = 0.0240
+	Layer 2: mKNN (CLS) = 0.1221, kNN Jaccard (CLS) = 0.0235
+	Layer 3: mKNN (CLS) = 0.2211, kNN Jaccard (CLS) = 0.0497
+	Layer 4: mKNN (CLS) = 0.2239, kNN Jaccard (CLS) = 0.0492
+	Layer 5: mKNN (CLS) = 0.2281, kNN Jaccard (CLS) = 0.0498
+	Layer 6: mKNN (CLS) = 0.3446, kNN Jaccard (CLS) = 0.0844
+	Layer 7: mKNN (CLS) = 0.3370, kNN Jaccard (CLS) = 0.0809
+	analysis with only 3*48 samples, full seq
+	temp cls shape: torch.Size([144, 768])
+	Layer 0: mKNN (CLS) = 0.1863, mKNN (Seq) = 0.1551
+	Layer 1: mKNN (CLS) = 0.2884, mKNN (Seq) = 0.1580
+	Layer 2: mKNN (CLS) = 0.3068, mKNN (Seq) = 0.1582
+	Layer 3: mKNN (CLS) = 0.4568, mKNN (Seq) = 0.1593
+	Layer 4: mKNN (CLS) = 0.4709, mKNN (Seq) = 0.1592
+	Layer 5: mKNN (CLS) = 0.4775, mKNN (Seq) = 0.1591
+	Layer 6: mKNN (CLS) = 0.5957, mKNN (Seq) = 0.1597
+	^CTraceback (most recent call last):
+	</details>
+
 - [x] implement gradient accum.
 - [ ] problem with contrastive term in pretraining: combined approach!
 - [ ] visualization of cka, mutual knns
@@ -14,7 +204,9 @@ I'm currently working on it, so it is not yet complete.
 
 	- [ ] visualization of all the other measueres
 		- [x] mknn
-		- [ ] 
+		- [ ] jaccard - add to analysis
+		- [ ] rank - add to analysis
+		- [ ]
 - [ ] implement further datasets for alignment evaluation
 	- [ ] ms coco
 	- [ ] vqa

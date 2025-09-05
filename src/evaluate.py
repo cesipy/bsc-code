@@ -88,6 +88,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
     config.learning_rate = DOWNSTREAM_LR
     print(f"bs_alignment_analysis: {bs_alignment_analysis}, batchsize: {BATCH_SIZE}")
 
+
     transform_hm = transforms.Compose([
 
         transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
@@ -104,7 +105,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         ], p=0.2),
 
         transforms.RandomGrayscale(p=0.1),
-        transforms.RandomHorizontalFlip(p=0.2),
+        # transforms.RandomHorizontalFlip(p=0.2),
         transforms.RandomErasing(),
 
     ])
@@ -144,6 +145,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         num_workers=4,
         pin_memory=False,
         prefetch_factor=4,
+        num_samples=1000
     )
     info_str = f"using contrastive: {use_constrastive}"
     print(info_str)
