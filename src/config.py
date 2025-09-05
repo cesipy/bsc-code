@@ -18,10 +18,10 @@ PREPROCESSED_PATH = "res/preprocessed.pkl"      # not yet used, used to store pr
 TRAIN_TEST_RATIO = 0.8
 
 if machine == "remote":
-    BATCH_SIZE = 32
-    GRADIENT_ACCUMULATION = 16  # simulated batches of 512, similar to the og vilbert paper
+    BATCH_SIZE = 20
+    GRADIENT_ACCUMULATION = 26  # simulated batches of 512, similar to the og vilbert paper
 else:
-    BATCH_SIZE = 8
+    BATCH_SIZE = 16
     GRADIENT_ACCUMULATION = 64    # simulated batches of 128
 
 EPOCHS = 10
