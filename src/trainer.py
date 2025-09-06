@@ -20,8 +20,6 @@ from info_nce import InfoNCE, info_nce
 
 
 
-
-
 def alignment_loss_cosine(text_emb, vision_emb):
     cosine_sim = torch.nn.functional.cosine_similarity(
         text_emb,
@@ -39,11 +37,14 @@ class Trainer():
         config: ViLBERTConfig,
         use_contrastive_loss:bool=False,
         use_cosine_loss:bool=False,
+        gradient_accumulation:int=1,        # how many batches to accumulate!
         ):
         self.lr = config.learning_rate
         self.model = model
         self.config = config
         self.logger = Logger()
+
+        self.scheduler = None
 
         self.optimizer = torch.optim.AdamW(
             self.model.parameters(),
@@ -60,24 +61,29 @@ class Trainer():
 
         self.use_contrastive_loss = use_contrastive_loss
         self.use_cosine_loss = use_cosine_loss
+
         if self.use_contrastive_loss or self.use_cosine_loss:
             info_str = f"using contrastive loss: {self.use_contrastive_loss}, using cosine loss: {self.use_cosine_loss}"
             print(info_str)
             self.logger.info(info_str)
 
+        self.gradient_accumulation = gradient_accumulation
 
 
 
 
     def train_epoch(self, data_loader: DataLoader):
+
+        info_str = f"simulated batchsize: {data_loader.batch_size * self.gradient_accumulation}, actual batchsize: {data_loader.batch_size}"
+        print(info_str)
+        self.logger.info(info_str)
+
         self.model.train()
         total_loss = 0
 
         num_batches = 0
-        for batch in tqdm(data_loader,total=len(data_loader), desc="training"):
+        for batch_indx,batch in enumerate(tqdm(data_loader,total=len(data_loader), desc="training")):
             num_batches += 1
-            self.optimizer.zero_grad()
-
 
             data_dict = batch
 
@@ -85,7 +91,6 @@ class Trainer():
             # its not possible to send dicts to device, so do it for every value in dict.
             text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
             image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
-
 
             if self.use_contrastive_loss:
 
@@ -105,9 +110,6 @@ class Trainer():
                 loss_normal = self.loss_fn(preds, label)
 
                 loss = loss_normal + 0.3 * loss_info   # with info nce
-                loss.backward()
-                self.optimizer.step()
-                total_loss += loss.item()
 
 
             elif self.use_cosine_loss:
@@ -127,9 +129,6 @@ class Trainer():
                 loss_normal = self.loss_fn(preds, label)
 
                 loss = loss_normal + 0.3 * loss_cosine  #cosine loss
-                loss.backward()
-                self.optimizer.step()
-                total_loss += loss.item()
 
 
 
@@ -150,9 +149,19 @@ class Trainer():
                 loss_normal = self.loss_fn(preds, label)
 
                 loss = loss_normal
-                loss.backward()
+
+            loss /= self.gradient_accumulation
+            loss.backward()
+
+            if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(data_loader):
+                lr = self.scheduler.get_lr()
+                for param_group in self.optimizer.param_groups:
+                    param_group["lr"] = lr
+
                 self.optimizer.step()
-                total_loss += loss.item()
+                self.optimizer.zero_grad()
+
+            total_loss += loss.item() * self.gradient_accumulation  # to account for division above
 
 
         return total_loss / num_batches
@@ -166,25 +175,36 @@ class Trainer():
         hm_dataloader: CustomDataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
-        analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+
+        total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
+        self.scheduler = utils.Scheduler(
+            warmup_iterations=int(0.1 * float(total_training_steps)),
+            decay_iterations=int(0.9 * float(total_training_steps)),
+            learning_rate=self.lr,
+            min_lr_fraction=0.1,
+        )
+        # analysis.analyse_alignment(dataloader=hm_dataloader, model=self.model)
+        # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
-        # if hm_dataloader is not None and cc_dataloader is not None:
-        #         info_str = "\n\nbefore training, evaluating on uninitialized model"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         info_str = "alignment for hateful memes:"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         analysis.analyse_alignment(hm_dataloader, self.model)
+        if hm_dataloader is not None and cc_dataloader is not None:
+                info_str = "\n\nbefore training, evaluating on uninitialized model"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # info_str = "alignment for hateful memes:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # analysis.analyse_alignment(hm_dataloader, self.model)
 
-        #         info_str = "alignment for conceptual captions:"
-        #         print(info_str)
-        #         self.logger.info(info_str)
-        #         analysis.analyse_alignment(cc_dataloader, self.model)
+                # info_str = "alignment for conceptual captions:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # analysis.analyse_alignment(cc_dataloader, self.model)
 
-        #         info_str = "finished!" + "\n" + 20*"-"
-        #         print(info_str)
-        #         self.logger.info(info_str)
+                # info_str = "finished!" + "\n" + 20*"-"
+                # print(info_str)
+                # self.logger.info(info_str)
+
+                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
 
 
@@ -202,10 +222,10 @@ class Trainer():
                 analysis.analyse_alignment(hm_dataloader, self.model)
                 analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
-                info_str = "alignment for conceptual captions:"
-                print(info_str)
-                self.logger.info(info_str)
-                analysis.analyse_alignment(cc_dataloader, self.model)
+                # info_str = "alignment for conceptual captions:"
+                # print(info_str)
+                # self.logger.info(info_str)
+                # analysis.analyse_alignment(cc_dataloader, self.model)
                 # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
 
 
@@ -309,6 +329,7 @@ class PretrainingTrainer:
             Task.MASKED_LM,
             Task.MASKED_IM
         ],
+        gradient_accumulation:int=1,
     ):
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
@@ -331,6 +352,9 @@ class PretrainingTrainer:
         self.scaler = torch.amp.grad_scaler.GradScaler(device=self.device)
         self.config = config
         self.logger = Logger()
+        self.scheduler = None
+
+        self.gradient_accumulation = gradient_accumulation
 
 
     def evaluate_mlm(self, dataloader: DataLoader):
@@ -491,7 +515,7 @@ class PretrainingTrainer:
         for batch in dataloader:
             num_batches += 1
 
-            loss = self.train_epoch_prediction_batch(batch)
+            loss = self.train_alignment_prediction_batch(batch)
             total_loss += loss
 
         return total_loss / num_batches
@@ -504,7 +528,7 @@ class PretrainingTrainer:
         for batch in dataloader:
             num_batches += 1
 
-            loss = self.train_epoch_mlm_batch(batch)
+            loss = self.train_mlm_batch(batch)
             total_loss += loss
 
         return total_loss / num_batches
@@ -512,12 +536,10 @@ class PretrainingTrainer:
 
 
 
-    def train_epoch_prediction_batch(self, batch):
+    def train_alignment_prediction_batch(self, batch, flag_optimizer:bool=True):
         """trains only one batch"""
 
         tasks = ["alignment_prediction"]
-
-        self.optimizer.zero_grad()
 
         # handle data here
         current_task = batch["task"]
@@ -548,22 +570,25 @@ class PretrainingTrainer:
                 prediction_logits = self.model.alignment_fc(shared_embedding)
                 loss = self.loss_fn_alignment(prediction_logits, label)
 
+            loss /= self.gradient_accumulation
 
         # from karpathy video,
         # https://www.youtube.com/watch?v=l8pRSuU81PU
         scaled_loss = self.scaler.scale(loss)
         scaled_loss.backward()
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
 
-        return loss.item()
+        if flag_optimizer:
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.optimizer.zero_grad()
 
-    def train_epoch_mlm_batch(self, batch):
+        return loss.item() * self.gradient_accumulation
+
+    def train_mlm_batch(self, batch, flag_optimizer:bool=True):
         """trains only one batch"""
 
         task = ["mlm"]
 
-        self.optimizer.zero_grad()
 
         current_task = batch["task"]            # [bs]
         text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()} # text['input_ids'] shape: torch.Size([128, 192]
@@ -586,17 +611,19 @@ class PretrainingTrainer:
             label = label.view(-1)                  # [bs*seq_len]
             loss = self.loss_fn_mlm(preds, label)
 
-
+        loss /= self.gradient_accumulation
         scaled_loss = self.scaler.scale(loss)
         scaled_loss.backward()
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
 
-        return loss.item()
+        if flag_optimizer:
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.optimizer.zero_grad()
 
-    def train_epoch_mim_batch(self, batch):
+        return loss.item() * self.gradient_accumulation
 
-        self.optimizer.zero_grad()
+    def train_mim_batch(self, batch, flag_optimizer:bool=True):
+
 
         task = ["mim"]
 
@@ -634,12 +661,16 @@ class PretrainingTrainer:
                 masked_patches_idxs=masked_patches_idxs
             )
 
+        loss /= self.gradient_accumulation
         scaled_loss = self.scaler.scale(loss)
         scaled_loss.backward()
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
 
-        return loss.item()
+        if flag_optimizer:
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.optimizer.zero_grad()
+
+        return loss.item() * self.gradient_accumulation
 
     # TODO: clean this up
     def train_epoch_mim(
@@ -649,7 +680,7 @@ class PretrainingTrainer:
         total_loss = 0
         num_batches = 0
         for batch in dataloader_mim:
-            loss = self.train_epoch_mim_batch(batch)
+            loss = self.train_mim_batch(batch)
             total_loss += loss
             num_batches += 1
 
@@ -673,23 +704,46 @@ class PretrainingTrainer:
 
         total_batches = len(dataloader_ap)
 
-        for batch_ap, batch_mlm, batch_mim in tqdm(
-            zip(dataloader_ap, dataloader_mlm, dataloader_mim),
-            total=total_batches):
+        info_str = f"simulated batchsize: {dataloader_ap.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader_ap.batch_size}"
+        print(info_str)
+        self.logger.info(info_str)
+
+
+        for batch_indx, (batch_ap, batch_mlm, batch_mim) in enumerate(
+            tqdm(
+                zip(dataloader_ap, dataloader_mlm, dataloader_mim),
+                total=total_batches
+                )
+            ):
+
+            # currently set to false, as no step should happen in batch
+            # too many steps and zeroing out!
+            flag_optimizer=False
+
 
             loss_ap = 0
             loss_mlm = 0
             loss_mim = 0
             if Task.ALIGNMENT_PREDICTION in tasks:
                 # alignment prediction
-                loss_ap = self.train_epoch_prediction_batch(batch_ap)
+                loss_ap = self.train_alignment_prediction_batch(batch_ap, flag_optimizer=flag_optimizer)
 
             if Task.MASKED_LM in tasks:
                 # masked language modeling
-                loss_mlm = self.train_epoch_mlm_batch(batch_mlm)
+                loss_mlm = self.train_mlm_batch(batch_mlm, flag_optimizer=flag_optimizer)
 
             if Task.MASKED_IM in tasks:
-                loss_mim = self.train_epoch_mim_batch(batch_mim)
+                loss_mim = self.train_mim_batch(batch_mim, flag_optimizer=flag_optimizer)
+
+
+            if (batch_indx+1) % self.gradient_accumulation == 0 or (batch_indx + 1) == total_batches:
+                lr = self.scheduler.get_lr()
+                for param_group in self.optimizer.param_groups:
+                    param_group["lr"] = lr
+
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+                self.optimizer.zero_grad()
 
             total_loss_ap += loss_ap
             total_loss_mlm += loss_mlm
@@ -737,6 +791,15 @@ class PretrainingTrainer:
         train_losses_mim = []
         validation_losses_mim = []
 
+        total_training_steps = epochs * len(train_dataloaderAP) // self.gradient_accumulation
+
+        self.scheduler = utils.Scheduler(
+            warmup_iterations=int(0.1 * float(total_training_steps)),
+            decay_iterations=int(0.9 * float(total_training_steps)),
+            learning_rate=self.config.learning_rate,
+            min_lr_fraction=0.1,
+
+        )
 
         for epoch in range(epochs):
             t_loss_ap, t_loss_mlm, t_loss_mim = self.train_epoch(
@@ -750,21 +813,6 @@ class PretrainingTrainer:
             v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
             v_loss_mim = self.evaluate_mim(test_dataloaderMIM)
 
-            # if Task.ALIGNMENT_PREDICTION in tasks:
-            #     v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
-            # else:
-            #     v_loss_ap, acc = 0, 0
-
-            # if Task.MASKED_LM in tasks:
-            #     v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
-            # else:
-            #     v_loss_mlm = 0
-
-            # if Task.MASKED_IM in tasks:
-            #     v_loss_mim = self.evaluate_mim(test_dataloaderMIM)
-            # else:
-            #     v_loss_mim = 0
-            # print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f}")
             info_str = (
                 f"Epoch {epoch+1}/{epochs}, "
                 f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "

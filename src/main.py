@@ -68,7 +68,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    trainer = Trainer(model, config)
+    trainer = Trainer(model, config, gradient_accumulation=GRADIENT_ACCUMULATION)
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
@@ -89,7 +89,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:70_000]
+    data_list = data_list[:10_000]
     # validation_list = validation_list[:1000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -137,7 +137,9 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         model=model,
         config=config,
         tasks=tasks,
-        use_contrastive_ap=USE_CONTRASTIVE_LOSS
+        use_contrastive_ap=USE_CONTRASTIVE_LOSS,
+        gradient_accumulation=GRADIENT_ACCUMULATION
+
     )
 
 

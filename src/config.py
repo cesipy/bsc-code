@@ -10,7 +10,7 @@ VOCAB_SIZE    = 30522
 NUM_HIDDEN_LAYERS = 12
 NUM_ATTENTION_HEADS = 12
 DROPOUT_PROB        = 0.4
-LEARNING_RATE       = 3e-5
+LEARNING_RATE       = 1e-4
 
 # data specific
 IMG_SIZE = (224, 224)
@@ -18,26 +18,28 @@ PREPROCESSED_PATH = "res/preprocessed.pkl"      # not yet used, used to store pr
 TRAIN_TEST_RATIO = 0.8
 
 if machine == "remote":
-    BATCH_SIZE = 16
-    EPOCHS = 10         # TODO: not yet used
+    BATCH_SIZE = 20
+    GRADIENT_ACCUMULATION = 26  # simulated batches of 512, similar to the og vilbert paper
 else:
     BATCH_SIZE = 16
-    EPOCHS = 10
+    GRADIENT_ACCUMULATION = 32    # simulated batches of 128
 
+EPOCHS = 10
 
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
 DOWNSTREAM_EPOCHS = 5
-DOWNSTREAM_LR     = 1e-5
+DOWNSTREAM_LR     = 2e-5
 
 TOKENIZER_MAX_LEN = 197
 
 
 FC_HIDDEN_DIM = 512       # what hidden size in fc head
-DEPTH = 6           # how many co-attn layers in transformer
-CROSS_ATTENTION_LAYERS = [1,3,5]      # first and 3rd layer are coattn
+DEPTH = 8           # how many co-attn layers in transformer
+CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
 
 
 VIT_MODEL_NAME = "vit_base_patch16_224"
+
 
 
 

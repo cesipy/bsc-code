@@ -28,6 +28,36 @@ from logger import Logger
 
 logger = Logger()
 
+class Scheduler:
+    def __init__(
+        self,
+        warmup_iterations: int,
+        decay_iterations: int,
+        learning_rate: float,
+        min_lr_fraction: float      # x \in \[0,1\]
+        ):
+        self.warmup_iterations = warmup_iterations
+        self.decay_iterations = decay_iterations
+        self.learning_rate = learning_rate
+        self.min_lr = learning_rate * min_lr_fraction
+        self.iteration = 0
+
+    def get_lr(self, ):
+        self.iteration += 1
+        #https://github.com/karpathy/nanoGPT/blob/93a43d9a5c22450bbf06e78da2cb6eeef084b717/train.py#L231
+        if self.iteration < self.warmup_iterations:
+            return self.learning_rate * (self.iteration+1) / (self.warmup_iterations+1)
+
+        if self.iteration > self.decay_iterations:
+            return self.min_lr
+
+        # in between
+        decay_ratio = (self.iteration - self.warmup_iterations) / (self.decay_iterations - self.warmup_iterations)
+        assert 0 <= decay_ratio <=1
+        coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))   # cosine decay
+        lr = self.min_lr + coeff * (self.learning_rate - self.min_lr)
+        return lr
+
 
 
 
@@ -110,8 +140,9 @@ def memory_cleanup(func):
                 gc.collect()
 
             if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.synchronize()
+                with torch.no_grad():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
 
             gc.collect()
 
