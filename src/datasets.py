@@ -123,6 +123,7 @@ def get_alignment_dataloaders(
 def get_dataloaders(
     train_data,
     val_data,
+    batch_size: int,
     num_workers,
     prefetch,
     persistent_workers,
@@ -189,7 +190,7 @@ def get_dataloaders(
 
     train_loader_mim = DataLoader(
         dataset=train_dataset_mim,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
@@ -199,7 +200,7 @@ def get_dataloaders(
 
     val_loader_mim = DataLoader(
         dataset=val_dataset_mim,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
         pin_memory=pin_memory,
@@ -209,7 +210,7 @@ def get_dataloaders(
 
     train_loader_ap = DataLoader(
         dataset=train_dataset_ap,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
@@ -219,7 +220,7 @@ def get_dataloaders(
 
     val_loader_ap = DataLoader(
         dataset=val_dataset_ap,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
         pin_memory=pin_memory,
@@ -229,7 +230,7 @@ def get_dataloaders(
 
     train_loader_mlm = DataLoader(
         dataset=train_dataset_mlm,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
@@ -239,7 +240,7 @@ def get_dataloaders(
 
     val_loader_mlm = DataLoader(
         dataset=val_dataset_mlm,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
         pin_memory=pin_memory,
