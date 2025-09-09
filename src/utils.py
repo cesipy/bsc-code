@@ -58,7 +58,26 @@ class Scheduler:
         lr = self.min_lr + coeff * (self.learning_rate - self.min_lr)
         return lr
 
+# used for extraction of multi-hot vector for MM-imdb dataset
+def genre_parsing(genre:str ):
+    """
+    parse the genre string from the MM-IMDB dataset into a multi-hot encoded list.
 
+    Parameters:
+        genre (str): A string representing the genre in multi-hot encoding format, e.g., '[0,0,0,1,0,0,]'
+
+    Returns:
+        List[int]: A list of integers (0s and 1s) representing the multi-hot encoded genres.
+    """
+    genre_list = []
+    for char in genre:
+        if char == "1":
+            genre_list.append(1)
+        elif char == "0":
+            genre_list.append(0)
+        else: pass
+
+    return genre_list
 
 
 

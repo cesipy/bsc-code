@@ -3,6 +3,7 @@ import json
 import typing;
 import csv
 import random
+import io
 
 
 
@@ -21,6 +22,8 @@ import cv2
 from torch.utils.data import Dataset, DataLoader
 import torch
 import numpy as np
+import pandas as pd
+import h5py
 
 from PIL import Image, UnidentifiedImageError
 
@@ -258,8 +261,6 @@ def get_dataloaders(
     )
 
 def get_image_embedding(path: str, image_processor: BaseImageProcessor, transform=None):
-
-
     try:
         with Image.open(path) as image:
             # Resize if too large, some images in cc are too large
@@ -278,7 +279,7 @@ def get_image_embedding(path: str, image_processor: BaseImageProcessor, transfor
 
             image = image.convert("RGB")
 
-            # TODO: fix this
+            # TODO: fix this, this is a bit clunky and unintuitive
             if not transform:
                 # performs the transformation (torchvision transform) for
                 # the vit model
@@ -296,7 +297,7 @@ def get_image_embedding(path: str, image_processor: BaseImageProcessor, transfor
         return None
 
 
-def get_text_embedding(text:str, tokenizer: PreTrainedTokenizerFast):
+def get_text_embedding(text:str, tokenizer:PreTrainedTokenizerFast):
     # it is necessary to pad and trucate all to 128
     # https://huggingface.co/docs/transformers/en/pad_truncation
     # TODO: parameters configurable, no magic numbers directly in code
@@ -914,6 +915,97 @@ def generate_data_list_pretrain(path: str, max_number=None):
 
 
 
+# ------------------------------
+# mm-imdb
+
+
+
+class MM_IMDB_Dataset(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        csv_path: str,
+        img_path: str,
+        tokenizer: PreTrainedTokenizerFast,
+        image_processor: BaseImageProcessor,
+
+    ):
+        assert os.path.exists(img_path)
+        self.img_data = h5py.File(img_path, "r")
+
+        self.csv_data = pd.read_csv(csv_path)
+        print(self.csv_data.columns)
+
+        self.tokenizer = tokenizer
+        self.image_processor = image_processor
+
+
+    def __len__(self,):
+        return len(self.csv_data)
+
+
+
+    def __getitem__(self, idx):
+
+        tup = self.csv_data.iloc[idx]       #['img_index', 'genre', 'caption']
+        img_idx = tup["img_index"]
+
+        img = self.img_data["images"][img_idx]  # 3, 256, 160 / c, h, w
+        img = np.transpose(img, (1,2,0))            # h, w, c
+
+        genre = tup["genre"]
+        parsed_genre = utils.genre_parsing(genre)   # multi-hot vector
+        genre = torch.tensor(parsed_genre, dtype=torch.float32)
+        caption = tup["caption"]
+
+        caption_embeddings = get_text_embedding(caption, tokenizer=self.tokenizer)
+        print(f"img shape: {img.shape}")
+        #debugging
+
+        # img = torch.tensor(img, dtype=torch.float32)
+
+        img_pre: Image = Image.fromarray(img.astype(np.uint8))
+        # img_pre = img_pre.convert("RGB")
+        img_pre.save("img_pre.jpg")
+
+        print(f"type image: {type(img)}")
+        #custom image embedding handling here
+        #TODO: clean up
+        transform_mm_imdb = transforms. Compose(
+            [
+                transforms.Resize(224),
+                transforms.CenterCrop(224),
+                transforms.ToTensor()
+            ]
+        )
+
+        img_processed = transform_mm_imdb(img_pre)
+
+
+        img_processed = { "pixel_values": img_processed.unsqueeze(0) }
+
+        dict = {
+            "img": img_processed,
+            "label": genre,
+            "caption": caption_embeddings,
+        }
+
+
+
+        return dict
+
+
+    def __del__(self):
+        if self.img_data != None:
+            self.img_data.close()
+            self.img_data = None
+
+
+
+# ------------------------------
+
+
+
+
 # def main():
 #     dir_name = "res/data/hateful_memes_data/img"
 
@@ -1014,4 +1106,24 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+
+    path = "res/data/mm-imdb/images.h5"
+    csv_path = "res/data/mm-imdb/mmimdb_trainval.csv"
+    # get_mm_imdb_data(path=path)
+
+    dataset = MM_IMDB_Dataset(
+        csv_path=csv_path,
+        img_path=path,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+
+    dataloader = torch.utils.data.DataLoader(dataset=dataset, )
+
+    for i, batch in enumerate(dataloader):
+        print(batch.shape)
+        break
+        if i > 3: break
