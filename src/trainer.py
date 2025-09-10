@@ -11,7 +11,7 @@ from logger import Logger
 
 
 import analysis
-from datasets import CustomDataset, PretrainDatasetAP
+from datasets import HM_Dataset, PretrainDatasetAP
 
 
 
@@ -172,16 +172,16 @@ class Trainer():
         train_dataloader: DataLoader,
         test_dataloader:  DataLoader,
         epochs: int,
-        hm_dataloader: CustomDataset=None,
+        hm_dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
 
         total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
         self.scheduler = utils.Scheduler(
-            warmup_iterations=int(0.1 * float(total_training_steps)),
-            decay_iterations=int(0.9 * float(total_training_steps)),
+            warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
+            decay_iterations=int(DECAY_ITERATIONS * float(total_training_steps)),
             learning_rate=self.lr,
-            min_lr_fraction=0.1,
+            min_lr_fraction=MIN_LR_FRACTION,
         )
         # analysis.analyse_alignment(dataloader=hm_dataloader, model=self.model)
         # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
@@ -741,6 +741,8 @@ class PretrainingTrainer:
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = lr
 
+                print(f"current learning rate: {lr}")
+
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
                 self.optimizer.zero_grad()
@@ -777,7 +779,7 @@ class PretrainingTrainer:
         train_dataloaderMIM: DataLoader,    #masked image modeling
         test_dataloaderMIM:  DataLoader,        #masked image modeling
         epochs: int,
-        hm_dataloader: CustomDataset=None,
+        hm_dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
         info_str = f"training with tasks: {self.config.pretraining_tasks}"
@@ -794,11 +796,10 @@ class PretrainingTrainer:
         total_training_steps = epochs * len(train_dataloaderAP) // self.gradient_accumulation
 
         self.scheduler = utils.Scheduler(
-            warmup_iterations=int(0.1 * float(total_training_steps)),
-            decay_iterations=int(0.9 * float(total_training_steps)),
+            warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
+            decay_iterations=int(DECAY_ITERATIONS * float(total_training_steps)),
             learning_rate=self.config.learning_rate,
-            min_lr_fraction=0.1,
-
+            min_lr_fraction=MIN_LR_FRACTION,
         )
 
         for epoch in range(epochs):

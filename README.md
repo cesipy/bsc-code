@@ -5,6 +5,9 @@ I'm currently working on it, so it is not yet complete.
 
 
 ## TODO
+- [ ] self.fc outside of forward - refactor
+- [ ] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
+- [ ] mmimdb alignment vis
 - [ ] check if cka is right..
 	- [ ] try with bigger bs for the data collection
 - [ ] add parameter how many samples to collect for visualization
@@ -194,7 +197,7 @@ I'm currently working on it, so it is not yet complete.
 	Layer 6: mKNN (CLS) = 0.5957, mKNN (Seq) = 0.1597
 	^CTraceback (most recent call last):
 	</details>
-
+- [ ] fix spelling issue in "costrative"
 - [x] implement gradient accum.
 - [ ] problem with contrastive term in pretraining: combined approach!
 - [ ] visualization of cka, mutual knns

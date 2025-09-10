@@ -126,13 +126,26 @@ class ViLBERT(nn.Module):
         #     nn.Linear(FC_HIDDEN_DIM//2, 1),
         # )
 
-
+        # for hateful memes
         self.fc = nn.Sequential(
             nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, 1),
         )
+
+        # TODO: unify, here i do multiplication in the other not
+
+        # for mmimdb
+        self.fc_imdb = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, MM_IMDB_NUM_GENRES),
+        )
+        # self.fc_imdb = nn.Sequential(
+        #     nn.Linear(EMBEDDING_DIM, MM_IMDB_NUM_GENRES)
+        # )
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
@@ -186,6 +199,8 @@ class ViLBERT(nn.Module):
         # print(f"shape of image_embedding: {image_embedding.shape}")
         concatted_embedding = torch.cat([text_embedding, image_embedding], dim=1)
         # print(f"shape of concatted_embedding: {concatted_embedding.shape}")
+
+        #TODO: this should be called in
         out = self.fc(concatted_embedding)
 
         if save_intermediate_representations:

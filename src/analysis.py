@@ -25,17 +25,15 @@ def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 1
     """
     Creates and saves heatmaps for Rank Similarity and Orthogonal Procrustes.
     """
-    # Create empty matrices to store the results
+
     rank_sim_cross_modal = np.zeros((num_layers, num_layers))
     procrustes_dist_cross_modal = np.zeros((num_layers, num_layers))
 
     for i in tqdm(range(num_layers), leave=False, desc="Computing Rank Sim & Procrustes"):
         for j in range(num_layers):
-            # Extract the [CLS] token representations for text layer i and vision layer j
             text_cls = measure_per_layer[i]["text_embeddings"]
             vision_cls = measure_per_layer[j]["vision_embeddings"]
 
-            # Compute and store the metrics
             rank_sim_cross_modal[i, j] = measures.rank_similarity(
                 X=text_cls, Y=vision_cls, k=k
             )
@@ -43,7 +41,7 @@ def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 1
                 X=text_cls, Y=vision_cls
             )
 
-    # --- Plotting ---
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     # Rank Similarity Plot
@@ -67,7 +65,9 @@ def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 1
     plt.tight_layout()
     timestamp = int(time.time())
     fig.savefig(f"res/plots/new_measures_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
-    plt.show()
+    logger.info(f"Saved new measures heatmaps to res/plots/new_measures_matrices_{timestamp}.png")
+
+    plt.close(fig)
 
 def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
 
@@ -135,12 +135,11 @@ def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
 
     plt.tight_layout()
 
-    # Save plots
     timestamp = int(time.time())
     fig1.savefig(f"res/plots/jaccard_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
+    logger.info(f"Saved jaccard heatmaps to res/plots/jaccard_matrices_{timestamp}.png")
 
-
-    plt.show()
+    plt.close(fig1)
 
     return (jaccard_cross_modal, jaccard_text_text, jaccard_vision_vision,)
 
@@ -236,10 +235,9 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
     timestamp = int(time.time())
     filename = f"res/plots/all_cka_matrices_{timestamp}.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
+    logger.info(f"Saved CKA heatmaps to {filename}")
 
-
-    plt.show()
-
+    plt.close(fig)
     return cross_modal_matrix, text_text_matrix, vision_vision_matrix
 
 def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10):
@@ -318,7 +316,7 @@ def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10)
     filename = f"res/plots/mutual_knn_matrices_{timestamp}.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
 
-    plt.show()
+    logger.info(f"Saved mutual k-NN heatmaps to {filename}")
 
     return cross_modal_matrix, text_text_matrix, vision_vision_matrix
 
@@ -417,19 +415,19 @@ def visualize_cka(
     measures_per_layer_full_seq: dict = get_visualisation_data(
         dataloader=dataloader,
         model=model,
-        num_samples=200
+        num_samples=NUM_SAMPLES_FULL_SEQ
     )
 
     measures_per_layer_cls: dict = get_visualisation_data(
         dataloader=dataloader,
         model=model,
-        num_samples=2000,
+        num_samples=NUM_SAMPLES_CLS,
         cls_only=True
     )
-    _visualize_new_measures(measures_per_layer_cls, model.depth, k=10)
-    _visualize_jaccard(measures_per_layer_cls, model.depth, k=10)
+    _visualize_new_measures(measures_per_layer_cls, model.depth, k=KNN_K)
+    _visualize_jaccard(measures_per_layer_cls, model.depth, k=KNN_K)
     _visualize_cka(measures_per_layer_full_seq, model.depth)
-    _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=10)
+    _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=KNN_K)
 
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.eval()
@@ -519,12 +517,12 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
         mknn_cls = measures.mutual_knn_alignment_gpu_advanced(
             Z1=current_text,
             Z2=current_vision,
-            k=10
+            k=KNN_K
         )
         ranked = measures.rank_similarity(
             X=current_text,
             Y=current_vision,
-            k=10)
+            k=KNN_K)
         procrustes = measures.orthogonal_procrustes_distance(
             X=current_text,
             Y=current_vision,

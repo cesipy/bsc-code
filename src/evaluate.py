@@ -15,7 +15,7 @@ from torchvision import transforms; import torchvision
 
 import utils
 from task import Task
-import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
+import datasets; from datasets import HM_Dataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
 from trainer import Trainer, PretrainingTrainer
@@ -86,7 +86,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         bs_alignment_analysis = 48
 
     config.learning_rate = DOWNSTREAM_LR
-    print(f"bs_alignment_analysis: {bs_alignment_analysis}, batchsize: {BATCH_SIZE}")
+    print(f"bs_alignment_analysis: {bs_alignment_analysis}, batchsize: {BATCH_SIZE_DOWNSTREAM}")
 
 
     transform_hm = transforms.Compose([
@@ -110,34 +110,32 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
 
     ])
 
-    num_workers = 4
-    pin_memory= True
-    prefetch_factor = 3
+
 
     train_data = train_data
-    train_dataset = CustomDataset(
+    train_dataset = HM_Dataset(
         train_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
         transforms=transform_hm
     )
-    val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
+    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=BATCH_SIZE_DOWNSTREAM,
         shuffle=True,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        prefetch_factor=prefetch_factor,
+        num_workers=NUM_WORKERS,
+        pin_memory=PIN_MEMORY,
+        prefetch_factor=PREFETCH,
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=BATCH_SIZE,
+        batch_size=BATCH_SIZE_DOWNSTREAM,
         shuffle=False,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        prefetch_factor=prefetch_factor,
+        num_workers=NUM_WORKERS,
+        pin_memory=PIN_MEMORY,
+        prefetch_factor=PREFETCH,
         )
 
     hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
@@ -241,13 +239,13 @@ def test_on_hm():
     prefetch_factor = 3
 
     train_data = train_data
-    train_dataset = CustomDataset(
+    train_dataset = HM_Dataset(
         train_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
         transforms=transform_hm
     )
-    val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
+    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
 
     train_loader = DataLoader(
         train_dataset,
