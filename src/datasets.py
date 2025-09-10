@@ -5,6 +5,9 @@ import csv
 import random
 import io
 
+from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from torchvision.transforms import InterpolationMode
+from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
 
 from transformers import (
@@ -927,13 +930,29 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         img_path: str,
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor,
-
+        is_train:bool=True,
+        train_test_ratio:float = TRAIN_TEST_RATIO,
     ):
+
         assert os.path.exists(img_path)
         self.img_data = h5py.File(img_path, "r")
 
-        self.csv_data = pd.read_csv(csv_path)
-        print(self.csv_data.columns)
+
+        csv_data = pd.read_csv(csv_path)
+
+        csv_data = csv_data.sample(frac=1, random_state=42).reset_index(drop=True)  # shuffle the data
+
+        train_test_split_idx = int(train_test_ratio * len(csv_data))
+        print(len(csv_data))
+
+        print(csv_data.columns)
+        print(f"train-test split idx: {train_test_split_idx}")
+
+
+        if is_train:
+            self.csv_data = csv_data[:train_test_split_idx]
+        else:
+            self.csv_data = csv_data[train_test_split_idx:]
 
         self.tokenizer = tokenizer
         self.image_processor = image_processor
@@ -945,7 +964,6 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
 
 
     def __getitem__(self, idx):
-
         tup = self.csv_data.iloc[idx]       #['img_index', 'genre', 'caption']
         img_idx = tup["img_index"]
 
@@ -958,23 +976,23 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         caption = tup["caption"]
 
         caption_embeddings = get_text_embedding(caption, tokenizer=self.tokenizer)
-        print(f"img shape: {img.shape}")
+        # print(f"img shape: {img.shape}")
         #debugging
 
         # img = torch.tensor(img, dtype=torch.float32)
 
         img_pre: Image = Image.fromarray(img.astype(np.uint8))
-        # img_pre = img_pre.convert("RGB")
-        img_pre.save("img_pre.jpg")
 
-        print(f"type image: {type(img)}")
+
+        # print(f"type image: {type(img)}")
         #custom image embedding handling here
         #TODO: clean up
         transform_mm_imdb = transforms. Compose(
             [
                 transforms.Resize(224),
                 transforms.CenterCrop(224),
-                transforms.ToTensor()
+                transforms.ToTensor(),
+                transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
             ]
         )
 
@@ -986,9 +1004,8 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         dict = {
             "img": img_processed,
             "label": genre,
-            "caption": caption_embeddings,
+            "text": caption_embeddings,
         }
-
 
 
         return dict
@@ -1124,6 +1141,6 @@ if __name__ == "__main__":
     dataloader = torch.utils.data.DataLoader(dataset=dataset, )
 
     for i, batch in enumerate(dataloader):
-        print(batch.shape)
-        break
-        if i > 3: break
+        print(batch.keys())
+        shp = batch["label"].shape[1]
+        assert shp == 23

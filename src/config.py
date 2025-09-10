@@ -5,6 +5,8 @@ from task import Task
 
 machine = os.environ.get("MACHINE_TYPE", "local")  # local or remote: local - my gaming pc (16gb), remote - university gpu (24gb)
 
+SEED = 1334 #TODO INTEGRATE EVERYWHERE
+MM_IMDB_NUM_GENRES = 23 
 
 # --------------------------------------------------
 # ViLBERT
@@ -15,9 +17,9 @@ NUM_ATTENTION_HEADS = 12
 DROPOUT_PROB        = 0.4
 VIT_MODEL_NAME = "vit_base_patch16_224"
 #default vals for them
-DEPTH = 8           # how many co-attn layers in transformer
+DEPTH = 5           # how many co-attn layers in transformer
 # CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
-CROSS_ATTENTION_LAYERS = [1,2,3,4,5,7]      # first and 3rd layer are coattn
+CROSS_ATTENTION_LAYERS = [0,1,2,4]      # first and 3rd layer are coattn
 # --------------------------------------------------
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4
