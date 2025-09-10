@@ -19,7 +19,7 @@ import utils
 
 from logger import Logger
 from config import *
-from .dataset_utils import get_image_embedding, get_text_embedding
+from .dataset_utils import get_image_embedding, get_text_embedding;  from . import dataset_utils
 import augments_transforms
 
 class PretrainDatasetAP(Dataset):
@@ -186,7 +186,7 @@ class PretrainDatasetAP(Dataset):
             else:
                 label = 1
 
-        img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
+        img_embeddings = dataset_utils.process_image(img=img_path, transform=None)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
         if random.random() <0.35:
@@ -348,7 +348,7 @@ class PretrainDatasetMLM(Dataset):
         dp = self.data[index]
         task, img_path, text, label = dp
 
-        img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
+        img_embeddings = dataset_utils.process_image(img=img_path, transform=None)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
         if img_embeddings is None or text_embeddings is None:
@@ -437,7 +437,8 @@ class PretrainDatasetMIM(Dataset):
         dp = self.data[idx]
         task, img_path, text, label = dp
 
-        img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
+        # img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
+        img_embeddings = dataset_utils.process_image(img=img_path, transform=None)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
         if img_embeddings is None or text_embeddings is None:

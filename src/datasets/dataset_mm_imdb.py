@@ -26,7 +26,7 @@ import utils
 
 from logger import Logger
 from config import *
-from .dataset_utils import get_image_embedding, get_text_embedding
+from .dataset_utils import get_image_embedding, get_text_embedding; from . import dataset_utils
 import augments_transforms
 
 
@@ -40,6 +40,7 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         image_processor: BaseImageProcessor,
         is_train:bool=True,
         train_test_ratio:float = TRAIN_TEST_RATIO,
+        transform: typing.Optional[torchvision.transforms.Compose] = None
     ):
 
         assert os.path.exists(img_path)
@@ -59,10 +60,12 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         if is_train:
             self.csv_data = csv_data[:train_test_split_idx]
         else:
+
             self.csv_data = csv_data[train_test_split_idx:]
 
         self.tokenizer = tokenizer
         self.image_processor = image_processor
+        self.transform = transform
 
 
     def __len__(self,):
@@ -90,47 +93,18 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
 
         img_pre: Image = Image.fromarray(img.astype(np.uint8))
 
-
-        # print(f"type image: {type(img)}")
-        #custom image embedding handling here
-        #TODO: clean up
-        transform_mm_imdb = transforms. Compose(
-            [
-                transforms.Resize(224),
-                transforms.CenterCrop(224),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
-            ]
-        )
-
-        transform_augmentation = transforms.Compose([
-
-            transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
-
-            transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
-            transforms.RandomAffine(
-                degrees=10,
-                translate=(0.05, 0.05),
-                scale=(0.95, 1.05),
-                shear=2
-            ),
-            transforms.RandomApply([
-                transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
-            ], p=0.2),
-
-            transforms.RandomGrayscale(p=0.1),
-            # transforms.RandomHorizontalFlip(p=0.2),
-            transforms.RandomErasing(),
-
-        ])
-
-
-        img_processed = transform_mm_imdb(img_pre)
         if self.is_train:
-            img_processed = transform_augmentation(img_processed)
 
+            img_processed = dataset_utils.process_image(img_pre, transform=self.transform)
+        else:
+            transform_resize_only = transforms.Compose(
+                [
+                    transforms.Resize(224),
+                    transforms.CenterCrop(224)
+                ]
+            )
+            img_processed = dataset_utils.process_image(img=img_pre, transform=transform_resize_only)
 
-        img_processed = { "pixel_values": img_processed.unsqueeze(0) }
 
         dict = {
             "img": img_processed,

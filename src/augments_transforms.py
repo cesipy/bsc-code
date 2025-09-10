@@ -48,3 +48,34 @@ def get_minimal_vit_transform():
     return vit_transform
 
 
+def get_mm_imdb_train_augmentation():
+    """ data augmentation for MM-IMDB dataset training"""
+
+    transform_augmentation = transforms.Compose([
+
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
+
+        transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
+        transforms.RandomAffine(
+            degrees=10,
+            translate=(0.05, 0.05),
+            scale=(0.95, 1.05),
+            shear=2
+        ),
+        transforms.RandomApply([
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
+        ], p=0.2),
+
+        transforms.RandomGrayscale(p=0.1),
+        # transforms.RandomHorizontalFlip(p=0.2),
+        transforms.RandomErasing(),
+
+    ])
+    return transform_augmentation
+
+def get_hateful_memes_train_augmentation():
+    """ data augmentation for hateful memes dataset training. the same as `get_mm_imdb_train_augmentation`"""
+
+    return get_mm_imdb_train_augmentation()
+
+

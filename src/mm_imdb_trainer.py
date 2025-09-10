@@ -23,6 +23,8 @@ from transformers import (
 import analysis
 from datasets import HM_Dataset, PretrainDatasetAP, MM_IMDB_Dataset; import datasets
 
+import augments_transforms
+
 
 
 
@@ -80,11 +82,14 @@ class MM_IMDB_Trainer():
             self.logger.info(info_str)
 
             if hm_dataloader is not None:
-                align_acc = analysis.analyse_alignment(
+                analysis.analyse_alignment(
                     model=self.model,
-                    data_loader=hm_dataloader,
+                    dataloader=hm_dataloader,
                 )
-                info_str = f"Alignment accuracy on hateful memes dataset: {align_acc:.4f}"
+                analysis.visualize_cka(
+                    model=self.model,
+                    dataloader=hm_dataloader)
+                info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
 
@@ -207,13 +212,16 @@ def main():
     path = "res/data/mm-imdb/images.h5"
     csv_path = "res/data/mm-imdb/mmimdb_trainval.csv"
 
+    transform = augments_transforms.get_mm_imdb_train_augmentation()
+
     train_dataset = MM_IMDB_Dataset(
         csv_path=csv_path,
         img_path=path,
         tokenizer=tokenizer,
         image_processor=image_processor,
-        train_test_ratio=0.8,
-        is_train=True
+        train_test_ratio=0.05,
+        is_train=True,
+        transform=transform
     )
 
     val_dataset = MM_IMDB_Dataset(

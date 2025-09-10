@@ -46,10 +46,66 @@ warnings.filterwarnings("ignore", ".*Palette images with Transparency.*", catego
 
 Image.MAX_IMAGE_PIXELS = None
 
+def _process_image(img: Image.Image, transform=None):
 
-# def process_image(img: typing.Union[str, Image]):
+    assert isinstance(img, Image.Image)
+    basic_vit_transform = augments_transforms.get_minimal_vit_transform()
 
-#     if isinstance()
+    # performs only normlalization
+
+    img_t : torch.tensor = basic_vit_transform(img).unsqueeze(0)
+
+    if transform:
+        img_t = transform(img_t)
+
+    return { "pixel_values": img_t }
+
+
+
+def process_image(
+    img: typing.Union[str, Image.Image],
+    transform=None
+    ) -> typing.Optional[typing.Dict[str, torch.Tensor]]:
+    """
+    processes a single image, performs necessary processing for ViT.
+
+    parameters:
+        img: either a path to the image, or a PIL image
+        transform: optional torchvision transform to apply after the basic vit transform
+
+    returns:
+        dictionary of form {"pixel_values": img_tensor} where img_tensor is of shape (1, 3, 224, 224)
+
+    """
+
+    if isinstance(img, str):
+        try:
+            with Image.open(img) as image:
+                # Resize if too large, some images in cc are too large
+                # i need to resize them to mitigate warnings
+                # vit sizes them down anyways
+                width, height = image.size
+                max_size = 4096  # Max dimension
+                if width > max_size or height > max_size:
+                    if width > height:
+                        new_width = max_size
+                        new_height = int(height * max_size / width)
+                    else:
+                        new_height = max_size
+                        new_width = int(width * max_size / height)
+                    image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+                image = image.convert("RGB")
+                img = image
+        except Exception as e:
+            print(f"Error processing image {img}. Skipping.")
+            print(f"error: {e}")
+            return None
+
+    # print(type(img))
+    assert isinstance(img, Image.Image)
+    return _process_image(img, transform=transform)
+
 
 
 

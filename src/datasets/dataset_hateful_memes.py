@@ -18,6 +18,8 @@ import augments_transforms
 from config import *
 
 from .dataset_utils import get_image_embedding, get_text_embedding
+from . import dataset_utils
+
 
 class HM_Dataset(Dataset):
     def __init__(
@@ -91,21 +93,28 @@ class HM_Dataset(Dataset):
         data = self.data[index]
         img_path, label, text = data
 
-        img_embeddings = get_image_embedding(
-            img_path,
-            image_processor=self.image_processor,
-            transform=augments_transforms.get_minimal_vit_transform()      # not vit transform full anymore - no now i resized the images in the dataset
-        )
+        # img_embeddings = get_image_embedding(
+        #     img_path,
+        #     image_processor=self.image_processor,
+        #     transform=augments_transforms.get_minimal_vit_transform()      # not vit transform full anymore - no now i resized the images in the dataset
+        # )
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
+        if self.transforms:
+           img_embeddings = dataset_utils.process_image(
+               img=img_path,
+               transform=self.transforms,
+
+           )
+        else:
+              img_embeddings = dataset_utils.process_image(
+                img=img_path,
+                transform=None
+              )
 
         label_tensor = torch.tensor(label, dtype=torch.long)
 
 
-        if self.transforms:
-            img_tensor = img_embeddings["pixel_values"].squeeze(0)
-            img_tensor = self.transforms(img_tensor)
-            img_embeddings["pixel_values"] = img_tensor.unsqueeze(0)
 
         return {
             "img": img_embeddings,

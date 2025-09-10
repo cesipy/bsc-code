@@ -35,53 +35,6 @@ logger = Logger()
 machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 
 
-def train_and_eval_on_downstream_task(pretrained_model_path:str):
-    if pretrained_model_path==None or not os.path.exists(pretrained_model_path) :
-        # use fresh vilbert
-        info_str = f"Pretrained model path {pretrained_model_path} does not exist, using fresh model."
-        print(info_str)
-        logger.info(info_str)
-
-        config = ViLBERTConfig()
-        model = ViLBERT()
-
-    else:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        model, cp = ViLBERT.from_pretrained_checkpoint(checkpoint_path=pretrained_model_path, device=device)
-
-    path = "res/data/hateful_memes_data/train.jsonl"
-    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-    config = ViLBERTConfig()
-    config.learning_rate = 1e-5     # TODO: make this cleaner
-
-    #TODO: also freeze co-attention layers here
-    utils.params_summary(model=model)
-    train_data_list = datasets.generate_data_list(path)
-
-    train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
-    train_data = train_data_list[:train_idx]
-    val_data   = train_data_list[train_idx:]
-
-    train_data = train_data
-    train_dataset = HM_Dataset(train_data, tokenizer=tokenizer, image_processor=image_processor)
-    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
-
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE_PRETRAIN, shuffle=True,)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE_PRETRAIN, shuffle=False)
-
-    trainer = Trainer(model, config, gradient_accumulation=GRADIENT_ACCUMULATION)
-    trainer.train(
-        train_dataloader=train_loader,
-        test_dataloader=val_loader,
-        epochs=4
-    )
-
-    del model, trainer, train_dataset, val_dataset, train_loader, val_loader
-    torch.cuda.empty_cache()
-    gc.collect()
-    logger.info("Training and evaluation on downstream task finished, cleaning up memory")
-
 @utils.memory_cleanup
 def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]):
 
@@ -110,7 +63,8 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         prefetch=PREFETCH,
         persistent_workers=PERSISTENT_WORKERS,
         pin_memory=PIN_MEMORY,
-        use_contrastive_ap=USE_CONTRASTIVE_LOSS
+        use_contrastive_ap=USE_CONTRASTIVE_LOSS,
+        batch_size=BATCH_SIZE_PRETRAIN,
     )
 
     print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
