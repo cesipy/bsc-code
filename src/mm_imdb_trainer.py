@@ -21,7 +21,7 @@ from transformers import (
 
 
 import analysis
-from datasets import CustomDataset, PretrainDatasetAP, MM_IMDB_Dataset
+from datasets import HM_Dataset, PretrainDatasetAP, MM_IMDB_Dataset; import datasets
 
 
 
@@ -61,7 +61,7 @@ class MM_IMDB_Trainer():
         test_dataloader: DataLoader,
         epochs: int,
         #for alingment testing
-        hm_dataloader: CustomDataset=None,
+        hm_dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
         total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
@@ -78,6 +78,17 @@ class MM_IMDB_Trainer():
             info_str = f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f},  accuracy: {acc:.4f}"
             print(info_str)
             self.logger.info(info_str)
+
+            if hm_dataloader is not None:
+                align_acc = analysis.analyse_alignment(
+                    model=self.model,
+                    data_loader=hm_dataloader,
+                )
+                info_str = f"Alignment accuracy on hateful memes dataset: {align_acc:.4f}"
+                print(info_str)
+                self.logger.info(info_str)
+
+
 
     def train_epoch(self, data_loader: DataLoader):
 
@@ -167,26 +178,23 @@ class MM_IMDB_Trainer():
                 total_loss += loss.item()
                 num_batches += 1
 
-                # For multi-label classification (convert logits to binary predictions)
                 preds = (torch.sigmoid(pred) > 0.5).float()
                 all_preds.append(preds.cpu())
                 all_labels.append(label.cpu())
 
         avg_loss = total_loss / num_batches
 
-        # Calculate metrics
         all_preds = torch.cat(all_preds, dim=0)
         all_labels = torch.cat(all_labels, dim=0)
 
-        # For multi-label classification, we can calculate:
         # 1. Exact match accuracy (all genres must match)
         exact_match = (all_preds == all_labels).all(dim=1).float().mean().item()
 
         # 2. Hamming accuracy (percentage of correct genre predictions)
         hamming_acc = (all_preds == all_labels).float().mean().item()
 
-        # Choose which metric to return
-        acc = hamming_acc  # or exact_match depending on your preference
+        acc = exact_match
+        acc = hamming_acc
 
         return avg_loss, acc
 
@@ -204,7 +212,7 @@ def main():
         img_path=path,
         tokenizer=tokenizer,
         image_processor=image_processor,
-        train_test_ratio=0.2,
+        train_test_ratio=0.8,
         is_train=True
     )
 
@@ -234,11 +242,22 @@ def main():
     config = ViLBERTConfig()
     model = ViLBERT(config=config)
 
+    #alignment sets
+    hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
+        batch_size=BATCH_SIZE_ANALYSIS,
+        num_workers=4,
+        pin_memory=False,
+        prefetch_factor=4,
+        num_samples=2000
+    )
+
     trainer = MM_IMDB_Trainer(model=model, config=config, gradient_accumulation=32)
     trainer.train(
         train_dataloader=train_dataloader,
         test_dataloader=val_dataloader,
-        epochs=3
+        epochs=8,
+        hm_dataloader=hm_dataloader,
+        cc_dataloader=cc_dataloader,
     )
 
 

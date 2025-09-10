@@ -1,0 +1,287 @@
+
+import sys, os; sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'src'))
+import torch; from torch.utils.data import Dataset, DataLoader
+import typing
+
+from transformers import (
+     # ViT stuff
+    BaseImageProcessor,
+    ViTImageProcessor,
+
+    # type hinting stuff
+    PreTrainedTokenizerFast,
+    BertTokenizerFast
+)
+
+import random
+
+from logger import Logger
+from config import *
+from .dataset_utils import get_image_embedding, get_text_embedding
+import augments_transforms
+
+from .dataset_hateful_memes import HM_Dataset
+from .dataset_pretrain import *
+from .dataset_mm_imdb import *
+
+from .dataset_utils import generate_data_list, generate_data_list_pretrain
+
+
+def get_alignment_dataloaders(
+    batch_size,
+    num_workers: int,
+    pin_memory: bool,
+    prefetch_factor: int,
+    num_samples:int = 1000
+    )-> typing.Tuple[DataLoader, DataLoader]:
+    """
+    returns tuple of dataloader in the following order:
+    dataloader-hateful-memes, dataloader-conceputal-captions
+    """
+
+    path_cc = "res/data/conceptual-captions/validation.csv"
+    path_hm = "res/data/hateful_memes_data/train.jsonl"
+
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    data_list_hm = generate_data_list(path_hm)
+    random.shuffle(data_list_hm)
+    # TODO: not needed for every sample!
+
+    assert num_samples <= len(data_list_hm)
+
+    #TODO: it now uses the complete dataset, not the train-test split here for alignment analysis
+    data_list_cc = generate_data_list_pretrain(path=path_cc, max_number=None)
+    random.shuffle(data_list_cc)
+    data_list_hm = data_list_hm[:num_samples]
+    data_list_cc = data_list_cc[:num_samples]
+
+    dataset_hm = HM_Dataset(
+        data=data_list_hm,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+
+    dataset_cc = PretrainDatasetAP(
+        data=data_list_cc,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        preprocessing_prediction_alignment=False
+    )
+
+    dataloader_hm = DataLoader(
+        dataset=dataset_hm,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+    )
+
+    dataloader_cc = DataLoader(
+        dataset=dataset_cc,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+    )
+
+    return dataloader_hm, dataloader_cc
+
+
+
+
+def get_dataloaders(
+    train_data,
+    val_data,
+    batch_size: int,
+    num_workers,
+    prefetch,
+    persistent_workers,
+    pin_memory=True,
+    use_contrastive_ap: bool=False
+    ):
+    """
+    Returns: (
+        train_loader_ap,
+        val_loader_ap,
+        train_loader_mlm,
+        val_loader_mlm,
+        train_loader_mim,
+        val_loader_mim
+    )
+    """
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    print(f"dataset lengths: train: {len(train_data)}; val: {len(val_data)}")
+
+    train_dataset_mim = PretrainDatasetMIM(
+        data=train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        transforms_weak=augments_transforms.get_transform_unmasked(),
+        transforms_strong=augments_transforms.get_transform_masked()
+    )
+    val_dataset_mim   = PretrainDatasetMIM(
+        data=val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        transforms_weak=augments_transforms.get_transform_unmasked(),
+        transforms_strong=augments_transforms.get_transform_masked(),
+    )
+
+    train_dataset_ap = PretrainDatasetAP(
+        data=train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        preprocessing_prediction_alignment=False,
+        use_contrastive_ap_loss=use_contrastive_ap
+    )
+
+
+    val_dataset_ap   = PretrainDatasetAP(
+        data=val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        preprocessing_prediction_alignment=False,
+    )
+
+    train_dataset_mlm = PretrainDatasetMLM(
+        data=train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+
+    val_dataset_mlm   = PretrainDatasetMLM(
+        data=val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+
+    train_loader_mim = DataLoader(
+        dataset=train_dataset_mim,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+
+    val_loader_mim = DataLoader(
+        dataset=val_dataset_mim,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+
+    train_loader_ap = DataLoader(
+        dataset=train_dataset_ap,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+
+    val_loader_ap = DataLoader(
+        dataset=val_dataset_ap,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+
+    train_loader_mlm = DataLoader(
+        dataset=train_dataset_mlm,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+
+    val_loader_mlm = DataLoader(
+        dataset=val_dataset_mlm,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch
+    )
+
+    return (
+        train_loader_ap,
+        val_loader_ap,
+        train_loader_mlm,
+        val_loader_mlm,
+        train_loader_mim,
+        val_loader_mim,
+    )
+
+def get_mmimdb_datasets(
+    train_test_ratio: float,
+    batch_size: int,
+    num_workers: int,
+    pin_memory: bool = False,
+    prefetch_factor: int = 4,
+    persistent_workers: bool = True,
+) -> typing.Tuple[DataLoader, DataLoader]:
+
+    assert 0< train_test_ratio <1
+
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    path = "res/data/mm-imdb/images.h5"
+    csv_path = "res/data/mm-imdb/mmimdb_trainval.csv"
+
+    train_dataset = MM_IMDB_Dataset(
+        csv_path=csv_path,
+        img_path=path,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        train_test_ratio=train_test_ratio,
+        is_train=True
+    )
+
+    val_dataset = MM_IMDB_Dataset(
+        csv_path=csv_path,
+        img_path=path,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        is_train=False
+    )
+
+    train_dataloader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+    )
+
+    val_dataloader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+    )
+
+    return train_dataloader, val_dataloader

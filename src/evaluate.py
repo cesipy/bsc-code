@@ -15,7 +15,7 @@ from torchvision import transforms; import torchvision
 
 import utils
 from task import Task
-import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
+import datasets; from datasets import HM_Dataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
 from trainer import Trainer, PretrainingTrainer
@@ -113,13 +113,13 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
 
 
     train_data = train_data
-    train_dataset = CustomDataset(
+    train_dataset = HM_Dataset(
         train_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
         transforms=transform_hm
     )
-    val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
+    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
 
     train_loader = DataLoader(
         train_dataset,
@@ -239,13 +239,13 @@ def test_on_hm():
     prefetch_factor = 3
 
     train_data = train_data
-    train_dataset = CustomDataset(
+    train_dataset = HM_Dataset(
         train_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
         transforms=transform_hm
     )
-    val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
+    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
 
     train_loader = DataLoader(
         train_dataset,

@@ -1,3 +1,5 @@
+import sys, os; sys.path.append('src')
+
 import os
 # problem when running training on loaded models after pretraining.
 # occurs because of parallelism in data loaders
@@ -16,7 +18,7 @@ from transformers import (
 
 import utils
 from task import Task
-import datasets; from datasets import CustomDataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
+import datasets; from datasets import HM_Dataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
 from trainer import Trainer, PretrainingTrainer
@@ -62,8 +64,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str):
     val_data   = train_data_list[train_idx:]
 
     train_data = train_data
-    train_dataset = CustomDataset(train_data, tokenizer=tokenizer, image_processor=image_processor)
-    val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
+    train_dataset = HM_Dataset(train_data, tokenizer=tokenizer, image_processor=image_processor)
+    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE_PRETRAIN, shuffle=True,)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE_PRETRAIN, shuffle=False)

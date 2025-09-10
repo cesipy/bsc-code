@@ -5,6 +5,9 @@ I'm currently working on it, so it is not yet complete.
 
 
 ## TODO
+- [ ] self.fc outside of forward - refactor
+- [ ] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
+- [ ] mmimdb alignment vis
 - [ ] check if cka is right..
 	- [ ] try with bigger bs for the data collection
 - [ ] add parameter how many samples to collect for visualization

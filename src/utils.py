@@ -4,24 +4,14 @@ import typing
 
 import numpy as np
 import torch; from torch import nn
-import torchvision; from torchvision import transforms
 import gc; import time
 from functools import wraps
 import matplotlib.pyplot as plt
 
 from PIL import Image
-from timm.data import resolve_data_config
-from timm.data.transforms_factory import create_transform
-from timm.data import resolve_data_config
-from timm.data.transforms_factory import create_transform
-from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from torchvision.transforms import InterpolationMode
-from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-
-
 
 from config import *
-
+import augments_transforms
 from logger import Logger
 
 
@@ -81,67 +71,38 @@ def genre_parsing(genre:str ):
 
 
 
-def get_image_embedding(path: str, image_processor=None):
+# def get_image_embedding(path: str, image_processor=None):
 
 
-    try:
-        with Image.open(path) as image:
-            # Resize if too large, some images in cc are too large
-            # i need to resize them to mitigate warnings
-            # vit sizes them down anyways
-            width, height = image.size
-            max_size = 4096  # Max dimension
-            if width > max_size or height > max_size:
-                if width > height:
-                    new_width = max_size
-                    new_height = int(height * max_size / width)
-                else:
-                    new_height = max_size
-                    new_width = int(width * max_size / height)
-                image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+#     try:
+#         with Image.open(path) as image:
+#             # Resize if too large, some images in cc are too large
+#             # i need to resize them to mitigate warnings
+#             # vit sizes them down anyways
+#             width, height = image.size
+#             max_size = 4096  # Max dimension
+#             if width > max_size or height > max_size:
+#                 if width > height:
+#                     new_width = max_size
+#                     new_height = int(height * max_size / width)
+#                 else:
+#                     new_height = max_size
+#                     new_width = int(width * max_size / height)
+#                 image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-            image = image.convert("RGB")
-            # image = image_processor(images=image, return_tensors="pt")
-            # return image
-            image = vit_transform(image).unsqueeze(0)
-            # logger.info(f"processed image shape: {image.shape}")
-            # to keep the format of transformers-package, which i was using before
-            return {"pixel_values": image}
-    except Exception as e:
-        print(f"Error processing image {path}. Skipping.")
-        print(f"error: {e}")
-        return None
+#             image = image.convert("RGB")
+#             # image = image_processor(images=image, return_tensors="pt")
+#             # return image
+#             minimal_vit_transform = augments_transforms.get_minimal_vit_transform()
+#             image = minimal_vit_transform(image).unsqueeze(0)
+#             # logger.info(f"processed image shape: {image.shape}")
+#             # to keep the format of transformers-package, which i was using before
+#             return {"pixel_values": image}
+#     except Exception as e:
+#         print(f"Error processing image {path}. Skipping.")
+#         print(f"error: {e}")
+#         return None
 
-
-
-transforms_unmasked = torchvision.transforms.Compose([
-    transforms.RandomRotation(5),
-    transforms.RandomRotation(degrees=5),
-    transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.05),
-    transforms.RandomResizedCrop(size=224, scale=(0.95, 1.0)),
-])
-
-transforms_masked = torchvision.transforms.Compose([
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomRotation(degrees=15),
-    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
-    transforms.RandomResizedCrop(size=224, scale=(0.7, 1.0)),  # More aggressive cropping
-    transforms.RandomGrayscale(p=0.1),
-    transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
-])
-
-config = resolve_data_config({}, model=VIT_MODEL_NAME)
-# vit_transform = create_transform(**config)        # this was used before
-vit_transform_full = transforms.Compose([
-    transforms.Resize(256, interpolation=InterpolationMode.BICUBIC, antialias=True),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
-])
-vit_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
-])
 
 
 

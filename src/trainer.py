@@ -11,7 +11,7 @@ from logger import Logger
 
 
 import analysis
-from datasets import CustomDataset, PretrainDatasetAP
+from datasets import HM_Dataset, PretrainDatasetAP
 
 
 
@@ -172,7 +172,7 @@ class Trainer():
         train_dataloader: DataLoader,
         test_dataloader:  DataLoader,
         epochs: int,
-        hm_dataloader: CustomDataset=None,
+        hm_dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
 
@@ -779,7 +779,7 @@ class PretrainingTrainer:
         train_dataloaderMIM: DataLoader,    #masked image modeling
         test_dataloaderMIM:  DataLoader,        #masked image modeling
         epochs: int,
-        hm_dataloader: CustomDataset=None,
+        hm_dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
         info_str = f"training with tasks: {self.config.pretraining_tasks}"
