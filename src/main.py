@@ -38,6 +38,7 @@ machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 @utils.memory_cleanup
 def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]):
 
+    utils.set_seeds(SEED)
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)

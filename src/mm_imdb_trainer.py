@@ -206,6 +206,7 @@ class MM_IMDB_Trainer():
 
 
 def main():
+    utils.set_seeds(SEED)
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 

@@ -18,6 +18,15 @@ from logger import Logger
 
 logger = Logger()
 
+def set_seeds(seed:int):
+
+    torch.manual_seed(seed=seed)
+    random.seed(seed)
+    torch.use_deterministic_algorithms(True)
+    np.random.seed(seed)
+
+
+
 class Scheduler:
     def __init__(
         self,

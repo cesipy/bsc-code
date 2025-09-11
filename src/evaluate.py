@@ -36,8 +36,11 @@ logger = Logger()
 
 @utils.memory_cleanup
 def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastive:Optional[bool]=False):
+
+
     if pretrained_model_path==None or not os.path.exists(pretrained_model_path) :
         # use fresh vilbert
+        utils.set_seeds(SEED)
         info_str = f"Pretrained model path {pretrained_model_path} does not exist, using fresh model."
         print(info_str)
         logger.info(info_str)
@@ -46,6 +49,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         model = ViLBERT(config=config)
 
     else:
+
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model, cp = ViLBERT.from_pretrained_checkpoint(checkpoint_path=pretrained_model_path, device=device)
         info_str = f"Loaded model from {pretrained_model_path} with config: {cp['config']}"
