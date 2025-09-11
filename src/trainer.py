@@ -173,12 +173,15 @@ class Trainer():
 
         return total_loss / num_batches
 
-    def setup_scheduler(self, epochs:int, train_dataloader: DataLoader):
+    def setup_scheduler(self, epochs:int, train_dataloader: DataLoader, lr=None):
+        if lr is None:
+            lr = self.lr
+        
         total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
         self.scheduler = utils.Scheduler(
             warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
             decay_iterations=int(DECAY_ITERATIONS * float(total_training_steps)),
-            learning_rate=self.lr,
+            learning_rate=lr,
             min_lr_fraction=MIN_LR_FRACTION,
         )
 

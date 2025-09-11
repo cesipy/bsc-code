@@ -10,6 +10,8 @@ I'm currently working on it, so it is not yet complete.
 		from bertviz import head_view
 		head_view(model, tokenizer, text_inputs, layer=4)  # visualize cross-attention
 		```
+- [ ] use albuminations
+- [ ] use test sets for alignment; no training on it. 
 - [ ] easier dataset handling
 - [ ] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
 - [ ] implement experiment tracker

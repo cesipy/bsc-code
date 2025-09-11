@@ -14,21 +14,30 @@ import analysis
 logger = Logger()
 
 """
-dict = {
+training_results = {
     "hateful_memes": {
-        0: { ... },      # uninitialized
-        1: {            # epoch 1
-            0: {        # layer 0
-                "is_cross_attention": bool,
-                "cosine": float,
-                "cka": float,
-                "max_sim_tp": float,
-                "max_sim_pt": float,
-                "svcca": float,
-                "mknn_full_epoch": float,
-                "rank_full_epoch": float,
-                "procrustes_full_epoch": float
+        "alignment": {
+            0: { ... },      # uninitialized
+            1: {            # epoch 1
+                0: {        # layer 0
+                    "is_cross_attention": bool,
+                    "cosine": float,
+                    "cka": float,
+                    "max_sim_tp": float,
+                    "max_sim_pt": float,
+                    "svcca": float,
+                    "mknn_full_epoch": float,
+                    "rank_full_epoch": float,
+                    "procrustes_full_epoch": float
                 },
+        },
+        "training": {
+            1 : { ... }   # epoch 1
+            2 : {
+                "train_loss": float,
+                "val_loss": float,
+                "val_acc": float
+            }
         },
         ...
     },
@@ -52,13 +61,18 @@ class ExperimentTracker:
         #TODO: two tasks: hateful memes and mm-imdb
         utils.set_seeds(SEED)
 
-        training_results = { "hateful_memes": {}, "mm_imdb": {} }
+        training_results = {
+            "hateful_memes": { "alignment": {}, "training": {} },
+            "mm_imdb": {  "alignment": {}, "training": {} }
+        }
+        training_results["hateful_memes"]["alignment"][0] = {}
+        training_results["mm_imdb"]["alignment"][0] = {}
         for i in range(epochs):
             curr_epoch = i+1    # 0 is uninitialized
-            training_results["hateful_memes"][curr_epoch] = {}
-            training_results["mm_imdb"][curr_epoch] = {}
-        training_results["hateful_memes"]["0"] = {}
-        training_results["mm_imdb"]["0"] = {}
+            training_results["hateful_memes"]["alignment"][curr_epoch] = {}
+            training_results["mm_imdb"]["alignment"][curr_epoch] = {}
+            training_results["hateful_memes"]["training"][curr_epoch] = {}
+            training_results["mm_imdb"]["training"][curr_epoch] = {}
 
 
 
@@ -70,8 +84,8 @@ class ExperimentTracker:
         )
 
         train_loader, val_loader = datasets.get_hateful_memes_datasets(
-            # train_test_ratio=TRAIN_TEST_RATIO,
-            train_test_ratio=0.1,
+            train_test_ratio=TRAIN_TEST_RATIO,
+            # train_test_ratio=0.1,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -79,7 +93,6 @@ class ExperimentTracker:
             persistent_workers=PERSISTENT_WORKERS,
             use_train_augmentation=True,
         )
-
         hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=NUM_WORKERS,
@@ -87,8 +100,8 @@ class ExperimentTracker:
             prefetch_factor=PREFETCH,
             num_samples=2000
         )
-
-        trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader)
+        trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
+                                lr=DOWNSTREAM_LR)
 
 
         for i in range(epochs):
@@ -107,9 +120,13 @@ class ExperimentTracker:
             print(info_str)
             logger.info(info_str)
 
+            training_results["hateful_memes"]["training"][i+1]["train_loss"] = train_loss
+            training_results["hateful_memes"]["training"][i+1]["val_loss"] = test_loss
+            training_results["hateful_memes"]["training"][i+1]["val_acc"] = acc
+
 
             alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
-            training_results["hateful_memes"][i+1] = alignment_metrics
+            training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
         # self.save_results()
 
 
@@ -129,7 +146,6 @@ class ExperimentTracker:
         ) -> Tuple[float, float]:
 
         return trainer.evaluate(dataloader=dataloader)
-
 
 
 
