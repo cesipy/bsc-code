@@ -55,9 +55,9 @@ def get_mm_imdb_train_augmentation():
 
         transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
 
-        transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
+        transforms.RandomResizedCrop(size=224, scale=(0.92, 1.0), ratio=(0.95, 1.05 )),
         transforms.RandomAffine(
-            degrees=10,
+            degrees=5,
             translate=(0.05, 0.05),
             scale=(0.95, 1.05),
             shear=2
@@ -65,6 +65,8 @@ def get_mm_imdb_train_augmentation():
         transforms.RandomApply([
             transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
         ], p=0.2),
+
+        transforms.RandomPerspective(distortion_scale=0.08, p=0.25),
 
         transforms.RandomGrayscale(p=0.1),
         # transforms.RandomHorizontalFlip(p=0.2),

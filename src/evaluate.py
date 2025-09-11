@@ -177,7 +177,7 @@ def test_on_hm():
         cc_dataloader=cc_dataloader
     )
 
-    del model, trainer, train_dataset, val_dataset, train_loader, val_loader
+    del model, trainer, hm_dataloader, cc_dataloader, train_loader, val_loader
     logger.info(25*"-")
 
 

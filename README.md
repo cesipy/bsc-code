@@ -5,6 +5,16 @@ I'm currently working on it, so it is not yet complete.
 
 
 ## TODO
+- [ ] bertviz
+		```python
+		from bertviz import head_view
+		head_view(model, tokenizer, text_inputs, layer=4)  # visualize cross-attention
+		```
+- [ ] easier dataset handling
+- [ ] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
+- [ ] implement experiment tracker
+	- [ ] for two tasks: mmimdb, hateful memes
+	- [ ] proper config handling
 - [ ] self.fc outside of forward - refactor
 - [ ] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
 - [ ] mmimdb alignment vis

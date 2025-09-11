@@ -587,7 +587,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             if i % 10 == 0:
                 torch.cuda.empty_cache()
 
-    analyse(
+    measures_per_layer = analyse(
         layer_similarities=layer_sims,
         num_layers=model.depth,
         mknn_values=mknn_values,
@@ -598,6 +598,8 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
     with torch.no_grad():
         torch.cuda.empty_cache()
+
+    return measures_per_layer
 
 
 
@@ -734,6 +736,9 @@ def analyse(
         same for the others
 
     """
+    temp_dict = {}
+    for i in range(num_layers):
+        temp_dict[i] = {}
 
     layers = {}
     for i in range(num_layers):
@@ -792,6 +797,24 @@ def analyse(
                     ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
             print(info_str)
             logger.info(info_str)
+
+            layer_num = int(layer_name.replace("layer", ""))
+            temp_dict[layer_num] = metrics
+
+    return_dict = {}
+    for layer in range(num_layers):
+        return_dict[layer] = {
+            "is_cross_attention": layers[f"layer{layer}"]["is_cross_attention"],
+            "cosine": temp_dict[layer]["cosine"],
+            "cka": temp_dict[layer]["CKA"],
+            "max_sim_tp": temp_dict[layer]["max_sim_tp"],
+            "max_sim_pt": temp_dict[layer]["max_sim_pt"],
+            "svcca": temp_dict[layer]["SVCCA"],
+            "mknn_full_epoch": temp_dict[layer]["mknn_full_epoch"],
+            "rank_full_epoch": temp_dict[layer]["rank_full_epoch"],
+            "procrustes_full_epoch": temp_dict[layer]["procrustes_full_epoch"]
+        }
+    return return_dict
 
 def cka_custom(X, Y):
     """
