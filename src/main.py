@@ -57,7 +57,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     train_loader_ap, val_loader_ap, \
     train_loader_mlm, val_loader_mlm, \
     train_loader_mim, val_loader_mim \
-        =  datasets.get_dataloaders(
+        =  datasets.get_dataloaders_pretrain(
         train_data=train_data,
         val_data=val_data,
         num_workers=NUM_WORKERS,

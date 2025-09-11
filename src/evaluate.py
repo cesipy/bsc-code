@@ -61,26 +61,10 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
     # utils.freeze_all_layers(model.vit)
     # utils.freeze_all_layers(model.bert)
 
-    path = "res/data/hateful_memes_data/train.jsonl"
-    val_path = "res/data/hateful_memes_data/test.jsonl"
-
-    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     config = ViLBERTConfig()
 
     #TODO: also freeze co-attention layers here
     utils.params_summary(model=model)
-    train_data_list = datasets.generate_data_list(path)
-    # val_data_list = datasets.generate_data_list(val_path)
-
-    # train_data_list = train_data_list[:1000]
-
-    train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
-    train_data = train_data_list[:train_idx]
-    val_data   = train_data_list[train_idx:]
-
-    # train_data = train_data[:1000]
-    # val_data = val_data[:400]
 
 
     # for alignment analysis
@@ -93,61 +77,22 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
     print(f"bs_alignment_analysis: {bs_alignment_analysis}, batchsize: {BATCH_SIZE_DOWNSTREAM}")
 
 
-    transform_hm = transforms.Compose([
-
-        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
-
-        transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
-        transforms.RandomAffine(
-            degrees=10,
-            translate=(0.05, 0.05),
-            scale=(0.95, 1.05),
-            shear=2
-        ),
-        transforms.RandomApply([
-            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
-        ], p=0.2),
-
-        transforms.RandomGrayscale(p=0.1),
-        # transforms.RandomHorizontalFlip(p=0.2),
-        transforms.RandomErasing(),
-
-    ])
-
-
-
-    train_data = train_data
-    train_dataset = HM_Dataset(
-        train_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        transforms=transform_hm
-    )
-    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
-
-    train_loader = DataLoader(
-        train_dataset,
+    train_loader, val_loader = datasets.get_hateful_memes_datasets(
+        train_test_ratio=TRAIN_TEST_RATIO,
         batch_size=BATCH_SIZE_DOWNSTREAM,
-        shuffle=True,
         num_workers=NUM_WORKERS,
         pin_memory=PIN_MEMORY,
         prefetch_factor=PREFETCH,
+        persistent_workers=PERSISTENT_WORKERS,
+        use_train_augmentation=True
     )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=BATCH_SIZE_DOWNSTREAM,
-        shuffle=False,
-        num_workers=NUM_WORKERS,
-        pin_memory=PIN_MEMORY,
-        prefetch_factor=PREFETCH,
-        )
 
     hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
         batch_size=bs_alignment_analysis,
         num_workers=4,
         pin_memory=False,
         prefetch_factor=4,
-        num_samples=4000
+        num_samples=2000
     )
     info_str = f"using contrastive: {use_constrastive}"
     print(info_str)
@@ -176,97 +121,38 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
 
 @utils.memory_cleanup
 def test_on_hm():
-
-
+    utils.set_seeds(SEED)
     config = ViLBERTConfig()
     model = ViLBERT(config=config)
 
     utils.freeze_all_layers(model.vit)
     utils.freeze_all_layers(model.bert)
-
-    path = "res/data/hateful_memes_data/train.jsonl"
-    val_path = "res/data/hateful_memes_data/test.jsonl"
-
-    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
     config = ViLBERTConfig()
 
     #TODO: also freeze co-attention layers here
     utils.params_summary(model=model)
-    train_data_list = datasets.generate_data_list(path)
-    # val_data_list = datasets.generate_data_list(val_path)
-
-    # train_data_list = train_data_list[:1000]
-
-    train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
-    train_data = train_data_list[:train_idx]
-    val_data   = train_data_list[train_idx:]
-
-    train_data = train_data[:1000]
-    val_data = val_data[:400]
 
 
     if machine == "remote":
-        bs = 48   # obout 23.3gb vrman
         bs_alignment_analysis = 32
     else:
-        bs = 32
         bs_alignment_analysis = 32
 
-    config.learning_rate = 2e-6
-    print(bs)
+    config.learning_rate = DOWNSTREAM_LR
+
     print(f"bs_alignment_analysis: {bs_alignment_analysis}")
 
-    transform_hm = transforms.Compose([
 
-        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
-
-        transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
-        transforms.RandomAffine(
-            degrees=10,
-            translate=(0.05, 0.05),
-            scale=(0.95, 1.05),
-            shear=2
-        ),
-        transforms.RandomApply([
-            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
-        ], p=0.2),
-
-        transforms.RandomGrayscale(p=0.1),
-        transforms.RandomHorizontalFlip(p=0.2),
-        transforms.RandomErasing(),
-
-    ])
-
-    num_workers = 4
-    pin_memory= True
-    prefetch_factor = 3
-
-    train_data = train_data
-    train_dataset = HM_Dataset(
-        train_data,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        transforms=transform_hm
+    train_loader, val_loader = datasets.get_hateful_memes_datasets(
+        train_test_ratio=TRAIN_TEST_RATIO,
+        batch_size=BATCH_SIZE_DOWNSTREAM,
+        num_workers=NUM_WORKERS,
+        pin_memory=PIN_MEMORY,
+        prefetch_factor=PREFETCH,
+        persistent_workers=PERSISTENT_WORKERS,
+        use_train_augmentation=True,
+        limit_total_dataset=True,
     )
-    val_dataset   = HM_Dataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
-
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=bs,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        prefetch_factor=prefetch_factor,
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=bs,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=pin_memory,
-        prefetch_factor=prefetch_factor,
-        )
 
     hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
         batch_size=bs_alignment_analysis,
@@ -294,119 +180,6 @@ def test_on_hm():
     del model, trainer, train_dataset, val_dataset, train_loader, val_loader
     logger.info(25*"-")
 
-# def test_visualization():
-
-#     config = ViLBERTConfig()
-#     model = ViLBERT(config=config)
-
-#     utils.freeze_all_layers(model.vit)
-#     utils.freeze_all_layers(model.bert)
-
-#     path = "res/data/hateful_memes_data/train.jsonl"
-#     val_path = "res/data/hateful_memes_data/test.jsonl"
-
-#     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-#     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-#     config = ViLBERTConfig()
-
-#     #TODO: also freeze co-attention layers here
-#     utils.params_summary(model=model)
-#     train_data_list = datasets.generate_data_list(path)
-#     # val_data_list = datasets.generate_data_list(val_path)
-
-#     # train_data_list = train_data_list[:1000]
-
-#     train_idx = int(len(train_data_list) * TRAIN_TEST_RATIO)
-#     train_data = train_data_list[:train_idx]
-#     val_data   = train_data_list[train_idx:]
-
-#     train_data = train_data[:1000]
-#     val_data = val_data[:400]
-
-
-#     if machine == "remote":
-#         bs = 48
-
-#     config.learning_rate = 2e-6
-#     transform_hm = transforms.Compose([
-
-#         transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15),
-
-#         transforms.RandomResizedCrop(size=224, scale=(0.85, 1.0), ratio=(0.9, 1.1)),
-#         transforms.RandomAffine(
-#             degrees=10,
-#             translate=(0.05, 0.05),
-#             scale=(0.95, 1.05),
-#             shear=2
-#         ),
-#         transforms.RandomApply([
-#             transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 0.5))
-#         ], p=0.2),
-
-#         transforms.RandomGrayscale(p=0.1),
-#         transforms.RandomHorizontalFlip(p=0.2),
-#         transforms.RandomErasing(),
-
-#     ])
-
-#     num_workers = 4
-#     pin_memory= True
-#     prefetch_factor = 3
-
-#     train_data = train_data
-#     train_dataset = CustomDataset(
-#         train_data,
-#         tokenizer=tokenizer,
-#         image_processor=image_processor,
-#         transforms=transform_hm
-#     )
-#     val_dataset   = CustomDataset(val_data, tokenizer=tokenizer, image_processor=image_processor)
-
-#     train_loader = DataLoader(
-#         train_dataset,
-#         batch_size=bs,
-#         shuffle=True,
-#         num_workers=num_workers,
-#         pin_memory=pin_memory,
-#         prefetch_factor=prefetch_factor,
-#     )
-#     val_loader = DataLoader(
-#         val_dataset,
-#         batch_size=bs,
-#         shuffle=False,
-#         num_workers=num_workers,
-#         pin_memory=pin_memory,
-#         prefetch_factor=prefetch_factor,
-#         )
-
-#     # hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
-#     #     batch_size=bs_alignment_analysis,
-#     #     num_workers=4,
-#     #     pin_memory=False,
-#     #     prefetch_factor=4,
-#     #     num_samples=1000,       # how many samples to do the alignment eval on
-#     # )
-
-#     trainer = Trainer(
-#         model,
-#         config,
-#         use_contrastive_loss=False,
-#         # use_cosine_loss=True,
-#         )
-#     trainer.train(
-#         train_dataloader=train_loader,
-#         test_dataloader=val_loader,
-#         epochs=2,
-#         hm_dataloader=None,
-#         cc_dataloader=None
-#     )
-
-#     analysis.get_visualisation_data(
-#         dataloader=val_loader,
-#         model=model,)
-
-#     del model, trainer, train_dataset, val_dataset, train_loader, val_loader
-#     logger.info(25*"-")
 
 
 

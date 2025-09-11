@@ -93,7 +93,7 @@ def get_alignment_dataloaders(
 
 
 
-def get_dataloaders(
+def get_dataloaders_pretrain(
     train_data,
     val_data,
     batch_size: int,
@@ -237,9 +237,26 @@ def get_mmimdb_datasets(
     pin_memory: bool = False,
     prefetch_factor: int = 4,
     persistent_workers: bool = True,
+    use_train_augmentation:bool=True
 ) -> typing.Tuple[DataLoader, DataLoader]:
+    """
+    get the mmimdb dataset. per default enables data augmentation on testset
+
+    parameters:
+        train_test_ratio: float
+        batch_size: int
+        num_workers: int
+        pin_memory: bool
+        prefetch_factor: int
+        persistent_workers: bool
+        use_train_augmentation: bool, whether to use data augmentation on the training set. defaults to True
+    """
 
     assert 0< train_test_ratio <1
+
+    if use_train_augmentation:
+        transform = augments_transforms.get_mm_imdb_train_augmentation()
+    else: transform = None
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
@@ -253,7 +270,8 @@ def get_mmimdb_datasets(
         tokenizer=tokenizer,
         image_processor=image_processor,
         train_test_ratio=train_test_ratio,
-        is_train=True
+        is_train=True,
+        transform=transform
     )
 
     val_dataset = MM_IMDB_Dataset(
@@ -276,6 +294,87 @@ def get_mmimdb_datasets(
 
     val_dataloader = DataLoader(
         val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+    )
+
+    return train_dataloader, val_dataloader
+
+
+def get_hateful_memes_datasets(
+    train_test_ratio: float,
+    batch_size: int,
+    num_workers: int,
+    pin_memory: bool = False,
+    prefetch_factor: int = 4,
+    persistent_workers: bool = True,
+    use_train_augmentation:bool=True,
+    limit_total_dataset:bool=False,
+) -> typing.Tuple[DataLoader, DataLoader]:
+    """
+    get the hateful memes dataset. per default enables data augmentation on testset
+    parameters:
+        train_test_ratio: float
+        batch_size: int
+        num_workers: int
+        pin_memory: bool
+        prefetch_factor: int
+        persistent_workers: bool
+        use_train_augmentation: bool, whether to use data augmentation on the training set. defaults to True
+        limit_total_dataset: bool, whether to limit the total dataset size for faster experiments. defaults to True
+    """
+
+    if use_train_augmentation:
+        transform = augments_transforms.get_hateful_memes_train_augmentation()
+    else:
+        transform = None
+
+    assert 0< train_test_ratio <1
+
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    path = "res/data/hateful_memes_data/train.jsonl"
+    data_list = generate_data_list(path)
+
+    train_idx = int(len(data_list) * train_test_ratio)
+    train_data = data_list[:train_idx]
+    val_data   = data_list[train_idx:]
+
+    if limit_total_dataset:
+        train_data = train_data[:1000]
+        val_data = val_data[:400]
+
+
+    train_dataset = HM_Dataset(
+        data=train_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        transforms=transform
+    )
+
+    val_dataset = HM_Dataset(
+        data=val_data,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+    )
+
+    train_dataloader = DataLoader(
+        dataset=train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+    )
+
+    val_dataloader = DataLoader(
+        dataset=val_dataset,
         batch_size=batch_size,
         shuffle=False,
         prefetch_factor=prefetch_factor,
