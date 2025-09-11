@@ -68,7 +68,7 @@ def get_mm_imdb_train_augmentation():
 
         transforms.RandomGrayscale(p=0.1),
         # transforms.RandomHorizontalFlip(p=0.2),
-        transforms.RandomErasing(),
+        # transforms.RandomErasing(),
 
     ])
     return transform_augmentation

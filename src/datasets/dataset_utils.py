@@ -51,12 +51,13 @@ def _process_image(img: Image.Image, transform=None):
     assert isinstance(img, Image.Image)
     basic_vit_transform = augments_transforms.get_minimal_vit_transform()
 
+    if transform:
+        img = transform(img)
+
     # performs only normlalization
 
     img_t : torch.tensor = basic_vit_transform(img).unsqueeze(0)
 
-    if transform:
-        img_t = transform(img_t)
 
     return { "pixel_values": img_t }
 

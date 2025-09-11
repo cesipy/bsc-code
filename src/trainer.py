@@ -92,6 +92,13 @@ class Trainer():
             text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
             image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
+            # #-------
+            # #TODO: temp debugging
+
+            # pxl_vals = image["pixel_values"]
+            # print(f"Min: {pxl_vals.min().item()}, Max: {pxl_vals.max().item()}, Mean: {pxl_vals.mean().item()}, Std: {pxl_vals.std().item()}")
+            # #------
+
             if self.use_contrastive_loss:
 
                 preds, text_embedding, vision_embedding = self.model(
@@ -166,6 +173,15 @@ class Trainer():
 
         return total_loss / num_batches
 
+    def setup_scheduler(self, epochs:int, train_dataloader: DataLoader):
+        total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
+        self.scheduler = utils.Scheduler(
+            warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
+            decay_iterations=int(DECAY_ITERATIONS * float(total_training_steps)),
+            learning_rate=self.lr,
+            min_lr_fraction=MIN_LR_FRACTION,
+        )
+
 
     def train(
         self,
@@ -175,14 +191,7 @@ class Trainer():
         hm_dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
-
-        total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
-        self.scheduler = utils.Scheduler(
-            warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
-            decay_iterations=int(DECAY_ITERATIONS * float(total_training_steps)),
-            learning_rate=self.lr,
-            min_lr_fraction=MIN_LR_FRACTION,
-        )
+        self.setup_scheduler(epochs=epochs, train_dataloader=train_dataloader)
         # analysis.analyse_alignment(dataloader=hm_dataloader, model=self.model)
         # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
@@ -205,8 +214,6 @@ class Trainer():
                 # self.logger.info(info_str)
 
                 analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
-
-
 
         for epoch in range(epochs):
             train_loss = self.train_epoch(train_dataloader)
