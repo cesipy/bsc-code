@@ -21,7 +21,12 @@ logger = Logger()
 
 
 
-def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 10):
+def _visualize_new_measures(
+    measure_per_layer: dict,
+    num_layers: int,
+    k: int = 10,
+    dir_name: str = None
+):
     """
     Creates and saves heatmaps for Rank Similarity and Orthogonal Procrustes.
     """
@@ -64,12 +69,21 @@ def _visualize_new_measures(measure_per_layer: dict, num_layers: int, k: int = 1
 
     plt.tight_layout()
     timestamp = int(time.time())
-    fig.savefig(f"res/plots/new_measures_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
-    logger.info(f"Saved new measures heatmaps to res/plots/new_measures_matrices_{timestamp}.png")
+    if dir_name is None:
+        fig.savefig(f"res/plots/new_measures_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
+        logger.info(f"Saved new measures heatmaps to res/plots/new_measures_matrices_{timestamp}.png")
+    else:
+        fig.savefig(f"{dir_name}/new_measures_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
+        logger.info(f"Saved new measures heatmaps to {dir_name}/new_measures_matrices_{timestamp}.png")
 
     plt.close(fig)
 
-def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
+def _visualize_jaccard(
+    measure_per_layer: dict,
+    num_layers: int,
+    k: int = 10,
+    dir_name: str = None
+    ):
 
     jaccard_cross_modal = np.zeros((num_layers, num_layers))
     jaccard_text_text = np.zeros((num_layers, num_layers))
@@ -134,16 +148,24 @@ def _visualize_jaccard(measure_per_layer: dict, num_layers: int, k: int = 10):
 
 
     plt.tight_layout()
-
-    timestamp = int(time.time())
-    fig1.savefig(f"res/plots/jaccard_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
-    logger.info(f"Saved jaccard heatmaps to res/plots/jaccard_matrices_{timestamp}.png")
+    if dir_name is  None:
+        timestamp = int(time.time())
+        fig1.savefig(f"res/plots/jaccard_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
+        logger.info(f"Saved jaccard heatmaps to res/plots/jaccard_matrices_{timestamp}.png")
+    else:
+        timestamp = int(time.time())
+        fig1.savefig(f"{dir_name}/jaccard_matrices_{timestamp}.png", dpi=300, bbox_inches='tight', facecolor='white')
+        logger.info(f"Saved jaccard heatmaps to {dir_name}/jaccard_matrices_{timestamp}.png")
 
     plt.close(fig1)
 
     return (jaccard_cross_modal, jaccard_text_text, jaccard_vision_vision,)
 
-def _visualize_cka(measure_per_layer: dict, num_layers: int):
+def _visualize_cka(
+    measure_per_layer: dict,
+    num_layers: int,
+    dir_name: str = None
+    ):
 
     cross_modal_matrix = np.zeros((num_layers, num_layers))
     text_text_matrix = np.zeros((num_layers, num_layers))
@@ -233,14 +255,24 @@ def _visualize_cka(measure_per_layer: dict, num_layers: int):
     plt.tight_layout()
 
     timestamp = int(time.time())
-    filename = f"res/plots/all_cka_matrices_{timestamp}.png"
-    plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
+    if dir_name is None:
+        filename = f"res/plots/all_cka_matrices_{timestamp}.png"
+        plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
+    else:
+        filename = f"{dir_name}/all_cka_matrices_{timestamp}.png"
+        plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
+
     logger.info(f"Saved CKA heatmaps to {filename}")
 
     plt.close(fig)
     return cross_modal_matrix, text_text_matrix, vision_vision_matrix
 
-def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10):
+def _visualize_mutual_knn(
+    measure_per_layer: dict,
+    num_layers: int,
+    k: int = 10,
+    dir_name: str = None
+    ):
 
     cross_modal_matrix = np.zeros((num_layers, num_layers))
     text_text_matrix = np.zeros((num_layers, num_layers))
@@ -313,7 +345,10 @@ def _visualize_mutual_knn(measure_per_layer: dict, num_layers: int, k: int = 10)
     plt.tight_layout()
 
     timestamp = int(time.time())
-    filename = f"res/plots/mutual_knn_matrices_{timestamp}.png"
+    if dir_name is  None:
+        filename = f"res/plots/mutual_knn_matrices_{timestamp}.png"
+    else:
+        filename = f"{dir_name}/mutual_knn_matrices_{timestamp}.png"
     plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
 
     logger.info(f"Saved mutual k-NN heatmaps to {filename}")
@@ -409,7 +444,8 @@ def get_visualisation_data(
 
 def visualize_cka(
     dataloader: DataLoader,
-    model: ViLBERT
+    model: ViLBERT,
+    dir_name=None
     ):
 
     measures_per_layer_full_seq: dict = get_visualisation_data(
@@ -424,10 +460,16 @@ def visualize_cka(
         num_samples=NUM_SAMPLES_CLS,
         cls_only=True
     )
-    _visualize_new_measures(measures_per_layer_cls, model.depth, k=KNN_K)
-    _visualize_jaccard(measures_per_layer_cls, model.depth, k=KNN_K)
-    _visualize_cka(measures_per_layer_full_seq, model.depth)
-    _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=KNN_K)
+    if dir_name is None:
+        _visualize_new_measures(measures_per_layer_cls, model.depth, k=KNN_K,)
+        _visualize_jaccard(measures_per_layer_cls, model.depth, k=KNN_K)
+        _visualize_cka(measures_per_layer_full_seq, model.depth)
+        _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=KNN_K)
+    else:
+        _visualize_new_measures(measures_per_layer_cls, model.depth, k=KNN_K, dir_name=dir_name)
+        _visualize_jaccard(measures_per_layer_cls, model.depth, k=KNN_K, dir_name=dir_name)
+        _visualize_cka(measures_per_layer_full_seq, model.depth, dir_name=dir_name)
+        _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=KNN_K, dir_name=dir_name)
 
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     model.eval()

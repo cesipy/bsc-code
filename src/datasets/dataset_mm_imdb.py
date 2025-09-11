@@ -52,10 +52,6 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         csv_data = csv_data.sample(frac=1, random_state=42).reset_index(drop=True)  # shuffle the data
 
         train_test_split_idx = int(train_test_ratio * len(csv_data))
-        print(len(csv_data))
-
-        print(csv_data.columns)
-        print(f"train-test split idx: {train_test_split_idx}")
 
         self.is_train = is_train
         if max_samples != None:

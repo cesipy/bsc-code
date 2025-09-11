@@ -76,15 +76,19 @@ training_results = {
 class ExperimentTracker:
     def __init__(self,):
         self.save_dir = "res/experiments/"
+        self.visualization_dir = "res/experiments/visualizations/"
         os.makedirs(self.save_dir, exist_ok=True)
-        ...
+        os.makedirs(self.visualization_dir, exist_ok=True)
+
+
 
 
     def run_single_experiment_hateful_memes(
         self,
         config: ViLBERTConfig,
         training_results: dict,
-        epochs: int
+        epochs: int,
+        dir_name: Optional[str] = None
     ):
         model = self.create_model(config)
         trainer = Trainer(
@@ -137,13 +141,16 @@ class ExperimentTracker:
 
             alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
+
+            analysis.visualize_cka(dataloader=hm_dataloader, model=model, dir_name=dir_name)
         return training_results
 
     def run_single_experiment_mm_imdb(
         self,
         config: ViLBERTConfig,
         training_results: dict,
-        epochs: int
+        epochs: int,
+        dir_name: Optional[str] = None
     ):
         model = self.create_model(config)
         trainer = MM_IMDB_Trainer(
@@ -153,8 +160,8 @@ class ExperimentTracker:
         )
 
         train_loader, val_loader = datasets.get_mmimdb_datasets(
-            # train_test_ratio=TRAIN_TEST_RATIO,
-            train_test_ratio=0.1,
+            train_test_ratio=TRAIN_TEST_RATIO,
+            # train_test_ratio=0.1,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -198,13 +205,41 @@ class ExperimentTracker:
             alignment_metrics = self.analyse_alignment(
                 model=model, dataloader=imdb_dataloader)
             training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
+
+            analysis.visualize_cka(dataloader=imdb_dataloader, model=model, dir_name=dir_name)
+
         return training_results
 
+    def _get_filename(self, config: ExperimentConfig):
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        # coattn_pix: str =""
+        if config.cross_attention_layers == []:
+            coattn_fix = "no_coattn"
+        else:
+            coattn_fix = "coattn_"
+            for i in config.cross_attention_layers:
+                coattn_fix += str(i)
+                coattn_fix += "-"
+            coattn_fix = coattn_fix[:-1]
+
+        filename = f"experiment_{coattn_fix}_{timestamp}"
+
+        return filename
 
 
 
 
     def run_single_experiment(self, experiment_config: ExperimentConfig):
+        filename = self._get_filename(config=experiment_config)
+
+        print(f"Saving results to {filename}")
+        exp_dir_name = os.path.join(self.visualization_dir, filename)
+        os.makedirs(exp_dir_name, exist_ok=True)
+        exp_dir_name_hm = os.path.join(exp_dir_name, "hateful_memes")
+        exp_dir_name_imdb = os.path.join(exp_dir_name, "mm_imdb")
+        os.makedirs(exp_dir_name_hm, exist_ok=True)
+        os.makedirs(exp_dir_name_imdb, exist_ok=True)
+
 
         config = self.create_config(experiment_config)
         utils.set_seeds(experiment_config.seed)
@@ -214,14 +249,20 @@ class ExperimentTracker:
         training_results = self.run_single_experiment_mm_imdb(
             config=config,
             training_results=training_results,
-            epochs=experiment_config.epochs
+            epochs=experiment_config.epochs,
+            dir_name=exp_dir_name_imdb
         )
         training_results = self.run_single_experiment_hateful_memes(
             config=config,
             training_results=training_results,
-            epochs=experiment_config.epochs
+            epochs=experiment_config.epochs,
+            dir_name=exp_dir_name_hm
         )
-        self.save_results(training_results=training_results, config=experiment_config)
+        self.save_results(
+            training_results=training_results,
+            config=experiment_config,
+            filename=filename
+        )
 
     def _initialize_results_dict(self, epochs ):
         training_results = {
@@ -289,8 +330,8 @@ class ExperimentTracker:
         return config
 
 
-    def save_results(self, training_results: dict, config: ExperimentConfig):
-        tmsp = time.strftime("%Y%m%d-%H%M%S")
+    def save_results(self, training_results: dict, config: ExperimentConfig, filename:str):
+
 
         training_results["config"] = {
             "cross_attention_layers": config.cross_attention_layers,
@@ -302,19 +343,9 @@ class ExperimentTracker:
             "seed": config.seed,
             "train_test_ratio": config.train_test_ratio,
         }
-
-        # coattn_pix: str =""
-        if config.cross_attention_layers == []:
-            coattn_fix = "no_coattn"
-        else:
-            coattn_fix = "coattn_"
-            for i in config.cross_attention_layers:
-                coattn_fix += str(i)
-                coattn_fix += "-"
-            coattn_fix = coattn_fix[:-1]
-
-        filename = f"experiment_{coattn_fix}_{tmsp}.json"
+        filename += ".json"
         filename = os.path.join(self.save_dir, filename)
+
         with open(filename, "w") as f:
             json.dump(training_results, f, indent=4)
 
@@ -364,7 +395,12 @@ def main():
     # )
     for config in exps:
         print(f"Running experiment with config: {config}")
+        logger.info(f"Running experiment with config: {config}")
         tracker.run_single_experiment(config)
+
+        info_str = "-"*25
+        print(info_str+"\n")
+        logger.info(info_str)
 
 
 if __name__ == "__main__":

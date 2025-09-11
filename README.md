@@ -3,26 +3,54 @@
 This repository contains the code for my bachelor thesis. It is a PyTorch implementation of ViLBERT, a model that combines visual and language understanding.
 I'm currently working on it, so it is not yet complete.
 
+## Installation & Usage
+
+To install:
+```bash
+git clone https://github.com/cesipy/bsc-code
+cd bsc-code
+
+# in virtual env:
+pip install -r requirements.txt
+```
+
+To run the code, you have to set the following environment variable:
+```bash
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
+```
+
+
 
 ## TODO
+
+- [ ] run optuna for acc on both sets (mmimdb + hateful memes)
 - [ ] bertviz
 		```python
 		from bertviz import head_view
 		head_view(model, tokenizer, text_inputs, layer=4)  # visualize cross-attention
 		```
 - [ ] use albuminations
-- [ ] use test sets for alignment; no training on it. 
 - [ ] easier dataset handling
 - [ ] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
+
+
 - [ ] implement experiment tracker
-	- [ ] for two tasks: mmimdb, hateful memes
+	- [x] how to run several exps from configs!
+	- [x] for two tasks: mmimdb, hateful memes
+	- [ ] use test sets for alignment; no training on it.
+	- [ ] alignment measured on imdb
 	- [ ] proper config handling
+	- [ ] abstract class für trainer; hm, und mmimdb anpassen
+	- [ ] dir in `res/experiments/` for each experiment
+	- [ ] save visualizations to same dir
+
+
 - [ ] self.fc outside of forward - refactor
 - [ ] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
 - [ ] mmimdb alignment vis
 - [ ] check if cka is right..
 	- [ ] try with bigger bs for the data collection
-- [ ] add parameter how many samples to collect for visualization
+- [x] add parameter how many samples to collect for visualization
 	- [ ] more runs and avg out
 - [ ] comparison of full-seq to cls.
 	- [ ] training seemed to be more centered towards cls token alignment
@@ -212,20 +240,20 @@ I'm currently working on it, so it is not yet complete.
 - [ ] fix spelling issue in "costrative"
 - [x] implement gradient accum.
 - [ ] problem with contrastive term in pretraining: combined approach!
-- [ ] visualization of cka, mutual knns
+- [x] visualization of cka, mutual knns
 	- [x] implement a data collection pipeline
 		- [ ] improve memory with `del`- in original pipeline=> better CKA estimations
 
 
-	- [ ] visualization of all the other measueres
+	- [x] visualization of all the other measueres
 		- [x] mknn
-		- [ ] jaccard - add to analysis
-		- [ ] rank - add to analysis
+		- [x] jaccard - add to analysis
+		- [x] rank - add to analysis
 		- [ ]
 - [ ] implement further datasets for alignment evaluation
 	- [ ] ms coco
 	- [ ] vqa
-	- [ ] mm-imbd
+	- [x] mm-imbd
 - [x] cosine scheduler
 - [ ] add dropout in attention
 - [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
