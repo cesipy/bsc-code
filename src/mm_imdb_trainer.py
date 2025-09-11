@@ -66,6 +66,8 @@ class MM_IMDB_Trainer():
         hm_dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
+
+        self.setup_scheduler(epochs=epochs, train_dataloader=train_dataloader)
         total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
         self.scheduler = utils.Scheduler(
             warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
@@ -93,6 +95,17 @@ class MM_IMDB_Trainer():
                 print(info_str)
                 self.logger.info(info_str)
 
+    def setup_scheduler(self, epochs:int, train_dataloader: DataLoader, lr=None):
+        if lr is None:
+            lr = self.lr
+
+        total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
+        self.scheduler = utils.Scheduler(
+            warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
+            decay_iterations=int(DECAY_ITERATIONS * float(total_training_steps)),
+            learning_rate=lr,
+            min_lr_fraction=MIN_LR_FRACTION,
+        )
 
 
     def train_epoch(self, data_loader: DataLoader):
@@ -150,7 +163,7 @@ class MM_IMDB_Trainer():
 
         return total_loss / num_batches
 
-    def evaluate(self, data_loader: DataLoader):
+    def evaluate(self, dataloader: DataLoader):
         self.model.eval()
         total_loss = 0
         num_batches = 0
@@ -160,7 +173,7 @@ class MM_IMDB_Trainer():
         loss_fn = nn.BCEWithLogitsLoss()
 
         with torch.no_grad():
-            for batch in tqdm(data_loader, desc="Evaluating", leave=False):
+            for batch in tqdm(dataloader, desc="Evaluating", leave=False):
                 data_dict = batch
 
                 label = data_dict["label"].to(self.device)
