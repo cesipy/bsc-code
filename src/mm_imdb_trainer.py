@@ -265,7 +265,7 @@ def main():
     model = ViLBERT(config=config)
 
     #alignment sets
-    hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
+    hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
         batch_size=BATCH_SIZE_ANALYSIS,
         num_workers=4,
         pin_memory=False,

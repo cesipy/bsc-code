@@ -35,8 +35,9 @@ class ExperimentConfig:
 
 
     def __post_init__(self):
-        assert self.depth >= max(self.cross_attention_layers)
-        assert self.depth >= len(self.cross_attention_layers)
+        if self.cross_attention_layers != []:
+            assert self.depth >= max(self.cross_attention_layers)
+            assert self.depth >= len(self.cross_attention_layers)
 
 
 """
@@ -67,7 +68,8 @@ training_results = {
         },
         ...
     },
-    "mm_imdb": { ... }
+    "mm_imdb": { ... },
+    "config": { ... }       #TODO: complete this
 }
 """
 
@@ -101,7 +103,7 @@ class ExperimentTracker:
             persistent_workers=PERSISTENT_WORKERS,
             use_train_augmentation=True,
         )
-        hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
+        hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -161,7 +163,7 @@ class ExperimentTracker:
             use_train_augmentation=True,
         )
         #TODO: get alignment data loader for mmimdb
-        hm_dataloader, cc_dataloader = datasets.get_alignment_dataloaders(
+        hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -193,7 +195,8 @@ class ExperimentTracker:
             training_results["mm_imdb"]["training"][i+1]["val_acc"] = acc
 
 
-            alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
+            alignment_metrics = self.analyse_alignment(
+                model=model, dataloader=imdb_dataloader)
             training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
         return training_results
 
@@ -202,7 +205,6 @@ class ExperimentTracker:
 
 
     def run_single_experiment(self, experiment_config: ExperimentConfig):
-
 
         config = self.create_config(experiment_config)
         utils.set_seeds(experiment_config.seed)
@@ -275,7 +277,8 @@ class ExperimentTracker:
         config = ViLBERTConfig()
         config.cross_attention_layers = experiment_config.cross_attention_layers
         config.depth = experiment_config.depth
-        assert config.depth >= max(config.cross_attention_layers)
+        if config.cross_attention_layers != []:
+            assert config.depth >= max(config.cross_attention_layers)
         assert config.depth >= len(config.cross_attention_layers)
         config.epochs = experiment_config.epochs
         config.batch_size = experiment_config.batch_size
@@ -287,7 +290,6 @@ class ExperimentTracker:
 
 
     def save_results(self, training_results: dict, config: ExperimentConfig):
-
         tmsp = time.strftime("%Y%m%d-%H%M%S")
 
         training_results["config"] = {
@@ -299,36 +301,71 @@ class ExperimentTracker:
             "learning_rate": config.learning_rate,
             "seed": config.seed,
             "train_test_ratio": config.train_test_ratio,
-
         }
 
+        # coattn_pix: str =""
+        if config.cross_attention_layers == []:
+            coattn_fix = "no_coattn"
+        else:
+            coattn_fix = "coattn_"
+            for i in config.cross_attention_layers:
+                coattn_fix += str(i)
+                coattn_fix += "-"
+            coattn_fix = coattn_fix[:-1]
 
-        #TODO
-        filename = f"experiment_tmp_{tmsp}.json"
+        filename = f"experiment_{coattn_fix}_{tmsp}.json"
         filename = os.path.join(self.save_dir, filename)
         with open(filename, "w") as f:
             json.dump(training_results, f, indent=4)
 
+
+def get_experiments():
+    from itertools import chain, combinations
+
+    depth = 4
+    arr = [i for i in range(depth)]
+    all = []
+
+    powerset = list(chain.from_iterable(combinations(arr, r) for r in range(len(arr)+1)))
+    for s in powerset:
+        all.append(list(s))
+
+    print(f"total experiments: {len(all)}")
+    print(all)
+
+    exps = []
+
+    for i in all:
+        exp = ExperimentConfig(
+            cross_attention_layers=i,
+            depth=depth,
+            epochs=EPOCHS,
+            batch_size=BATCH_SIZE_DOWNSTREAM,
+            gradient_accumulation=GRADIENT_ACCUMULATION_DOWNSTREAM,
+            learning_rate=DOWNSTREAM_LR,
+            seed=SEED,
+            train_test_ratio=TRAIN_TEST_RATIO,
+        )
+        exps.append(exp)
+
+    return exps
 
 
 
 
 
 def main():
+    exps = get_experiments()
     tracker = ExperimentTracker()
-    config = ExperimentConfig(
-        cross_attention_layers=[1],
-        depth=2,
-        epochs=1
-    )
-    tracker.run_single_experiment(config)
-
+    # config = ExperimentConfig(
+    #     cross_attention_layers=[3],
+    #     depth=4,
+    #     epochs=1
+    # )
+    for config in exps:
+        print(f"Running experiment with config: {config}")
+        tracker.run_single_experiment(config)
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

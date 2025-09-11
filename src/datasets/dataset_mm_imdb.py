@@ -40,7 +40,8 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         image_processor: BaseImageProcessor,
         is_train:bool=True,
         train_test_ratio:float = TRAIN_TEST_RATIO,
-        transform: typing.Optional[torchvision.transforms.Compose] = None
+        transform: typing.Optional[torchvision.transforms.Compose] = None,
+        max_samples: typing.Optional[int] = None,
     ):
 
         assert os.path.exists(img_path)
@@ -57,11 +58,18 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         print(f"train-test split idx: {train_test_split_idx}")
 
         self.is_train = is_train
-        if is_train:
-            self.csv_data = csv_data[:train_test_split_idx]
-        else:
+        if max_samples != None:
+            assert max_samples < len(csv_data)
+            self.csv_data = csv_data[:max_samples]
 
+        elif max_samples == None and is_train:
+            self.csv_data = csv_data[:train_test_split_idx]
+        elif max_samples == None and not is_train:
             self.csv_data = csv_data[train_test_split_idx:]
+
+        else:
+            print("smth is completely wrong! panicking!!!")
+            exit(0)
 
         self.tokenizer = tokenizer
         self.image_processor = image_processor

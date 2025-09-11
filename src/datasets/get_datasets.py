@@ -39,8 +39,10 @@ def get_alignment_dataloaders(
     dataloader-hateful-memes, dataloader-conceputal-captions
     """
 
-    path_cc = "res/data/conceptual-captions/validation.csv"
-    path_hm = "res/data/hateful_memes_data/train.jsonl"
+    path_cc       = "res/data/conceptual-captions/validation.csv"
+    path_hm       = "res/data/hateful_memes_data/train.jsonl"
+    path_imdb     = "res/data/mm-imdb/images.h5"
+    csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
@@ -56,6 +58,17 @@ def get_alignment_dataloaders(
     random.shuffle(data_list_cc)
     data_list_hm = data_list_hm[:num_samples]
     data_list_cc = data_list_cc[:num_samples]
+
+
+    dataset_imdb = MM_IMDB_Dataset(
+        csv_path=csv_path_imdb,
+        img_path=path_imdb,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        train_test_ratio=0.8,
+        is_train=False,  # is ignored,
+        max_samples=num_samples
+    )
 
     dataset_hm = HM_Dataset(
         data=data_list_hm,
@@ -87,8 +100,17 @@ def get_alignment_dataloaders(
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
     )
+    dataloader_imdb = DataLoader(
+        dataset=dataset_imdb,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+    )
 
-    return dataloader_hm, dataloader_cc
+
+    return dataloader_hm, dataloader_cc, dataloader_imdb
 
 
 

@@ -651,6 +651,7 @@ def process_intermediate_repr(
 
         # currently not working?
         # #TODO: FIX
+
         svcca_sim = 0.0
         # svcca_sim = measures.svcca_similarity(
         #     text_embedding=representation["text_embedding"],
@@ -802,9 +803,9 @@ def analyse(
                 # f"max_sim_tp={avg_max_similarity_tp:.4f}, "
                 # f"max_sim_pt={avg_max_similarity_pt:.4f}, "
                 f"SVCCA={avg_svcca:.4f}, "
-                f"mknn_full_epoch={full_epoch_measure:.4f}, "
-                f"rank_full_epoch={rank_measure:.4f}, "
-                f"procrustes_full_epoch={procrustes_measure:.4f}"
+                f"mknn={full_epoch_measure:.4f}, "
+                f"rank={rank_measure:.4f}, "
+                f"procrustes={procrustes_measure:.4f}"
 
             )
             print(info_str)
