@@ -103,8 +103,10 @@ class ViLBERTConfig:
         train_test_ratio=TRAIN_TEST_RATIO,
         batch_size=BATCH_SIZE_PRETRAIN,
         depth=DEPTH,
+        gradient_accumulation=GRADIENT_ACCUMULATION,
         pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
-        cross_attention_layers: list[int]= CROSS_ATTENTION_LAYERS
+        cross_attention_layers: list[int]= CROSS_ATTENTION_LAYERS,
+        seed:int = SEED,
     ):
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
@@ -116,10 +118,11 @@ class ViLBERTConfig:
         self.preprocessed_path = preprocessed_path
         self.train_test_ratio = train_test_ratio
         self.batch_size = batch_size
+        self.gradient_accumulation = gradient_accumulation
         self.depth = depth
         self.pretraining_tasks = pretraining_tasks
         self.cross_attention_layers = cross_attention_layers
-
+        self.seed = seed
         assert depth >= len(cross_attention_layers)
 
 

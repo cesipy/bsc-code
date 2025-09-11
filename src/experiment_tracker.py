@@ -1,6 +1,9 @@
 import time
 import os
 from typing import Tuple, Optional
+import dataclasses
+import json
+
 
 
 from config import *
@@ -13,6 +16,28 @@ from logger import Logger
 import analysis
 
 logger = Logger()
+EPOCHS = 1
+ALIGNMENT_ANALYSIS_SIZE = 4000
+
+
+@dataclasses.dataclass
+class ExperimentConfig:
+    cross_attention_layers: list[int]
+    depth:int
+
+    epochs: int = EPOCHS
+    batch_size: int = BATCH_SIZE_DOWNSTREAM
+    gradient_accumulation: int = GRADIENT_ACCUMULATION_DOWNSTREAM
+    learning_rate: float = DOWNSTREAM_LR
+    seed:int = SEED
+    train_test_ratio: float = TRAIN_TEST_RATIO
+
+
+
+    def __post_init__(self):
+        assert self.depth >= max(self.cross_attention_layers)
+        assert self.depth >= len(self.cross_attention_layers)
+
 
 """
 training_results = {
@@ -81,10 +106,10 @@ class ExperimentTracker:
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
             prefetch_factor=PREFETCH,
-            num_samples=2000
+            num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
-                                lr=DOWNSTREAM_LR)
+                                lr=config.learning_rate)
 
 
         for i in range(epochs):
@@ -141,10 +166,10 @@ class ExperimentTracker:
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
             prefetch_factor=PREFETCH,
-            num_samples=2000
+            num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
-                                lr=DOWNSTREAM_LR)
+                                lr=config.learning_rate)
 
 
         for i in range(epochs):
@@ -176,36 +201,25 @@ class ExperimentTracker:
 
 
 
-    def run_single_experiment(self, config):
-        #TODO: temp
-        epochs = 4
+    def run_single_experiment(self, experiment_config: ExperimentConfig):
 
-        #TODO: proper handling of configs
-        proper_config = self.create_config(config)
-        config = proper_config
-        #TODO: two tasks: hateful memes and mm-imdb
-        utils.set_seeds(SEED)
 
-        training_results = self._initialize_results_dict(epochs=epochs)
+        config = self.create_config(experiment_config)
+        utils.set_seeds(experiment_config.seed)
+
+        training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
 
         training_results = self.run_single_experiment_mm_imdb(
             config=config,
             training_results=training_results,
-            epochs=epochs
+            epochs=experiment_config.epochs
         )
         training_results = self.run_single_experiment_hateful_memes(
             config=config,
             training_results=training_results,
-            epochs=epochs
+            epochs=experiment_config.epochs
         )
-
-
-
-
-
-
-
-        # self.save_results()
+        self.save_results(training_results=training_results, config=experiment_config)
 
     def _initialize_results_dict(self, epochs ):
         training_results = {
@@ -220,7 +234,6 @@ class ExperimentTracker:
             training_results["mm_imdb"]["alignment"][curr_epoch] = {}
             training_results["hateful_memes"]["training"][curr_epoch] = {}
             training_results["mm_imdb"]["training"][curr_epoch] = {}
-
         return  training_results
 
 
@@ -252,32 +265,64 @@ class ExperimentTracker:
         #TODO: implemet mmimdb loader
     ):
         measures_per_layer = analysis.analyse_alignment(dataloader=dataloader, model=model)
-        print(measures_per_layer)
         return measures_per_layer
 
-    def create_model(self, config) -> ViLBERT:
-        # TODO: currently config is ignored
-        config = ViLBERTConfig()
+    def create_model(self, config: ViLBERTConfig) -> ViLBERT:
         model = ViLBERT(config=config)
         return model
 
-    def create_config(self, config):
-        proper_config = ViLBERTConfig()
-        return proper_config
+    def create_config(self, experiment_config: ExperimentConfig):
+        config = ViLBERTConfig()
+        config.cross_attention_layers = experiment_config.cross_attention_layers
+        config.depth = experiment_config.depth
+        assert config.depth >= max(config.cross_attention_layers)
+        assert config.depth >= len(config.cross_attention_layers)
+        config.epochs = experiment_config.epochs
+        config.batch_size = experiment_config.batch_size
+        config.gradient_accumulation = experiment_config.gradient_accumulation
+        config.learning_rate = experiment_config.learning_rate
+        config.seed = experiment_config.seed
+        config.train_test_ratio = experiment_config.train_test_ratio
+        return config
 
 
+    def save_results(self, training_results: dict, config: ExperimentConfig):
+
+        tmsp = time.strftime("%Y%m%d-%H%M%S")
+
+        training_results["config"] = {
+            "cross_attention_layers": config.cross_attention_layers,
+            "depth": config.depth,
+            "epochs": config.epochs,
+            "batch_size": config.batch_size,
+            "gradient_accumulation": config.gradient_accumulation,
+            "learning_rate": config.learning_rate,
+            "seed": config.seed,
+            "train_test_ratio": config.train_test_ratio,
+
+        }
 
 
-class ExperimentResults():
-    ...
+        #TODO
+        filename = f"experiment_tmp_{tmsp}.json"
+        filename = os.path.join(self.save_dir, filename)
+        with open(filename, "w") as f:
+            json.dump(training_results, f, indent=4)
+
+
 
 
 
 
 def main():
     tracker = ExperimentTracker()
-    config = None
+    config = ExperimentConfig(
+        cross_attention_layers=[1],
+        depth=2,
+        epochs=1
+    )
     tracker.run_single_experiment(config)
+
 
 
 if __name__ == "__main__":

@@ -795,6 +795,18 @@ def analyse(
 
             info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
                     ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
+            info_str = (
+                f"layer {layer_name} (co-attn-{is_cross_attention}): "
+                f"cosine={avg_cosine:.4f}, "
+                f"CKA={avg_cka:.4f}, "
+                # f"max_sim_tp={avg_max_similarity_tp:.4f}, "
+                # f"max_sim_pt={avg_max_similarity_pt:.4f}, "
+                f"SVCCA={avg_svcca:.4f}, "
+                f"mknn_full_epoch={full_epoch_measure:.4f}, "
+                f"rank_full_epoch={rank_measure:.4f}, "
+                f"procrustes_full_epoch={procrustes_measure:.4f}"
+
+            )
             print(info_str)
             logger.info(info_str)
 
