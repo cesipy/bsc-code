@@ -20,6 +20,15 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
 ```
 
 
+## Optuna parameter tuning
+To perform either hyperparam-optimization or neural architecture search (NAS), simply run:
+```bash
+python src/hyperparameter_optimizer.py
+
+#opt: to see visualizations via dashboard:
+optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
+```
+
 
 ## TODO
 

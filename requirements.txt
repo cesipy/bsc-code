@@ -12,3 +12,5 @@ timm
 info-nce-pytorch
 ckatorch
 h5py
+optuna
+optuna-dashboard

@@ -15,3 +15,4 @@ res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv
 res/plots/*
 res/data/mm-imdb/
 res/experiments*
+res/hyperparameter_optimization/*.json
