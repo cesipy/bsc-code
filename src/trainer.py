@@ -176,7 +176,7 @@ class Trainer():
     def setup_scheduler(self, epochs:int, train_dataloader: DataLoader, lr=None):
         if lr is None:
             lr = self.lr
-        
+
         total_training_steps = epochs * len(train_dataloader) // self.gradient_accumulation
         self.scheduler = utils.Scheduler(
             warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
@@ -199,7 +199,8 @@ class Trainer():
         # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
         if hm_dataloader is not None and cc_dataloader is not None:
-                info_str = "\n\nbefore training, evaluating on uninitialized model"
+            ...
+                # info_str = "\n\nbefore training, evaluating on uninitialized model"
                 # print(info_str)
                 # self.logger.info(info_str)
                 # info_str = "alignment for hateful memes:"
@@ -216,7 +217,7 @@ class Trainer():
                 # print(info_str)
                 # self.logger.info(info_str)
 
-                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+                # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
         for epoch in range(epochs):
             train_loss = self.train_epoch(train_dataloader)
@@ -229,8 +230,8 @@ class Trainer():
                 info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
-                analysis.analyse_alignment(hm_dataloader, self.model)
-                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+                # analysis.analyse_alignment(hm_dataloader, self.model)
+                # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
                 # info_str = "alignment for conceptual captions:"
                 # print(info_str)

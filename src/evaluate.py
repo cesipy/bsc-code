@@ -112,7 +112,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         cc_dataloader=cc_dataloader,
     )
 
-    del model, trainer, train_dataset, val_dataset, train_loader, val_loader
+    del model, trainer, train_loader, val_loader
     with torch.no_grad():
         torch.cuda.empty_cache()
     gc.collect()

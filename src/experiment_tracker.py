@@ -83,11 +83,61 @@ class ExperimentTracker:
 
 
 
+    def optimize_coattn_for_accuracy(self, depth, n_trials):
+        import optuna
+
+        def _objective( trial):
+            coattn_layers = []
+
+            for i in range(depth):
+                if trial.suggest_categorical(f"layer_{i}", [True, False]):
+                    coattn_layers.append(i)
+
+            config = ExperimentConfig(
+                cross_attention_layers=coattn_layers,
+                depth=depth,
+            )
+
+
+            training_results = self.run_single_experiment(
+                config,
+                run_visualization=False                 # is too compute intensive, not wanted here
+            )
+
+            val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+            val_accs_imdb = [training_results["mm_imdb"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+
+            max_acc_hm = max(val_accs_hm)
+            max_acc_imdb = max(val_accs_imdb)
+
+            return max_acc_hm, max_acc_imdb
+
+
+
+        storage_path = f"sqlite:///{self.save_dir}coattn_optim.db"
+        study_name = "cross_attention_study"
+
+        study = optuna.create_study(
+            direction=["maximize","maximize"],
+            storage=storage_path,
+            study_name=study_name,
+            load_if_exists=True
+        )
+        study.optimize( _objective, n_trials=n_trials )
+
+        best_layers = [i for i in range(depth) if study.best_params.get(f"layer_{i}", False)]
+        print(f"best coattn: {best_layers}, avg acc: {study.best_value:.4f}")
+
+        return best_layers
+
+
+
     def run_single_experiment_hateful_memes(
         self,
         config: ViLBERTConfig,
         training_results: dict,
         epochs: int,
+        run_visualization: bool,
         dir_name: Optional[str] = None
     ):
         model = self.create_model(config)
@@ -141,8 +191,8 @@ class ExperimentTracker:
 
             alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
-
-            analysis.visualize_cka(dataloader=hm_dataloader, model=model, dir_name=dir_name)
+            if run_visualization:
+                analysis.visualize_cka(dataloader=hm_dataloader, model=model, dir_name=dir_name)
         return training_results
 
     def run_single_experiment_mm_imdb(
@@ -150,7 +200,8 @@ class ExperimentTracker:
         config: ViLBERTConfig,
         training_results: dict,
         epochs: int,
-        dir_name: Optional[str] = None
+        run_visualization: bool,
+        dir_name: Optional[str] = None,
     ):
         model = self.create_model(config)
         trainer = MM_IMDB_Trainer(
@@ -206,7 +257,8 @@ class ExperimentTracker:
                 model=model, dataloader=imdb_dataloader)
             training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
 
-            analysis.visualize_cka(dataloader=imdb_dataloader, model=model, dir_name=dir_name)
+            if run_visualization:
+                analysis.visualize_cka(dataloader=imdb_dataloader, model=model, dir_name=dir_name)
 
         return training_results
 
@@ -229,7 +281,7 @@ class ExperimentTracker:
 
 
 
-    def run_single_experiment(self, experiment_config: ExperimentConfig):
+    def run_single_experiment(self, experiment_config: ExperimentConfig, run_visualization:bool=True):
         filename = self._get_filename(config=experiment_config)
 
         print(f"Saving results to {filename}")
@@ -250,19 +302,23 @@ class ExperimentTracker:
             config=config,
             training_results=training_results,
             epochs=experiment_config.epochs,
-            dir_name=exp_dir_name_imdb
+            dir_name=exp_dir_name_imdb,
+            run_visualization=run_visualization,
         )
         training_results = self.run_single_experiment_hateful_memes(
             config=config,
             training_results=training_results,
             epochs=experiment_config.epochs,
-            dir_name=exp_dir_name_hm
+            dir_name=exp_dir_name_hm,
+            run_visualization=run_visualization,
         )
         self.save_results(
             training_results=training_results,
             config=experiment_config,
-            filename=filename
+            filename=filename,
+
         )
+        return training_results
 
     def _initialize_results_dict(self, epochs ):
         training_results = {
@@ -386,21 +442,20 @@ def get_experiments():
 
 
 def main():
-    exps = get_experiments()
     tracker = ExperimentTracker()
-    # config = ExperimentConfig(
-    #     cross_attention_layers=[3],
-    #     depth=4,
-    #     epochs=1
-    # )
-    for config in exps:
-        print(f"Running experiment with config: {config}")
-        logger.info(f"Running experiment with config: {config}")
-        tracker.run_single_experiment(config)
+    best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=25)
 
-        info_str = "-"*25
-        print(info_str+"\n")
-        logger.info(info_str)
+    # exps = get_experiments()
+    # tracker = ExperimentTracker()
+
+    # for config in exps:
+    #     print(f"Running experiment with config: {config}")
+    #     logger.info(f"Running experiment with config: {config}")
+    #     tracker.run_single_experiment(config)
+
+    #     info_str = "-"*25
+    #     print(info_str+"\n")
+    #     logger.info(info_str)
 
 
 if __name__ == "__main__":
