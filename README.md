@@ -31,8 +31,13 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 
 
 ## TODO
+- [ ] captum?
+- [ ] optuna:
+	- [ ] run optuna for acc on both sets (mmimdb + hateful memes)
+	- [ ] pruning
 
-- [ ] run optuna for acc on both sets (mmimdb + hateful memes)
+
+
 - [ ] bertviz
 		```python
 		from bertviz import head_view
@@ -46,16 +51,16 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 - [ ] implement experiment tracker
 	- [x] how to run several exps from configs!
 	- [x] for two tasks: mmimdb, hateful memes
-	- [ ] use test sets for alignment; no training on it.
-	- [ ] alignment measured on imdb
-	- [ ] proper config handling
+	- [ ] use test sets for alignment; no training on it. - currently on mmimdb, not on hm, still TODO!
+	- [x] alignment measured on imdb
+	- [x] proper config handling
 	- [ ] abstract class für trainer; hm, und mmimdb anpassen
-	- [ ] dir in `res/experiments/` for each experiment
-	- [ ] save visualizations to same dir
+	- [x] dir in `res/experiments/` for each experiment
+	- [x] save visualizations to same dir
 
+- [x] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
 
 - [ ] self.fc outside of forward - refactor
-- [ ] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
 - [ ] mmimdb alignment vis
 - [ ] check if cka is right..
 	- [ ] try with bigger bs for the data collection
@@ -247,26 +252,19 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 	^CTraceback (most recent call last):
 	</details>
 - [ ] fix spelling issue in "costrative"
-- [x] implement gradient accum.
 - [ ] problem with contrastive term in pretraining: combined approach!
 - [x] visualization of cka, mutual knns
 	- [x] implement a data collection pipeline
 		- [ ] improve memory with `del`- in original pipeline=> better CKA estimations
 
 
-	- [x] visualization of all the other measueres
-		- [x] mknn
-		- [x] jaccard - add to analysis
-		- [x] rank - add to analysis
-		- [ ]
 - [ ] implement further datasets for alignment evaluation
 	- [ ] ms coco
 	- [ ] vqa
 	- [x] mm-imbd
-- [x] cosine scheduler
+
 - [ ] add dropout in attention
 - [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
-- [ ] visualization of pretraining tasks - like acc, loss, etc
 - [ ] different batchsizes for tasks
 	- maybe too difficult to implement!
 - [ ] is residual handling in crossattention correct?
@@ -283,7 +281,22 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 - [ ] pytorch hooks for intermediate layers
 	- quite hard to implement, plus there is not much documentation on this topic.
 
-- [ ] fix problem with ap pretraining only - has really bad performance, slightly worse than guessing!
+
+- [ ] investigating platonic representation hypothesis:
+	- simply concat represetnations of bert + vit: use as baseline.
+
+
+	- [x] visualization of all the other measueres
+		- [x] mknn
+		- [x] jaccard - add to analysis
+		- [x] rank - add to analysis
+- [x] visualization of pretraining tasks - like acc, loss, etc
+- [x] cosine scheduler
+- [x] implement gradient accum.
+
+
+### past TODOs
+- [x] fix problem with ap pretraining only - has really bad performance, slightly worse than guessing!
 	- 2025-08-23 22:35:30 - INFO  - trainer.py:train:691 - Epoch 4/4,
 	```
 	train loss MLM: 0.0000,
@@ -294,14 +307,6 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 	train loss MIM: 0.0000,
 	test loss MIM: 8.8669
 	```
-
-- [ ] investigating platonic representation hypothesis:
-	- simply concat represetnations of bert + vit: use as baseline.
-
-
-
-
-### past TODOs
 - [x] Tokenizer for text dependency injected
 - [x] pretrain dataset fix: filter out images that are not working
 - [x] pretrain dataset mlm task
@@ -377,6 +382,10 @@ dataset returned from dataloader/dataset:
 
 
 ## Results
+
+## 12.09
+Implemented optuna param optimization aswell as an experiment tracker to track all experiments wit proper directories.
+
 
 ## 04.09
 

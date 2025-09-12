@@ -5,6 +5,8 @@ import dataclasses
 import json
 
 
+import optuna; from optuna import pruners
+
 
 from config import *
 from trainer import Trainer
@@ -16,7 +18,7 @@ from logger import Logger
 import analysis
 
 logger = Logger()
-EPOCHS = 1
+EPOCHS = 7
 ALIGNMENT_ANALYSIS_SIZE = 4000
 
 
@@ -81,6 +83,115 @@ class ExperimentTracker:
         os.makedirs(self.visualization_dir, exist_ok=True)
 
 
+    def _run_trial(self, config: ExperimentConfig, trial):
+        vilbert_config = self.create_config(config)
+        utils.set_seeds(config.seed)
+
+        best_hm_acc = 0.0
+        best_imdb_acc = 0.0
+
+        #---------------------------------------------
+        # hm training (with pruning)
+
+        train_loader, val_loader = datasets.get_hateful_memes_datasets(
+            train_test_ratio=TRAIN_TEST_RATIO,
+            # train_test_ratio=0.1,
+            batch_size=BATCH_SIZE_DOWNSTREAM,
+            num_workers=NUM_WORKERS,
+            pin_memory=PIN_MEMORY,
+            prefetch_factor=PREFETCH,
+            persistent_workers=PERSISTENT_WORKERS,
+            use_train_augmentation=True,
+        )
+        # TODO: maybe include afterwards
+        # hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
+        #     batch_size=BATCH_SIZE_ANALYSIS,
+        #     num_workers=NUM_WORKERS,
+        #     pin_memory=PIN_MEMORY,
+        #     prefetch_factor=PREFETCH,
+        #     num_samples=ALIGNMENT_ANALYSIS_SIZE
+        # )
+
+        model = self.create_model(vilbert_config)
+        trainer = Trainer(
+            model=model,
+            config=vilbert_config,
+            gradient_accumulation=GRADIENT_ACCUMULATION
+        )
+        trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
+                                lr=vilbert_config.learning_rate)
+
+        for i in range(config.epochs):
+            train_loss = self.train_model_step(
+                trainer=trainer,
+                train_dataloader=train_loader,
+            )
+            test_loss, acc = self.evaluate_model(
+                trainer=trainer,
+                dataloader=val_loader,
+            )
+            info_str = (
+                f"HM Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
+                f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
+            )
+            # print(info_str)
+            # logger.info(info_str)
+
+            intermediate_value = acc
+            trial.report(intermediate_value, step=i)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
+            best_hm_acc = max(best_hm_acc, acc)
+
+        del model, trainer, train_loader, val_loader
+
+        #---------------------------------------------
+        # imdb training (with pruning)
+        model = self.create_model(vilbert_config)
+        trainer = MM_IMDB_Trainer(
+            model=model,
+            config=vilbert_config,
+            gradient_accumulation=GRADIENT_ACCUMULATION,
+        )
+
+        train_loader, val_loader = datasets.get_mmimdb_datasets(
+            train_test_ratio=TRAIN_TEST_RATIO,
+            # train_test_ratio=0.1,
+            batch_size=BATCH_SIZE_DOWNSTREAM,
+            num_workers=NUM_WORKERS,
+            pin_memory=PIN_MEMORY,
+            prefetch_factor=PREFETCH,
+            persistent_workers=PERSISTENT_WORKERS,
+            use_train_augmentation=True,
+        )
+        trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
+                                lr=vilbert_config.learning_rate)
+
+        for i in range(config.epochs):
+            train_loss = self.train_model_step(
+                trainer=trainer,
+                train_dataloader=train_loader,
+            )
+            test_loss, acc = self.evaluate_model(
+                trainer=trainer,
+                dataloader=val_loader,
+            )
+            info_str = (
+                f"IMDB Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
+                f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
+            )
+
+            # use different step numbers to avoid overwriting hm steps
+            intermediate_value = (best_hm_acc + acc) / 2  # average both tasks for pruning
+            trial.report(intermediate_value, step=config.epochs + i)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
+            best_imdb_acc = max(best_imdb_acc, acc)
+
+        return best_hm_acc, best_imdb_acc
+
+
+
 
 
     def optimize_coattn_for_accuracy(self, depth, n_trials):
@@ -98,36 +209,50 @@ class ExperimentTracker:
                 depth=depth,
             )
 
+            return self._run_trial(config, trial)
 
-            training_results = self.run_single_experiment(
-                config,
-                run_visualization=False                 # is too compute intensive, not wanted here
-            )
 
-            val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
-            val_accs_imdb = [training_results["mm_imdb"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+            # training_results = self.run_single_experiment(
+            #     config,
+            #     run_visualization=False                 # is too compute intensive, not wanted here
+            # )
 
-            max_acc_hm = max(val_accs_hm)
-            max_acc_imdb = max(val_accs_imdb)
+            # val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+            # val_accs_imdb = [training_results["mm_imdb"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
 
-            return max_acc_hm, max_acc_imdb
+            # max_acc_hm = max(val_accs_hm)
+            # max_acc_imdb = max(val_accs_imdb)
+
+            # return max_acc_hm, max_acc_imdb
 
 
 
         storage_path = f"sqlite:///{self.save_dir}coattn_optim.db"
         study_name = "cross_attention_study"
 
+        pruner = pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=2)
+
         study = optuna.create_study(
-            direction=["maximize","maximize"],
+            directions=["maximize","maximize"],
+            pruner=pruner,
             storage=storage_path,
             study_name=study_name,
             load_if_exists=True
         )
         study.optimize( _objective, n_trials=n_trials )
 
-        best_layers = [i for i in range(depth) if study.best_params.get(f"layer_{i}", False)]
-        print(f"best coattn: {best_layers}, avg acc: {study.best_value:.4f}")
+        pareto_trials = study.best_trials
+        print(f"{len(pareto_trials)}optimal solutions:")
 
+        for trial in pareto_trials:
+            layers = [i for i in range(depth) if trial.params.get(f"layer_{i}", False)]
+            hm_acc, imdb_acc = trial.values
+            print(f"  {layers}: hm={hm_acc:.4f}, imdb={imdb_acc:.4f}")
+
+        best_trial = max(pareto_trials, key=lambda t: sum(t.values)/2)
+        best_layers = [i for i in range(depth) if best_trial.params.get(f"layer_{i}", False)]
+
+        print(f"selected: {best_layers}")
         return best_layers
 
 
