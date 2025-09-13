@@ -9,7 +9,7 @@ import optuna; from optuna import pruners
 
 
 from config import *
-from trainer import Trainer
+from trainer import HatefulMemesTrainer
 from mm_imdb_trainer import MM_IMDB_Trainer
 from vilbert import ViLBERT
 import utils
@@ -115,7 +115,7 @@ class ExperimentTracker:
         # )
 
         model = self.create_model(vilbert_config)
-        trainer = Trainer(
+        trainer = HatefulMemesTrainer(
             model=model,
             config=vilbert_config,
             gradient_accumulation=GRADIENT_ACCUMULATION
@@ -268,7 +268,7 @@ class ExperimentTracker:
         dir_name: Optional[str] = None
     ):
         model = self.create_model(config)
-        trainer = Trainer(
+        trainer = HatefulMemesTrainer(
             model=model,
             config=config,
             gradient_accumulation=GRADIENT_ACCUMULATION
@@ -467,16 +467,16 @@ class ExperimentTracker:
 
     def train_model_step(
         self,
-        trainer: Trainer,
+        trainer: HatefulMemesTrainer,
         train_dataloader: datasets.DataLoader,
     ):
         return trainer.train_epoch(
-            data_loader=train_dataloader
+            dataloader=train_dataloader
         )
 
     def evaluate_model(
         self,
-        trainer: Trainer,
+        trainer: HatefulMemesTrainer,
         dataloader: datasets.DataLoader,
         ) -> Tuple[float, float]:
 

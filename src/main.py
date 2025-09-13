@@ -21,7 +21,7 @@ from task import Task
 import datasets; from datasets import HM_Dataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
-from trainer import Trainer, PretrainingTrainer
+from trainer import HatefulMemesTrainer, PretrainingTrainer
 from logger import Logger
 
 import warnings

@@ -9,7 +9,7 @@ from optuna.pruners import MedianPruner
 import math
 
 from config import *
-from trainer import Trainer
+from trainer import HatefulMemesTrainer
 from mm_imdb_trainer import MM_IMDB_Trainer
 from vilbert import ViLBERT
 import utils
@@ -132,7 +132,7 @@ class HyperparameterOptimizer:
         model = ViLBERT(config=config)
 
         if task_name == "hateful_memes":
-            trainer = Trainer(model=model, config=config,
+            trainer = HatefulMemesTrainer(model=model, config=config,
                             gradient_accumulation=config.gradient_accumulation)
             train_loader, val_loader = datasets.get_hateful_memes_datasets(
                 train_test_ratio=config.train_test_ratio,
@@ -165,7 +165,7 @@ class HyperparameterOptimizer:
         #track best validation accuracy
         best_val = float("-inf")
         for epoch in range(epochs):
-            train_loss = trainer.train_epoch(data_loader=train_loader)
+            train_loss = trainer.train_epoch(dataloader=train_loader)
             val_loss, val_acc = trainer.evaluate(dataloader=val_loader)
 
             if optim_objective == "acc":

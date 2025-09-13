@@ -18,6 +18,7 @@ from transformers import (
     PreTrainedTokenizerFast,
     BertTokenizerFast
 )
+from .base_trainer import BaseTrainer
 
 
 import analysis
@@ -29,7 +30,7 @@ import augments_transforms
 
 
 
-class MM_IMDB_Trainer():
+class MM_IMDB_Trainer(BaseTrainer):
     def __init__(
         self,
         model: ViLBERT,
@@ -77,7 +78,7 @@ class MM_IMDB_Trainer():
         )
 
         for epoch in range(epochs):
-            train_loss = self.train_epoch(train_dataloader)
+            train_loss = self.train_epoch(dataloader=train_dataloader)
             test_loss, acc  = self.evaluate(test_dataloader)
             info_str = f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, test loss: {test_loss:.4f},  accuracy: {acc:.4f}"
             print(info_str)
@@ -108,9 +109,9 @@ class MM_IMDB_Trainer():
         )
 
 
-    def train_epoch(self, data_loader: DataLoader):
+    def train_epoch(self, dataloader: DataLoader):
 
-        info_str = f"simulated batchsize: {data_loader.batch_size * self.gradient_accumulation}, actual batchsize: {data_loader.batch_size}"
+        info_str = f"simulated batchsize: {dataloader.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader.batch_size}"
         print(info_str)
         self.logger.info(info_str)
 
@@ -118,7 +119,7 @@ class MM_IMDB_Trainer():
         total_loss = 0
         num_batches = 0
 
-        for batch_indx, batch in enumerate(tqdm(data_loader, desc="Training")):
+        for batch_indx, batch in enumerate(tqdm(dataloader, desc="Training")):
             num_batches += 1
 
             data_dict = batch
@@ -151,7 +152,7 @@ class MM_IMDB_Trainer():
 
 
 
-            if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(data_loader):
+            if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(dataloader):
                 lr = self.scheduler.get_lr()
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = lr
