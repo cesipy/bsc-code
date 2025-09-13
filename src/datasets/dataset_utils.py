@@ -6,6 +6,7 @@ import csv
 import random
 import io
 
+import albumentations as A
 
 from transformers import (
      # ViT stuff
@@ -51,7 +52,12 @@ def _process_image(img: Image.Image, transform=None):
     assert isinstance(img, Image.Image)
     basic_vit_transform = augments_transforms.get_minimal_vit_transform()
 
-    if transform:
+    #if albumantion transform:
+    if transform and isinstance(transform, A.Compose):
+        img_np = np.asarray(img)
+        result = transform(image=img_np)
+        img = result['image']
+    elif transform:
         img = transform(img)
 
     # performs only normlalization

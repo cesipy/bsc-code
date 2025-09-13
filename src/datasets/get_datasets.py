@@ -351,7 +351,8 @@ def get_hateful_memes_datasets(
     """
 
     if use_train_augmentation:
-        transform = augments_transforms.get_hateful_memes_train_augmentation()
+        # transform = augments_transforms.get_hateful_memes_train_augmentation()
+        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=True)
     else:
         transform = None
 

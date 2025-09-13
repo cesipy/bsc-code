@@ -84,7 +84,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         pin_memory=PIN_MEMORY,
         prefetch_factor=PREFETCH,
         persistent_workers=PERSISTENT_WORKERS,
-        use_train_augmentation=True
+        # use_train_augmentation=True   #TODO: for testing
+        use_train_augmentation=False,
     )
 
     hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(

@@ -32,6 +32,7 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 
 ## TODO
 - [ ] captum?
+	- [ ] https://captum.ai/tutorials/Multimodal_VQA_Captum_Insights
 - [ ] optuna:
 	- [ ] run optuna for acc on both sets (mmimdb + hateful memes)
 	- [ ] pruning

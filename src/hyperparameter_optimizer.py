@@ -6,6 +6,8 @@ import json
 import optuna
 from optuna.pruners import MedianPruner
 
+import math
+
 from config import *
 from trainer import Trainer
 from mm_imdb_trainer import MM_IMDB_Trainer
@@ -37,7 +39,10 @@ class HyperparameterOptimizer:
         os.makedirs(self.save_dir, exist_ok=True)
 
 
-    def optimize_single_task(self, tuning_config: OptunaTuningConfig):
+    def optimize_single_task(self, tuning_config: OptunaTuningConfig, optim_obj:str = "acc"):
+
+        assert tuning_config.task_name in ["hateful_memes", "mm_imdb"]
+        assert optim_obj in ["acc", "loss"]
         def objective(trial):
             learning_rate = trial.suggest_float("learning_rate", 5e-6, 5e-4, log=True)
             dropout = trial.suggest_float("dropout", 0.0, 0.3)
@@ -61,16 +66,29 @@ class HyperparameterOptimizer:
             utils.set_seeds(SEED)
 
             try:
-                val_acc = self._run_trial(config, tuning_config.task_name, epochs)
-                return val_acc
+                val = self._run_trial(
+                    trial=trial,
+                    config=config,
+                    task_name=tuning_config.task_name,
+                    epochs=epochs,
+                    optim_objective=optim_obj
+                    )
+                return val
+            except optuna.TrialPruned:
+                raise
             except Exception as e:
                 print(f"Trial failed: {e}")
                 return 0.0
-        storage_path = f"sqlite:///{self.save_dir}optuna_study.db"
-        study_name = f"{tuning_config.task_name}_study"
+
+        tmsp = time.strftime("%Y%m%d-%H%M%S")
+        storage_path = f"sqlite:///{self.save_dir}optuna_study_{tmsp}.db"
+        study_name = f"{tuning_config.task_name}_study_{tmsp}"
+
+        pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=1, interval_steps=1)
 
         study = optuna.create_study(
             direction="maximize",
+            pruner=pruner,
             storage=storage_path,
             study_name=study_name,
             load_if_exists=True  # resume if exists
@@ -107,8 +125,10 @@ class HyperparameterOptimizer:
         return config
 
 
-    def _run_trial(self, config: ViLBERTConfig, task_name: str, epochs: int):
+    def _run_trial(self,trial, config: ViLBERTConfig, task_name: str, epochs: int, optim_objective:str="acc"):
         """Run single trial and return best validation accuracy"""
+
+        assert optim_objective in ["acc", "loss"]
         model = ViLBERT(config=config)
 
         if task_name == "hateful_memes":
@@ -143,17 +163,24 @@ class HyperparameterOptimizer:
                               lr=config.learning_rate)
 
         #track best validation accuracy
-        best_val_acc = 0.0
+        best_val = 0.0
         for epoch in range(epochs):
             train_loss = trainer.train_epoch(data_loader=train_loader)
             val_loss, val_acc = trainer.evaluate(dataloader=val_loader)
-            best_val_acc = max(best_val_acc, val_acc)
 
-
+            if optim_objective == "acc":
+                current_val = val_acc
+                best_val = max(best_val, val_acc)
+            else:   # val_loss
+                current_val = -val_loss
+                best_val = max(best_val, current_val)
+            trial.report(current_val, epoch)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
             if epoch == 0:
                 print(f"  Epoch 1/{epochs} - Train: {train_loss:.4f}, "
-                      f"Val: {val_loss:.4f}, Acc: {val_acc:.4f}")
-        return best_val_acc
+                    f"Val: {val_loss:.4f}, Acc: {val_acc:.4f}")
+        return best_val
 
     def _save_optimization_results(self, study, tuning_config: OptunaTuningConfig):
         """Save optimization results"""
@@ -202,7 +229,7 @@ def main():
 
     results = {}
     for config in confs:
-        results[config.task_name] = optimizer.optimize_single_task(config)
+        results[config.task_name] = optimizer.optimize_single_task(config, optim_obj="loss")
         print("-"*25)
 
     results["timestamp"] = time.strftime("%Y%m%d-%H%M%S")
