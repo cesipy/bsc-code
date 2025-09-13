@@ -44,9 +44,9 @@ class HyperparameterOptimizer:
         assert tuning_config.task_name in ["hateful_memes", "mm_imdb"]
         assert optim_obj in ["acc", "loss"]
         def objective(trial):
-            learning_rate = trial.suggest_float("learning_rate", 5e-6, 5e-4, log=True)
-            dropout = trial.suggest_float("dropout", 0.0, 0.3)
-            epochs = trial.suggest_int("epochs", 1, tuning_config.max_epochs)
+            learning_rate = trial.suggest_float("learning_rate", 5e-6, 1.5e-4, log=True)
+            dropout = trial.suggest_float("dropout", 0.0, 0.4)
+            epochs = trial.suggest_int("epochs", 3, tuning_config.max_epochs)
 
             # opt: not sure if i want it right now
             if tuning_config.optimize_depth:
@@ -163,7 +163,7 @@ class HyperparameterOptimizer:
                               lr=config.learning_rate)
 
         #track best validation accuracy
-        best_val = 0.0
+        best_val = float("-inf")
         for epoch in range(epochs):
             train_loss = trainer.train_epoch(data_loader=train_loader)
             val_loss, val_acc = trainer.evaluate(dataloader=val_loader)
