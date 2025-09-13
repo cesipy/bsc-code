@@ -31,38 +31,36 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 
 
 ## TODO
+- [ ] tools to look into:
+	- [ ] captum
+	- [ ] alibi
+	- [ ] bertviz
+		```python
+		from bertviz import head_view
+		head_view(model, tokenizer, text_inputs, layer=4)  # visualize cross-attention
+		```
 - [ ] captum?
 	- [ ] https://captum.ai/tutorials/Multimodal_VQA_Captum_Insights
 - [ ] optuna:
 	- [ ] run optuna for acc on both sets (mmimdb + hateful memes)
 	- [ ] pruning
+	- [ ] in ep_tracker: disable multiobjective or disable pruning
+
+	- [ ] is my current setup even the right one?
+		- [ ] optimize for alignment, not for loss
 
 
-
-- [ ] bertviz
-		```python
-		from bertviz import head_view
-		head_view(model, tokenizer, text_inputs, layer=4)  # visualize cross-attention
-		```
-- [ ] use albuminations
-- [ ] easier dataset handling
 - [ ] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
 
 
 - [ ] implement experiment tracker
-	- [x] how to run several exps from configs!
-	- [x] for two tasks: mmimdb, hateful memes
 	- [ ] use test sets for alignment; no training on it. - currently on mmimdb, not on hm, still TODO!
-	- [x] alignment measured on imdb
-	- [x] proper config handling
 	- [ ] abstract class für trainer; hm, und mmimdb anpassen
-	- [x] dir in `res/experiments/` for each experiment
-	- [x] save visualizations to same dir
 
-- [x] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
+
 
 - [ ] self.fc outside of forward - refactor
-- [ ] mmimdb alignment vis
+
 - [ ] check if cka is right..
 	- [ ] try with bigger bs for the data collection
 - [x] add parameter how many samples to collect for visualization
@@ -254,9 +252,6 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 	</details>
 - [ ] fix spelling issue in "costrative"
 - [ ] problem with contrastive term in pretraining: combined approach!
-- [x] visualization of cka, mutual knns
-	- [x] implement a data collection pipeline
-		- [ ] improve memory with `del`- in original pipeline=> better CKA estimations
 
 
 - [ ] implement further datasets for alignment evaluation
@@ -266,8 +261,7 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 
 - [ ] add dropout in attention
 - [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
-- [ ] different batchsizes for tasks
-	- maybe too difficult to implement!
+
 - [ ] is residual handling in crossattention correct?
 - [ ] other datasets implement
 	- [ ] find alignment datasets in literature
@@ -279,24 +273,35 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 	- [x] svcca
 	- [ ] sae (maybe)
 
-- [ ] pytorch hooks for intermediate layers
-	- quite hard to implement, plus there is not much documentation on this topic.
 
 
+
+### opts $\lor$ ideas
 - [ ] investigating platonic representation hypothesis:
 	- simply concat represetnations of bert + vit: use as baseline.
+- [ ] pytorch hooks for intermediate layers
+	- quite hard to implement, plus there is not much documentation on this topic.
+- [ ] different batchsizes for tasks
+	- maybe too difficult to implement!
 
-
-	- [x] visualization of all the other measueres
-		- [x] mknn
-		- [x] jaccard - add to analysis
-		- [x] rank - add to analysis
-- [x] visualization of pretraining tasks - like acc, loss, etc
-- [x] cosine scheduler
-- [x] implement gradient accum.
 
 
 ### past TODOs
+
+- [x] visualization of all the other measueres
+	- [x] mknn
+	- [x] jaccard - add to analysis
+	- [x] rank - add to analysis
+- [x] visualization of pretraining tasks - like acc, loss, etc
+- [x] cosine scheduler
+- [x] implement gradient accum.
+- [x] use albuminations
+- [x] easier dataset handling
+- [x] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
+- [x] visualization of cka, mutual knns
+	- [x] implement a data collection pipeline
+		- [ ] improve memory with `del`- in original pipeline=> better CKA estimations
+- [x] mmimdb alignment vis
 - [x] fix problem with ap pretraining only - has really bad performance, slightly worse than guessing!
 	- 2025-08-23 22:35:30 - INFO  - trainer.py:train:691 - Epoch 4/4,
 	```

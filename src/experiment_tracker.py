@@ -86,6 +86,8 @@ class ExperimentTracker:
     def _run_trial(self, config: ExperimentConfig, trial):
         vilbert_config = self.create_config(config)
         utils.set_seeds(config.seed)
+        # TODO: maybe include, but this makes it a lot slower for alignment
+        training_results = self._initialize_results_dict(epochs=config.epochs)
 
         best_hm_acc = 0.0
         best_imdb_acc = 0.0
@@ -568,7 +570,7 @@ def get_experiments():
 
 def main():
     tracker = ExperimentTracker()
-    best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=25)
+    best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()
     # tracker = ExperimentTracker()
