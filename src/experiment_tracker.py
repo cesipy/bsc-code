@@ -9,8 +9,8 @@ import optuna; from optuna import pruners
 
 
 from config import *
-from trainer import Trainer
-from mm_imdb_trainer import MM_IMDB_Trainer
+from trainer import HatefulMemesTrainer
+from trainer import MM_IMDB_Trainer
 from vilbert import ViLBERT
 import utils
 import datasets
@@ -33,6 +33,7 @@ class ExperimentConfig:
     learning_rate: float = DOWNSTREAM_LR
     seed:int = SEED
     train_test_ratio: float = TRAIN_TEST_RATIO
+    dropout:float = DROPOUT_PROB
 
 
 
@@ -83,118 +84,201 @@ class ExperimentTracker:
         os.makedirs(self.visualization_dir, exist_ok=True)
 
 
-    def _run_trial(self, config: ExperimentConfig, trial):
-        vilbert_config = self.create_config(config)
-        utils.set_seeds(config.seed)
+    # def _run_trial(self, config: ExperimentConfig, trial):
+    #     vilbert_config = self.create_config(config)
+    #     utils.set_seeds(config.seed)
+    #     # TODO: maybe include, but this makes it a lot slower for alignment
+    #     training_results = self._initialize_results_dict(epochs=config.epochs)
 
-        best_hm_acc = 0.0
-        best_imdb_acc = 0.0
+    #     best_hm_acc = 0.0
+    #     best_imdb_acc = 0.0
 
-        #---------------------------------------------
-        # hm training (with pruning)
+    #     #---------------------------------------------
+    #     # hm training (with pruning)
 
-        train_loader, val_loader = datasets.get_hateful_memes_datasets(
-            train_test_ratio=TRAIN_TEST_RATIO,
-            # train_test_ratio=0.1,
-            batch_size=BATCH_SIZE_DOWNSTREAM,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
-            persistent_workers=PERSISTENT_WORKERS,
-            use_train_augmentation=True,
+    #     train_loader, val_loader = datasets.get_hateful_memes_datasets(
+    #         train_test_ratio=TRAIN_TEST_RATIO,
+    #         # train_test_ratio=0.1,
+    #         batch_size=BATCH_SIZE_DOWNSTREAM,
+    #         num_workers=NUM_WORKERS,
+    #         pin_memory=PIN_MEMORY,
+    #         prefetch_factor=PREFETCH,
+    #         persistent_workers=PERSISTENT_WORKERS,
+    #         use_train_augmentation=True,
+    #     )
+    #     # TODO: maybe include afterwards
+    #     # hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
+    #     #     batch_size=BATCH_SIZE_ANALYSIS,
+    #     #     num_workers=NUM_WORKERS,
+    #     #     pin_memory=PIN_MEMORY,
+    #     #     prefetch_factor=PREFETCH,
+    #     #     num_samples=ALIGNMENT_ANALYSIS_SIZE
+    #     # )
+
+    #     model = self.create_model(vilbert_config)
+    #     trainer = HatefulMemesTrainer(
+    #         model=model,
+    #         config=vilbert_config,
+    #         gradient_accumulation=GRADIENT_ACCUMULATION
+    #     )
+    #     trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
+    #                             lr=vilbert_config.learning_rate)
+
+    #     for i in range(config.epochs):
+    #         train_loss = self.train_model_step(
+    #             trainer=trainer,
+    #             train_dataloader=train_loader,
+    #         )
+    #         test_loss, acc = self.evaluate_model(
+    #             trainer=trainer,
+    #             dataloader=val_loader,
+    #         )
+    #         info_str = (
+    #             f"HM Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
+    #             f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
+    #         )
+    #         # print(info_str)
+    #         # logger.info(info_str)
+
+    #         intermediate_value = acc
+    #         trial.report(intermediate_value, step=i)
+    #         if trial.should_prune():
+    #             raise optuna.TrialPruned()
+    #         best_hm_acc = max(best_hm_acc, acc)
+
+    #     del model, trainer, train_loader, val_loader
+
+    #     #---------------------------------------------
+    #     # imdb training (with pruning)
+    #     model = self.create_model(vilbert_config)
+    #     trainer = MM_IMDB_Trainer(
+    #         model=model,
+    #         config=vilbert_config,
+    #         gradient_accumulation=GRADIENT_ACCUMULATION,
+    #     )
+
+    #     train_loader, val_loader = datasets.get_mmimdb_datasets(
+    #         train_test_ratio=TRAIN_TEST_RATIO,
+    #         # train_test_ratio=0.1,
+    #         batch_size=BATCH_SIZE_DOWNSTREAM,
+    #         num_workers=NUM_WORKERS,
+    #         pin_memory=PIN_MEMORY,
+    #         prefetch_factor=PREFETCH,
+    #         persistent_workers=PERSISTENT_WORKERS,
+    #         use_train_augmentation=True,
+    #     )
+    #     trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
+    #                             lr=vilbert_config.learning_rate)
+
+    #     for i in range(config.epochs):
+    #         train_loss = self.train_model_step(
+    #             trainer=trainer,
+    #             train_dataloader=train_loader,
+    #         )
+    #         test_loss, acc = self.evaluate_model(
+    #             trainer=trainer,
+    #             dataloader=val_loader,
+    #         )
+    #         info_str = (
+    #             f"IMDB Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
+    #             f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
+    #         )
+
+    #         # use different step numbers to avoid overwriting hm steps
+    #         intermediate_value = (best_hm_acc + acc) / 2  # average both tasks for pruning
+    #         trial.report(intermediate_value, step=config.epochs + i)
+    #         if trial.should_prune():
+    #             raise optuna.TrialPruned()
+    #         best_imdb_acc = max(best_imdb_acc, acc)
+
+    #     return best_hm_acc, best_imdb_acc
+
+    def optimize_parameters_multi(self, n_trials, optimization_objective: str = "acc"):  # Fix: str not list[str]
+        assert optimization_objective in ["acc", "loss"]
+        import optuna
+
+        def objective(trial):
+            lr = trial.suggest_float("learning_rate", 5e-6, 5e-5, log=True)
+            dropout = trial.suggest_float("dropout", 0.0, 0.4)
+            epochs = trial.suggest_int("epochs", 3, 9)
+            depth = trial.suggest_int("depth", 4, 8)
+            first_layer_coattn = trial.suggest_categorical("coattn_0", [True, False])  # Fix: missing comma
+            last_layer_coattn = trial.suggest_categorical(f"coattn_{depth-1}", [True, False])
+            middle_layer_coattn = trial.suggest_categorical(f"coattn_{depth//2}", [True, False])
+
+            coattn_list = []
+            if first_layer_coattn:
+                coattn_list.append(0)
+            if middle_layer_coattn and depth//2 not in coattn_list:
+                coattn_list.append(depth//2)
+            if last_layer_coattn and (depth-1) not in coattn_list:
+                coattn_list.append(depth-1)
+
+            config = ExperimentConfig(
+                cross_attention_layers=coattn_list,
+                depth=depth,
+                epochs=epochs,
+                learning_rate=lr,
+                dropout=dropout,
+                train_test_ratio=0.1
+            )
+
+            training_results = self.run_single_experiment(
+                config,
+                run_visualization=False  # is too compute intensive, not wanted here
+            )
+
+            if optimization_objective == "acc":
+                val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+                val_accs_imdb = [training_results["mm_imdb"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+
+                # report intermediate results for dashboard. not quite sure about it
+                for epoch, (hm_acc, imdb_acc) in enumerate(zip(val_accs_hm, val_accs_imdb)):
+                    combined_metric = (hm_acc + imdb_acc) / 2
+                    trial.report(combined_metric, epoch)
+
+                return val_accs_hm[-1], val_accs_imdb[-1]
+            else:
+                val_losses_hm = [training_results["hateful_memes"]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
+                val_losses_imdb = [training_results["mm_imdb"]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
+
+
+                for epoch, (hm_loss, imdb_loss) in enumerate(zip(val_losses_hm, val_losses_imdb)):
+                    combined_metric = -(hm_loss + imdb_loss) / 2
+                    trial.report(combined_metric, epoch)
+
+                return -val_losses_hm[-1], -val_losses_imdb[-1]
+
+        tmsp = time.strftime("%Y%m%d-%H%M%S")
+        storage_path = f"sqlite:///{self.save_dir}multi_task_optim_{tmsp}.db"
+        study_name = f"multi_task_study_{tmsp}"
+
+
+        study = optuna.create_study(
+            directions=["maximize", "maximize"],
+            storage=storage_path,
+            study_name=study_name,
+            load_if_exists=True
         )
-        # TODO: maybe include afterwards
-        # hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
-        #     batch_size=BATCH_SIZE_ANALYSIS,
-        #     num_workers=NUM_WORKERS,
-        #     pin_memory=PIN_MEMORY,
-        #     prefetch_factor=PREFETCH,
-        #     num_samples=ALIGNMENT_ANALYSIS_SIZE
-        # )
 
-        model = self.create_model(vilbert_config)
-        trainer = Trainer(
-            model=model,
-            config=vilbert_config,
-            gradient_accumulation=GRADIENT_ACCUMULATION
-        )
-        trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
-                                lr=vilbert_config.learning_rate)
+        study.optimize(objective, n_trials=n_trials)
+        pareto_trials = study.best_trials
+        print(f"{len(pareto_trials)} optimal solutions:")
 
-        for i in range(config.epochs):
-            train_loss = self.train_model_step(
-                trainer=trainer,
-                train_dataloader=train_loader,
-            )
-            test_loss, acc = self.evaluate_model(
-                trainer=trainer,
-                dataloader=val_loader,
-            )
-            info_str = (
-                f"HM Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
-                f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
-            )
-            # print(info_str)
-            # logger.info(info_str)
+        for i, trial in enumerate(pareto_trials[:5]):  
+            hm_val, imdb_val = trial.values
+            print(f"  Solution {i+1}: HM={hm_val:.4f}, IMDB={imdb_val:.4f}")
+            print(f"    Params: {trial.params}")
 
-            intermediate_value = acc
-            trial.report(intermediate_value, step=i)
-            if trial.should_prune():
-                raise optuna.TrialPruned()
-            best_hm_acc = max(best_hm_acc, acc)
+        # TODO: add
+        # self._save_multi_optimization_results(study, optimization_objective, tmsp)
 
-        del model, trainer, train_loader, val_loader
-
-        #---------------------------------------------
-        # imdb training (with pruning)
-        model = self.create_model(vilbert_config)
-        trainer = MM_IMDB_Trainer(
-            model=model,
-            config=vilbert_config,
-            gradient_accumulation=GRADIENT_ACCUMULATION,
-        )
-
-        train_loader, val_loader = datasets.get_mmimdb_datasets(
-            train_test_ratio=TRAIN_TEST_RATIO,
-            # train_test_ratio=0.1,
-            batch_size=BATCH_SIZE_DOWNSTREAM,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
-            persistent_workers=PERSISTENT_WORKERS,
-            use_train_augmentation=True,
-        )
-        trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
-                                lr=vilbert_config.learning_rate)
-
-        for i in range(config.epochs):
-            train_loss = self.train_model_step(
-                trainer=trainer,
-                train_dataloader=train_loader,
-            )
-            test_loss, acc = self.evaluate_model(
-                trainer=trainer,
-                dataloader=val_loader,
-            )
-            info_str = (
-                f"IMDB Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
-                f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
-            )
-
-            # use different step numbers to avoid overwriting hm steps
-            intermediate_value = (best_hm_acc + acc) / 2  # average both tasks for pruning
-            trial.report(intermediate_value, step=config.epochs + i)
-            if trial.should_prune():
-                raise optuna.TrialPruned()
-            best_imdb_acc = max(best_imdb_acc, acc)
-
-        return best_hm_acc, best_imdb_acc
+        return pareto_trials[0].params if pareto_trials else {}
 
 
 
-
-
-    def optimize_coattn_for_accuracy(self, depth, n_trials):
+    def optimize_coattn_for_accuracy(self, depth, n_trials, optimization_objective:list[str]= "acc"):
+        assert optimization_objective in ["acc", "loss"]
         import optuna
 
         def _objective( trial):
@@ -209,32 +293,38 @@ class ExperimentTracker:
                 depth=depth,
             )
 
-            return self._run_trial(config, trial)
+            # return self._run_trial(config, trial)
 
 
-            # training_results = self.run_single_experiment(
-            #     config,
-            #     run_visualization=False                 # is too compute intensive, not wanted here
-            # )
+            training_results = self.run_single_experiment(
+                config,
+                run_visualization=False                 # is too compute intensive, not wanted here
+            )
+            if optimization_objective == "acc":
+                val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+                val_accs_imdb = [training_results["mm_imdb"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+                return val_accs_hm[-1], val_accs_imdb[-1]
+            else:
+                val_losses_hm = [training_results["hateful_memes"]["training"][i]["val_loss"]  for i in range(1, config.epochs+1)]
+                val_losses_imdb = [training_results["mm_imdb"]["training"][i]["val_loss"]  for i in range(1, config.epochs+1)]
+                return val_losses_hm[-1], val_losses_imdb[-1]
 
-            # val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
-            # val_accs_imdb = [training_results["mm_imdb"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+            max_acc_hm = max(val_accs_hm)
+            max_acc_imdb = max(val_accs_imdb)
 
-            # max_acc_hm = max(val_accs_hm)
-            # max_acc_imdb = max(val_accs_imdb)
-
-            # return max_acc_hm, max_acc_imdb
+            return max_acc_hm, max_acc_imdb
 
 
 
         storage_path = f"sqlite:///{self.save_dir}coattn_optim.db"
         study_name = "cross_attention_study"
 
-        pruner = pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=2)
+        # pruner does not work here, as this is mutliobj.
+        # surely there is a workaround, but i dont want to implement it right now lol
+        # pruner = pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=2)
 
         study = optuna.create_study(
             directions=["maximize","maximize"],
-            pruner=pruner,
             storage=storage_path,
             study_name=study_name,
             load_if_exists=True
@@ -266,7 +356,7 @@ class ExperimentTracker:
         dir_name: Optional[str] = None
     ):
         model = self.create_model(config)
-        trainer = Trainer(
+        trainer = HatefulMemesTrainer(
             model=model,
             config=config,
             gradient_accumulation=GRADIENT_ACCUMULATION
@@ -465,16 +555,16 @@ class ExperimentTracker:
 
     def train_model_step(
         self,
-        trainer: Trainer,
+        trainer: HatefulMemesTrainer,
         train_dataloader: datasets.DataLoader,
     ):
         return trainer.train_epoch(
-            data_loader=train_dataloader
+            dataloader=train_dataloader
         )
 
     def evaluate_model(
         self,
-        trainer: Trainer,
+        trainer: HatefulMemesTrainer,
         dataloader: datasets.DataLoader,
         ) -> Tuple[float, float]:
 
@@ -568,7 +658,8 @@ def get_experiments():
 
 def main():
     tracker = ExperimentTracker()
-    best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=25)
+    tracker.optimize_parameters_multi(n_trials=50, optimization_objective="acc")
+    # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()
     # tracker = ExperimentTracker()

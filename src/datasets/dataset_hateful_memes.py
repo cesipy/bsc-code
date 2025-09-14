@@ -3,15 +3,7 @@
 import torch; from torch.utils.data import Dataset, DataLoader
 import typing
 
-from transformers import (
-     # ViT stuff
-    BaseImageProcessor,
-    ViTImageProcessor,
-
-    # type hinting stuff
-    PreTrainedTokenizerFast,
-    BertTokenizerFast
-)
+from .dataset_utils import BaseImageProcessor, PreTrainedTokenizerFast
 
 from logger import Logger
 import augments_transforms

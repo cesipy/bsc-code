@@ -6,6 +6,17 @@ import csv
 import random
 import io
 
+from transformers import (
+     # ViT stuff
+    BaseImageProcessor,
+    ViTImageProcessor,
+
+    # type hinting stuff
+    PreTrainedTokenizerFast,
+    BertTokenizerFast
+)
+
+
 import albumentations as A
 
 from transformers import (

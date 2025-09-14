@@ -135,13 +135,18 @@ class ViLBERT(nn.Module):
         )
 
         # TODO: unify, here i do multiplication in the other not
-
         # for mmimdb
         self.fc_imdb = nn.Sequential(
             nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, MM_IMDB_NUM_GENRES),
+        )
+        self.fc_vqa = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),  
         )
         # self.fc_imdb = nn.Sequential(
         #     nn.Linear(EMBEDDING_DIM, MM_IMDB_NUM_GENRES)

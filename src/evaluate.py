@@ -18,7 +18,7 @@ from task import Task
 import datasets; from datasets import HM_Dataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
 from vilbert import ViLBERT
-from trainer import Trainer, PretrainingTrainer
+from trainer import HatefulMemesTrainer, PretrainingTrainer
 from logger import Logger
 
 import argparse
@@ -98,7 +98,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
     info_str = f"using contrastive: {use_constrastive}"
     print(info_str)
     logger.info(info_str)
-    trainer = Trainer(
+    trainer = HatefulMemesTrainer(
         model,
         config,
         use_contrastive_loss=use_constrastive,
@@ -163,7 +163,7 @@ def test_on_hm():
         num_samples=1000,       # how many samples to do the alignment eval on
     )
 
-    trainer = Trainer(
+    trainer = HatefulMemesTrainer(
         model,
         config,
         use_contrastive_loss=True,

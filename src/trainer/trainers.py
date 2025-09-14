@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from vilbert import ViLBERT
@@ -14,7 +13,9 @@ import analysis
 from datasets import HM_Dataset, PretrainDatasetAP
 
 
-
+from .base_trainer import (
+    DataLoader, Dataset, BaseTrainer
+)
 from info_nce import InfoNCE, info_nce
 
 
@@ -30,7 +31,7 @@ def alignment_loss_cosine(text_emb, vision_emb):
 
 
 
-class Trainer():
+class HatefulMemesTrainer(BaseTrainer):
     def __init__(
         self,
         model: ViLBERT,
@@ -72,9 +73,9 @@ class Trainer():
 
 
 
-    def train_epoch(self, data_loader: DataLoader):
+    def train_epoch(self, dataloader: DataLoader):
 
-        info_str = f"simulated batchsize: {data_loader.batch_size * self.gradient_accumulation}, actual batchsize: {data_loader.batch_size}"
+        info_str = f"simulated batchsize: {dataloader.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader.batch_size}"
         print(info_str)
         self.logger.info(info_str)
 
@@ -82,7 +83,7 @@ class Trainer():
         total_loss = 0
 
         num_batches = 0
-        for batch_indx,batch in enumerate(tqdm(data_loader,total=len(data_loader), desc="training")):
+        for batch_indx,batch in enumerate(tqdm(dataloader,total=len(dataloader), desc="training")):
             num_batches += 1
 
             data_dict = batch
@@ -160,7 +161,7 @@ class Trainer():
             loss /= self.gradient_accumulation
             loss.backward()
 
-            if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(data_loader):
+            if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(dataloader):
                 lr = self.scheduler.get_lr()
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = lr

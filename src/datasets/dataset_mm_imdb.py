@@ -11,16 +11,7 @@ import pandas as pd
 import numpy as np
 
 import h5py
-
-from transformers import (
-     # ViT stuff
-    BaseImageProcessor,
-    ViTImageProcessor,
-
-    # type hinting stuff
-    PreTrainedTokenizerFast,
-    BertTokenizerFast
-)
+from .dataset_utils import BaseImageProcessor, PreTrainedTokenizerFast
 
 import utils
 
