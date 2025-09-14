@@ -69,7 +69,7 @@ class VqaDataset(Dataset):
             tokenizer=self.tokenizer
         )
 
-        # Convert answer to class index
+        # convert answer to class index
         label_tensor = torch.tensor(
             self.answer_vocab[curr_a],
             dtype=torch.long
@@ -96,10 +96,6 @@ if __name__ == "__main__":
 
 
     sample = dataset[0]
-    # print("Sample keys:", sample.keys())
-    # print("Image shape:", sample["img"]["pixel_values"].shape)  # Should be [1, 3, 224, 224]
-    # print("Text keys:", sample["text"].keys())
-    # print("Label:", sample["label"].item(), "classes")
 
 
 

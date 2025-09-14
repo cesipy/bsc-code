@@ -4,13 +4,13 @@ from typing import Tuple
 import dataclasses
 import json
 import optuna
-from optuna.pruners import MedianPruner
+
 
 import math
 
 from config import *
 from trainer import HatefulMemesTrainer
-from mm_imdb_trainer import MM_IMDB_Trainer
+from trainer import MM_IMDB_Trainer
 from vilbert import ViLBERT
 import utils
 import datasets
@@ -21,7 +21,7 @@ logger = Logger()
 @dataclasses.dataclass
 class OptunaTuningConfig:
     """Config for hyperparameter optimization"""
-    task_name: str  # "hateful_memes" or "mm_imdb"
+    task_name: str  # "hateful_memes" or "mm_imdb" or "multi"
     n_trials: int = 25
     max_epochs: int = 9
     cross_attention_layers: list[int] = None
@@ -44,7 +44,7 @@ class HyperparameterOptimizer:
         assert tuning_config.task_name in ["hateful_memes", "mm_imdb"]
         assert optim_obj in ["acc", "loss"]
         def objective(trial):
-            learning_rate = trial.suggest_float("learning_rate", 5e-6, 1.5e-4, log=True)
+            learning_rate = trial.suggest_float("learning_rate", 5e-6, 5e-5, log=True)
             dropout = trial.suggest_float("dropout", 0.0, 0.4)
             epochs = trial.suggest_int("epochs", 3, tuning_config.max_epochs)
 
@@ -84,11 +84,9 @@ class HyperparameterOptimizer:
         storage_path = f"sqlite:///{self.save_dir}optuna_study_{tmsp}.db"
         study_name = f"{tuning_config.task_name}_study_{tmsp}"
 
-        pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=1, interval_steps=1)
 
         study = optuna.create_study(
             direction="maximize",
-            pruner=pruner,
             storage=storage_path,
             study_name=study_name,
             load_if_exists=True  # resume if exists
@@ -174,9 +172,7 @@ class HyperparameterOptimizer:
             else:   # val_loss
                 current_val = -val_loss
                 best_val = max(best_val, current_val)
-            trial.report(current_val, epoch)
-            if trial.should_prune():
-                raise optuna.TrialPruned()
+
             if epoch == 0:
                 print(f"  Epoch 1/{epochs} - Train: {train_loss:.4f}, "
                     f"Val: {val_loss:.4f}, Acc: {val_acc:.4f}")

@@ -33,6 +33,7 @@ class ExperimentConfig:
     learning_rate: float = DOWNSTREAM_LR
     seed:int = SEED
     train_test_ratio: float = TRAIN_TEST_RATIO
+    dropout:float = DROPOUT_PROB
 
 
 
@@ -192,7 +193,87 @@ class ExperimentTracker:
 
     #     return best_hm_acc, best_imdb_acc
 
+    def optimize_parameters_multi(self, n_trials, optimization_objective: str = "acc"):  # Fix: str not list[str]
+        assert optimization_objective in ["acc", "loss"]
+        import optuna
 
+        def objective(trial):
+            lr = trial.suggest_float("learning_rate", 5e-6, 5e-5, log=True)
+            dropout = trial.suggest_float("dropout", 0.0, 0.4)
+            epochs = trial.suggest_int("epochs", 3, 9)
+            depth = trial.suggest_int("depth", 4, 8)
+            first_layer_coattn = trial.suggest_categorical("coattn_0", [True, False])  # Fix: missing comma
+            last_layer_coattn = trial.suggest_categorical(f"coattn_{depth-1}", [True, False])
+            middle_layer_coattn = trial.suggest_categorical(f"coattn_{depth//2}", [True, False])
+
+            coattn_list = []
+            if first_layer_coattn:
+                coattn_list.append(0)
+            if middle_layer_coattn and depth//2 not in coattn_list:
+                coattn_list.append(depth//2)
+            if last_layer_coattn and (depth-1) not in coattn_list:
+                coattn_list.append(depth-1)
+
+            config = ExperimentConfig(
+                cross_attention_layers=coattn_list,
+                depth=depth,
+                epochs=epochs,
+                learning_rate=lr,
+                dropout=dropout,
+                train_test_ratio=0.1
+            )
+
+            training_results = self.run_single_experiment(
+                config,
+                run_visualization=False  # is too compute intensive, not wanted here
+            )
+
+            if optimization_objective == "acc":
+                val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+                val_accs_imdb = [training_results["mm_imdb"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+
+                # report intermediate results for dashboard. not quite sure about it
+                for epoch, (hm_acc, imdb_acc) in enumerate(zip(val_accs_hm, val_accs_imdb)):
+                    combined_metric = (hm_acc + imdb_acc) / 2
+                    trial.report(combined_metric, epoch)
+
+                return val_accs_hm[-1], val_accs_imdb[-1]
+            else:
+                val_losses_hm = [training_results["hateful_memes"]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
+                val_losses_imdb = [training_results["mm_imdb"]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
+
+
+                for epoch, (hm_loss, imdb_loss) in enumerate(zip(val_losses_hm, val_losses_imdb)):
+                    combined_metric = -(hm_loss + imdb_loss) / 2
+                    trial.report(combined_metric, epoch)
+
+                return -val_losses_hm[-1], -val_losses_imdb[-1]
+
+        tmsp = time.strftime("%Y%m%d-%H%M%S")
+        storage_path = f"sqlite:///{self.save_dir}multi_task_optim_{tmsp}.db"
+        study_name = f"multi_task_study_{tmsp}"
+
+
+        study = optuna.create_study(
+            directions=["maximize", "maximize"],
+            storage=storage_path,
+            study_name=study_name,
+            load_if_exists=True
+        )
+
+        study.optimize(objective, n_trials=n_trials)
+        pareto_trials = study.best_trials
+        print(f"{len(pareto_trials)} optimal solutions:")
+
+        for i, trial in enumerate(pareto_trials[:5]):  
+            hm_val, imdb_val = trial.values
+            print(f"  Solution {i+1}: HM={hm_val:.4f}, IMDB={imdb_val:.4f}")
+            print(f"    Params: {trial.params}")
+
+        # TODO: add
+        # self._save_multi_optimization_results(study, optimization_objective, tmsp)
+
+        return pareto_trials[0].params if pareto_trials else {}
 
 
 
@@ -227,7 +308,7 @@ class ExperimentTracker:
                 val_losses_hm = [training_results["hateful_memes"]["training"][i]["val_loss"]  for i in range(1, config.epochs+1)]
                 val_losses_imdb = [training_results["mm_imdb"]["training"][i]["val_loss"]  for i in range(1, config.epochs+1)]
                 return val_losses_hm[-1], val_losses_imdb[-1]
-            
+
             max_acc_hm = max(val_accs_hm)
             max_acc_imdb = max(val_accs_imdb)
 
@@ -577,7 +658,8 @@ def get_experiments():
 
 def main():
     tracker = ExperimentTracker()
-    best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
+    tracker.optimize_parameters_multi(n_trials=50, optimization_objective="acc")
+    # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()
     # tracker = ExperimentTracker()
