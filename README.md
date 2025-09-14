@@ -30,6 +30,62 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 ```
 
 
+## Implementation Decisions
+
+This section covers implementation decisions.
+
+### Datasets
+
+the pretraining dataset is downloaded using `src/download_cc.py`. It tries to download and open pictures from the conceptual captions dataset (`res/data/conceptual-captions/Train_GCC-training.tsv`). Some links are invalid and some images not openable, those are not saved.
+In the downloading step, I already resize to 224x224, in order to save memory.
+
+In the dataset handling in `src/datasets.py`, transformations for the timm-vit are applied.
+```python
+vit_transform = create_transform(**config)        # this was used before
+vit_transform: Compose(
+    Resize(size=256, interpolation=bicubic, max_size=None, antialias=True)
+    CenterCrop(size=(224, 224))
+    MaybeToTensor()
+    Normalize(mean=tensor([0.4850, 0.4560, 0.4060]), std=tensor([0.2290, 0.2240, 0.2250]))
+)
+```
+
+But as I already resize the images to 224x224, I don't need the resizing and cropping anymore.
+=>
+```python
+from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+vit_transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
+])
+```
+
+This generates the correct input for ViT. In the dataset, then the transformations are done. for pretraining, masking the language tokens, masking the vision tokens and creating the correct task for alignment prediction.
+
+
+The custom datasets inherit from `torch.utils.data.dataset` and return the following dictionary:
+```python
+{
+	"task": task.value,  # Task enum value
+	"img": img_embedding,  # Image embedding as tensor
+	"masked_img": masked_img,  # Masked image as tensor
+	"masked_patches_idxs": masked_patches_idxs,  # Indices of the masked patches
+	"text": text_embeddings,  # Text embeddings as tensor
+}
+```
+
+If alignment on new datasets should be tested, it should have the form of:
+```python
+{"img": ..., "text": ..., "label": ...}
+```
+
+
+### Optimization
+The optimization for this thesis consists of two task. i) to get the best hyperparams for a given depth (lr, epochs, dropout_pro) and ii) to optimize with those hyperparams using neural architecture search for the best coattn configuration.
+
+currently those parts are seperated by modules (might be different in newer implementations). `hyperparameter_optimizer.py` is used for hyperparam optimization and `experiment_tracker.py` for neural architecture search.
+
+
 ## TODO
 - [ ] tools to look into:
 	- [ ] captum
@@ -48,6 +104,10 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 
 	- [ ] is my current setup even the right one?
 		- [ ] optimize for alignment, not for loss
+
+
+- [ ] unify hyperparam_optimizer and experiment_tracker.
+- [ ] arparse for experimenttracker: whenever I want to test alignment
 
 
 - [ ] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
@@ -255,7 +315,6 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 
 
 - [ ] implement further datasets for alignment evaluation
-	- [ ] ms coco
 	- [ ] vqa
 	- [x] mm-imbd
 
@@ -389,8 +448,38 @@ dataset returned from dataloader/dataset:
 
 ## Results
 
-## 12.09
+## 13.09
 Implemented optuna param optimization aswell as an experiment tracker to track all experiments wit proper directories.
+Currently running on two gpus, two experiments:
+
+i) hyperparam optimization with fixed depth
+
+ii) optimization for coattns for different depths but fixed hyperparams. Takes way longer, as both models are evaluated.
+
+Today a run from yesterday finished for hyperparam optim. here are the results:
+<figure>
+	<img src="./res/markdown_res/13-7-hyperparamtuning-mmimdb.png" width=400><br>
+	- learning_rate 5.8761790368610554e-05<br>
+	- dropout 0.04505446623027967<br>
+	- epochs 8<br>
+	- depth 6<br><br>
+	<img src="./res/markdown_res/13-7-hyperparamtuning-hm.png" width=400><br>
+	- learning_rate 4.4085342730658045e-05<br>
+	- dropout 0.23424687497949043<br>
+	- epochs 6<br>
+	- depth 6<br>
+</figure>
+
+
+**from the paper "understanding the emergence of multimodal representation alignment**:
+its not simply *bigger models/more params => better alignment**
+
+its more nuanced:
+- performance and alignment are dependent on task. some tasks dont need strong alignment to perform well on downstream tasks. Others are extremly reliant on the alignment.
+- models capture multi-modal correspondence when there is shared information. They measured heterogenity of modalities using uniqueness $U$.
+$U$ increases $\rightarrow$ alignment decreases
+
+$\Rightarrow$ increasing alignment is not always good.
 
 
 ## 04.09
@@ -984,52 +1073,3 @@ Epoch 4/4, train loss: 0.4704, test loss: 0.5292,  accuracy: 0.7371
 
 
 
-
-## Remarks
-
-This section covers implementation decisions.
-
-### Datasets
-
-the pretraining dataset is downloaded using `src/download_cc.py`. It tries to download and open pictures from the conceptual captions dataset (`res/data/conceptual-captions/Train_GCC-training.tsv`). Some links are invalid and some images not openable, those are not saved.
-In the downloading step, I already resize to 224x224, in order to save memory.
-
-In the dataset handling in `src/datasets.py`, transformations for the timm-vit are applied.
-```python
-vit_transform = create_transform(**config)        # this was used before
-vit_transform: Compose(
-    Resize(size=256, interpolation=bicubic, max_size=None, antialias=True)
-    CenterCrop(size=(224, 224))
-    MaybeToTensor()
-    Normalize(mean=tensor([0.4850, 0.4560, 0.4060]), std=tensor([0.2290, 0.2240, 0.2250]))
-)
-```
-
-But as I already resize the images to 224x224, I don't need the resizing and cropping anymore.
-=>
-```python
-from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-vit_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
-])
-```
-
-This generates the correct input for ViT. In the dataset, then the transformations are done. for pretraining, masking the language tokens, masking the vision tokens and creating the correct task for alignment prediction.
-
-
-The custom datasets inherit from `torch.utils.data.dataset` and return the following dictionary:
-```python
-{
-	"task": task.value,  # Task enum value
-	"img": img_embedding,  # Image embedding as tensor
-	"masked_img": masked_img,  # Masked image as tensor
-	"masked_patches_idxs": masked_patches_idxs,  # Indices of the masked patches
-	"text": text_embeddings,  # Text embeddings as tensor
-}
-```
-
-If alignment on new datasets should be tested, it should have the form of:
-```python
-{"img": ..., "text": ..., "label": ...}
-```
