@@ -10,6 +10,7 @@ SEED = 1335 #TODO INTEGRATE EVERYWHERE
 
 
 MM_IMDB_NUM_GENRES = 23
+EASY_VQA_NUM_CLASSES = 13
 
 # --------------------------------------------------
 # ViLBERT
