@@ -14,5 +14,6 @@ res/data/conceptual-captions/Train_GCC-training.tsv
 res/data/conceptual-captions/Validation_GCC-1.1.0-Validation.tsv
 res/plots/*
 res/data/mm-imdb/
-res/experiments*
+res/experiments/*.json
+res/experiments/visualizations/*
 res/hyperparameter_optimization/*.json
