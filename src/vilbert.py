@@ -35,16 +35,7 @@ from logger import Logger
 
 logger = Logger()
 
-# various speedups for models, adapted from karpathy's gpt2 video
-# https://www.youtube.com/watch?v=l8pRSuU81PU
-# also adapted other methods like torch.compile and autocast (mixed precision)
-# have minimal tradeoffs.
-# in combination, leads to 2.5x speedup!!
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.allow_tf32 = True
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.deterministic = False
-torch.backends.cudnn.enabled = True
+
 
 
 class ViLBERT(nn.Module):
@@ -146,7 +137,7 @@ class ViLBERT(nn.Module):
             nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),  
+            nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),
         )
         # self.fc_imdb = nn.Sequential(
         #     nn.Linear(EMBEDDING_DIM, MM_IMDB_NUM_GENRES)

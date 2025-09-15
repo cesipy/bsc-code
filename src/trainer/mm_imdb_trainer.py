@@ -253,6 +253,8 @@ def main():
         shuffle=True,
         prefetch_factor=4,
         num_workers=4,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
     val_dataloader = DataLoader(
         val_dataset,
@@ -260,6 +262,8 @@ def main():
         shuffle=False,
         prefetch_factor=4,
         num_workers=4,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     config = ViLBERTConfig()

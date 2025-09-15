@@ -6,7 +6,7 @@ from task import Task
 
 machine = os.environ.get("MACHINE_TYPE", "local")  # local or remote: local - my gaming pc (16gb), remote - university gpu (24gb)
 
-SEED = 1335  #TODO INTEGRATE EVERYWHERE
+SEED = 1334  #TODO INTEGRATE EVERYWHERE
 
 
 MM_IMDB_NUM_GENRES = 23

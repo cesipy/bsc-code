@@ -13,6 +13,8 @@ from transformers import (
     BertTokenizerFast
 )
 
+import utils
+
 import random
 
 from logger import Logger
@@ -90,6 +92,8 @@ def get_alignment_dataloaders(
         num_workers=num_workers,
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     dataloader_cc = DataLoader(
@@ -99,6 +103,8 @@ def get_alignment_dataloaders(
         num_workers=num_workers,
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
     dataloader_imdb = DataLoader(
         dataset=dataset_imdb,
@@ -107,6 +113,8 @@ def get_alignment_dataloaders(
         num_workers=num_workers,
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
 
@@ -190,7 +198,9 @@ def get_dataloaders_pretrain(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
-        prefetch_factor=prefetch
+        prefetch_factor=prefetch,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     val_loader_mim = DataLoader(
@@ -200,7 +210,9 @@ def get_dataloaders_pretrain(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
-        prefetch_factor=prefetch
+        prefetch_factor=prefetch,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     train_loader_ap = DataLoader(
@@ -210,7 +222,9 @@ def get_dataloaders_pretrain(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
-        prefetch_factor=prefetch
+        prefetch_factor=prefetch,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     val_loader_ap = DataLoader(
@@ -220,7 +234,9 @@ def get_dataloaders_pretrain(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
-        prefetch_factor=prefetch
+        prefetch_factor=prefetch,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     train_loader_mlm = DataLoader(
@@ -230,7 +246,9 @@ def get_dataloaders_pretrain(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
-        prefetch_factor=prefetch
+        prefetch_factor=prefetch,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     val_loader_mlm = DataLoader(
@@ -240,7 +258,9 @@ def get_dataloaders_pretrain(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
-        prefetch_factor=prefetch
+        prefetch_factor=prefetch,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     return (
@@ -312,6 +332,8 @@ def get_mmimdb_datasets(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     val_dataloader = DataLoader(
@@ -322,6 +344,8 @@ def get_mmimdb_datasets(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     return train_dataloader, val_dataloader
@@ -394,6 +418,8 @@ def get_hateful_memes_datasets(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     val_dataloader = DataLoader(
@@ -404,6 +430,8 @@ def get_hateful_memes_datasets(
         num_workers=num_workers,
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     return train_dataloader, val_dataloader

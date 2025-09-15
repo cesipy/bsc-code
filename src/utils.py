@@ -19,11 +19,41 @@ from logger import Logger
 logger = Logger()
 
 def set_seeds(seed:int):
+    # for more reproducability
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.enabled = True
+
+    # with reproducability unfortuantely the below does not work.
+    # various speedups for models, adapted from karpathy's gpt2 video
+    # https://www.youtube.com/watch?v=l8pRSuU81PU
+    # also adapted other methods like torch.compile and autocast (mixed precision)
+    # have minimal tradeoffs.
+    # in combination, leads to 2.5x speedup!!
+    # torch.backends.cuda.matmul.allow_tf32 = True
+    # torch.backends.cudnn.allow_tf32 = True
+    # torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.deterministic = False
+    # torch.backends.cudnn.enabled = True
+
 
     torch.manual_seed(seed=seed)
     random.seed(seed)
     # torch.use_deterministic_algorithms(True)
     np.random.seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+def get_seeded_generator(seed:int):
+    g = torch.Generator()
+    return g.manual_seed(seed)
+
+
+def worker_init_fn(worker_id):
+    #https://docs.pytorch.org/docs/stable/notes/randomness.html#dataloader
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
 
 
 
