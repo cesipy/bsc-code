@@ -69,9 +69,9 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
 
     # for alignment analysis
     if machine == "remote":
-        bs_alignment_analysis = 16
+        bs_alignment_analysis = BATCH_SIZE_ANALYSIS
     else:
-        bs_alignment_analysis = 48
+        bs_alignment_analysis = BATCH_SIZE_ANALYSIS
 
     config.learning_rate = DOWNSTREAM_LR
     print(f"bs_alignment_analysis: {bs_alignment_analysis}, batchsize: {BATCH_SIZE_DOWNSTREAM}")

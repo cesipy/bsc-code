@@ -673,7 +673,7 @@ def process_intermediate_repr(
     for i, representation in enumerate(intermediate_reprs):
         # print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
 
-
+        # logger.info(f"dim before calculating cka: {representation['text_embedding'].shape}, {representation['vision_embedding'].shape}")
         cka_sim = measures.cka(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]

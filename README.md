@@ -30,6 +30,8 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 ```
 
 
+
+
 ## Implementation Decisions
 
 This section covers implementation decisions.
@@ -86,7 +88,79 @@ The optimization for this thesis consists of two task. i) to get the best hyperp
 currently those parts are seperated by modules (might be different in newer implementations). `hyperparameter_optimizer.py` is used for hyperparam optimization and `experiment_tracker.py` for neural architecture search.
 
 
-## TODO
+
+
+### Pretraining
+
+There are three pretraining tasks in ViLBERT: Masked Language Modelling, Masked Image Modelling, Alignment Prediction
+
+### MLM
+for 15% of all tokens:
+- 80% replaced with [MASK]
+- 10% replaced with random token
+- 10% unchanged
+
+array of length of tokens is returned. if masked: masked token, if not `token[i] = -100`(value for lossfunction to ignore it)
+
+### Alignment Prediction
+predict if images and caption are aligned. Is a dataset of 50/50 balance.
+- "research has been focused on two main schemes, either reconstructing the masked signal, or comparing two latent representations, one for the unaltered input signal and one for the masked input."
+
+
+
+
+### MIM
+
+Two options: reconstruct masked patches, contrastive comparision of hidden representations.
+
+Basd on my research I go for the contrastice approach, as this seems more interesting for me to implement.
+
+<figure>
+    <img src="./res/markdown_res/contrastive_mim.png" width=400>
+</figure>
+
+the workflow is the following:
+1) augment the data. Not yes timplemented
+2) mask image => (image, masked_image)
+3) encode(masked_image); encode(image)
+4) compute infoNCE on the representations, ONLY FOR UNMASKED tokens.
+
+
+dataset returned from dataloader/dataset:
+```python
+{
+    "task": task.value,
+    "img" : img_embedding,      # og img, as tensor
+    "masked_img": masked_img, # masked image as tensor
+    "masked_patches_idxs": masked_patches_idxs, # indices of the masked patches,
+    "text": text_embeddings,
+}
+```
+
+## ViLBERT
+original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
+
+
+---
+
+
+
+## TODO#
+**immediate:**
+- [x] vqa
+- [ ] wasserstein
+- [x] optuna- remove pruning, not necessary
+	- [x] optuna rerun wit smaller lr range
+	- [ ] include easyvqa in optuna
+
+- [ ] analysis of pretrained models: discrepancies in end representation of streams
+- [ ] better seeding
+- [ ] variable cka in analysis.
+- [ ] fix the alignment string to have same lenght
+- [ ] `src/evaluate.py` more flexible
+	- [ ] contrastive loss for other datasets; include in trainer
+
+**other**
 - [ ] tools to look into:
 	- [ ] captum
 	- [ ] alibi
@@ -106,16 +180,16 @@ currently those parts are seperated by modules (might be different in newer impl
 		- [ ] optimize for alignment, not for loss
 
 
-- [ ] unify hyperparam_optimizer and experiment_tracker.
+- [x] unify hyperparam_optimizer and experiment_tracker.
 - [ ] arparse for experimenttracker: whenever I want to test alignment
 
 
-- [ ] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
+- [x] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
 
 
-- [ ] implement experiment tracker
+- [x] implement experiment tracker
 	- [ ] use test sets for alignment; no training on it. - currently on mmimdb, not on hm, still TODO!
-	- [ ] abstract class für trainer; hm, und mmimdb anpassen
+	- [x] abstract class für trainer; hm, und mmimdb anpassen
 
 
 
@@ -391,58 +465,6 @@ currently those parts are seperated by modules (might be different in newer impl
 - [x] complete pipeline for running experiments
 - [x] hateful memes downsize to 224
 - [x] unify the alignment measurements
-
-## ViLBERT
-original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
-
-
-## Pretraining
-
-There are three pretraining tasks in ViLBERT: Masked Language Modelling, Masked Image Modelling, Alignment Prediction
-
-### MLM
-for 15% of all tokens:
-- 80% replaced with [MASK]
-- 10% replaced with random token
-- 10% unchanged
-
-array of length of tokens is returned. if masked: masked token, if not `token[i] = -100`(value for lossfunction to ignore it)
-
-### Alignment Prediction
-predict if images and caption are aligned. Is a dataset of 50/50 balance.
-- "research has been focused on two main schemes, either reconstructing the masked signal, or comparing two latent representations, one for the unaltered input signal and one for the masked input."
-
-
-
-
-### MIM
-
-Two options: reconstruct masked patches, contrastive comparision of hidden representations.
-
-Basd on my research I go for the contrastice approach, as this seems more interesting for me to implement.
-
-<figure>
-    <img src="./res/markdown_res/contrastive_mim.png" width=400>
-</figure>
-
-the workflow is the following:
-1) augment the data. Not yes timplemented
-2) mask image => (image, masked_image)
-3) encode(masked_image); encode(image)
-4) compute infoNCE on the representations, ONLY FOR UNMASKED tokens.
-
-
-dataset returned from dataloader/dataset:
-```python
-{
-    "task": task.value,
-    "img" : img_embedding,      # og img, as tensor
-    "masked_img": masked_img, # masked image as tensor
-    "masked_patches_idxs": masked_patches_idxs, # indices of the masked patches,
-    "text": text_embeddings,
-}
-```
-
 
 
 

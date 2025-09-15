@@ -200,14 +200,14 @@ class HatefulMemesTrainer(BaseTrainer):
         # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
         if hm_dataloader is not None and cc_dataloader is not None:
-            ...
-                # info_str = "\n\nbefore training, evaluating on uninitialized model"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # info_str = "alignment for hateful memes:"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # analysis.analyse_alignment(hm_dataloader, self.model)
+
+            info_str = "\n\nbefore training, evaluating on uninitialized model"
+            print(info_str)
+            self.logger.info(info_str)
+            info_str = "alignment for hateful memes:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(hm_dataloader, self.model)
 
                 # info_str = "alignment for conceptual captions:"
                 # print(info_str)
@@ -231,7 +231,7 @@ class HatefulMemesTrainer(BaseTrainer):
                 info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
-                # analysis.analyse_alignment(hm_dataloader, self.model)
+                analysis.analyse_alignment(hm_dataloader, self.model)
                 # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
                 # info_str = "alignment for conceptual captions:"

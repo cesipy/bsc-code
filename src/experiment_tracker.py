@@ -265,7 +265,7 @@ class ExperimentTracker:
         pareto_trials = study.best_trials
         print(f"{len(pareto_trials)} optimal solutions:")
 
-        for i, trial in enumerate(pareto_trials[:5]):  
+        for i, trial in enumerate(pareto_trials[:5]):
             hm_val, imdb_val = trial.values
             print(f"  Solution {i+1}: HM={hm_val:.4f}, IMDB={imdb_val:.4f}")
             print(f"    Params: {trial.params}")
@@ -374,9 +374,9 @@ class ExperimentTracker:
         )
         hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
+            num_workers=0,
+            pin_memory=False,
+            prefetch_factor=None,
             num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
@@ -438,9 +438,9 @@ class ExperimentTracker:
         #TODO: get alignment data loader for mmimdb
         hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
+            num_workers=0,
+            pin_memory=False,
+            prefetch_factor=None,
             num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
