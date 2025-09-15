@@ -20,6 +20,7 @@ import analysis
 logger = Logger()
 EPOCHS = 7
 ALIGNMENT_ANALYSIS_SIZE = 4000
+SKIP_ALIGNMENT = True
 
 
 @dataclasses.dataclass
@@ -193,18 +194,18 @@ class ExperimentTracker:
 
     #     return best_hm_acc, best_imdb_acc
 
-    def optimize_parameters_multi(self, n_trials, optimization_objective: str = "acc"):  # Fix: str not list[str]
+    def optimize_parameters_multi(self, n_trials, optimization_objective: str = "acc"):
         assert optimization_objective in ["acc", "loss"]
         import optuna
 
         def objective(trial):
             lr = trial.suggest_float("learning_rate", 5e-6, 5e-5, log=True)
             dropout = trial.suggest_float("dropout", 0.0, 0.4)
-            epochs = trial.suggest_int("epochs", 3, 9)
+            epochs = trial.suggest_int("epochs", 2, 9)
             depth = trial.suggest_int("depth", 4, 8)
-            first_layer_coattn = trial.suggest_categorical("coattn_0", [True, False])  # Fix: missing comma
-            last_layer_coattn = trial.suggest_categorical(f"coattn_{depth-1}", [True, False])
-            middle_layer_coattn = trial.suggest_categorical(f"coattn_{depth//2}", [True, False])
+            first_layer_coattn = trial.suggest_categorical("coattn_0", [True, False])
+            last_layer_coattn = trial.suggest_categorical(f"coattn_middle", [True, False])
+            middle_layer_coattn = trial.suggest_categorical(f"coattn_last", [True, False])
 
             coattn_list = []
             if first_layer_coattn:
@@ -220,7 +221,7 @@ class ExperimentTracker:
                 epochs=epochs,
                 learning_rate=lr,
                 dropout=dropout,
-                train_test_ratio=0.1
+                # train_test_ratio=0.1
             )
 
             training_results = self.run_single_experiment(
@@ -235,9 +236,9 @@ class ExperimentTracker:
                 # report intermediate results for dashboard. not quite sure about it
                 for epoch, (hm_acc, imdb_acc) in enumerate(zip(val_accs_hm, val_accs_imdb)):
                     combined_metric = (hm_acc + imdb_acc) / 2
-                    trial.report(combined_metric, epoch)
-
-                return val_accs_hm[-1], val_accs_imdb[-1]
+                    # trial.report(combined_metric, epoch)
+                return max(val_accs_hm), max(val_accs_imdb)
+                # return val_accs_hm[-1], val_accs_imdb[-1]
             else:
                 val_losses_hm = [training_results["hateful_memes"]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
                 val_losses_imdb = [training_results["mm_imdb"]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
@@ -245,9 +246,9 @@ class ExperimentTracker:
 
                 for epoch, (hm_loss, imdb_loss) in enumerate(zip(val_losses_hm, val_losses_imdb)):
                     combined_metric = -(hm_loss + imdb_loss) / 2
-                    trial.report(combined_metric, epoch)
-
-                return -val_losses_hm[-1], -val_losses_imdb[-1]
+                    # trial.report(combined_metric, epoch)
+                return -min(val_losses_hm), -min(val_losses_imdb)
+                # return -val_losses_hm[-1], -val_losses_imdb[-1]
 
         tmsp = time.strftime("%Y%m%d-%H%M%S")
         storage_path = f"sqlite:///{self.save_dir}multi_task_optim_{tmsp}.db"
@@ -353,7 +354,8 @@ class ExperimentTracker:
         training_results: dict,
         epochs: int,
         run_visualization: bool,
-        dir_name: Optional[str] = None
+        dir_name: Optional[str] = None,
+        skip_alignment_analysis: bool = False,
     ):
         model = self.create_model(config)
         trainer = HatefulMemesTrainer(
@@ -402,9 +404,9 @@ class ExperimentTracker:
             training_results["hateful_memes"]["training"][i+1]["train_loss"] = train_loss
             training_results["hateful_memes"]["training"][i+1]["val_loss"] = test_loss
             training_results["hateful_memes"]["training"][i+1]["val_acc"] = acc
-
-
-            alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
+            alignment_metrics = {}
+            if not skip_alignment_analysis:
+                alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
             if run_visualization:
                 analysis.visualize_cka(dataloader=hm_dataloader, model=model, dir_name=dir_name)
@@ -417,6 +419,7 @@ class ExperimentTracker:
         epochs: int,
         run_visualization: bool,
         dir_name: Optional[str] = None,
+        skip_alignment_analysis: bool = False,
     ):
         model = self.create_model(config)
         trainer = MM_IMDB_Trainer(
@@ -467,9 +470,12 @@ class ExperimentTracker:
             training_results["mm_imdb"]["training"][i+1]["val_loss"] = test_loss
             training_results["mm_imdb"]["training"][i+1]["val_acc"] = acc
 
+            alignment_metrics = {}
+            if not skip_alignment_analysis:
 
-            alignment_metrics = self.analyse_alignment(
-                model=model, dataloader=imdb_dataloader)
+                alignment_metrics = self.analyse_alignment(
+                    model=model, dataloader=imdb_dataloader)
+
             training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
 
             if run_visualization:
@@ -519,6 +525,7 @@ class ExperimentTracker:
             epochs=experiment_config.epochs,
             dir_name=exp_dir_name_imdb,
             run_visualization=run_visualization,
+            skip_alignment_analysis=SKIP_ALIGNMENT,
         )
         training_results = self.run_single_experiment_hateful_memes(
             config=config,
@@ -526,6 +533,7 @@ class ExperimentTracker:
             epochs=experiment_config.epochs,
             dir_name=exp_dir_name_hm,
             run_visualization=run_visualization,
+            skip_alignment_analysis=SKIP_ALIGNMENT,
         )
         self.save_results(
             training_results=training_results,
@@ -598,6 +606,7 @@ class ExperimentTracker:
         config.learning_rate = experiment_config.learning_rate
         config.seed = experiment_config.seed
         config.train_test_ratio = experiment_config.train_test_ratio
+        config.dropout_prob = experiment_config.dropout
         return config
 
 
@@ -658,7 +667,7 @@ def get_experiments():
 
 def main():
     tracker = ExperimentTracker()
-    tracker.optimize_parameters_multi(n_trials=50, optimization_objective="acc")
+    tracker.optimize_parameters_multi(n_trials=60, optimization_objective="loss")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()
