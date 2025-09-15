@@ -129,13 +129,12 @@ class MM_IMDB_Trainer(BaseTrainer):
             text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
             image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
-            preds, text_embedding, image_embedding = self.model(
+            text_embedding, image_embedding = self.model(
                 text_input_ids= text["input_ids"],
                 text_attention_mask= text["attention_mask"],
                 text_token_type_ids= text.get("token_type_ids", None),
                 image_pixel_values= image["pixel_values"],
                 image_attention_mask= image.get("attention_mask", None),
-                output_invididual_embeddings=True
             )
 
             combined = text_embedding * image_embedding
@@ -181,13 +180,12 @@ class MM_IMDB_Trainer(BaseTrainer):
                 text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
                 image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
-                preds, text_embedding, image_embedding = self.model(
+                text_embedding, image_embedding = self.model(
                     text_input_ids=text["input_ids"],
                     text_attention_mask=text["attention_mask"],
                     text_token_type_ids=text.get("token_type_ids", None),
                     image_pixel_values=image["pixel_values"],
                     image_attention_mask=image.get("attention_mask", None),
-                    output_invididual_embeddings=True
                 )
 
                 combined = text_embedding * image_embedding

@@ -17,7 +17,7 @@ import utils
 from task import Task
 import datasets; from datasets import HM_Dataset, PretrainDatasetAP, PretrainDatasetMLM, PretrainDatasetMIM
 from config import *
-from vilbert import ViLBERT
+from vilbert import ViLBERT, Baseline
 from trainer import HatefulMemesTrainer, PretrainingTrainer
 from logger import Logger
 
@@ -35,7 +35,7 @@ machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 logger = Logger()
 
 @utils.memory_cleanup
-def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastive:Optional[bool]=False):
+def train_and_eval_on_downstream_task(pretrained_model_path:str, use_contrastive:Optional[bool]=False):
 
 
     if pretrained_model_path==None or not os.path.exists(pretrained_model_path) :
@@ -46,7 +46,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         logger.info(info_str)
 
         config = ViLBERTConfig()
-        model = ViLBERT(config=config)
+        # model = ViLBERT(config=config)
+        model = Baseline(config=config)
 
     else:
 
@@ -56,8 +57,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         print(info_str)
         logger.info(info_str)
 
-    if not use_constrastive:
-        use_constrastive=False
+    if not use_contrastive:
+        use_contrastive=False
     # utils.freeze_all_layers(model.vit)
     # utils.freeze_all_layers(model.bert)
 
@@ -95,13 +96,13 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
         prefetch_factor=4,
         num_samples=2000
     )
-    info_str = f"using contrastive: {use_constrastive}"
+    info_str = f"using contrastive: {use_contrastive}"
     print(info_str)
     logger.info(info_str)
     trainer = HatefulMemesTrainer(
         model,
         config,
-        use_contrastive_loss=use_constrastive,
+        use_contrastive_loss=use_contrastive,
         use_cosine_loss=False,
         gradient_accumulation=GRADIENT_ACCUMULATION,
         )
@@ -124,7 +125,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_constrastiv
 def test_on_hm():
     utils.set_seeds(SEED)
     config = ViLBERTConfig()
-    model = ViLBERT(config=config)
+    # model = ViLBERT(config=config)
+    model = Baseline(config=config)
 
     utils.freeze_all_layers(model.vit)
     utils.freeze_all_layers(model.bert)
@@ -189,21 +191,21 @@ if __name__ == "__main__":
         p = argparse.ArgumentParser(description="train on hateful memes")
         p.add_argument("--path", type=str, default=None,
                     help="Path to pretrained model checkpoint (optional)")
-        p.add_argument("--use-constrastive", action="store_true",)
+        p.add_argument("--use-contrastive", action="store_true",)
         p.add_argument("--test", action="store_true",
                        help="only test if it is running with small subsetof training")
 
         arg = p.parse_args()
         is_testing = arg.test
         pretrained_model_path = arg.path
-        use_constrastive = arg.use_constrastive
+        use_contrastive = arg.use_contrastive
 
         if is_testing:
             test_on_hm()
         else:
             train_and_eval_on_downstream_task(
                 pretrained_model_path=pretrained_model_path,
-                use_constrastive=use_constrastive
+                use_contrastive=use_contrastive
             )
 
         # test_visualization()

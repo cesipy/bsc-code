@@ -391,7 +391,7 @@ def get_visualisation_data(
 
             # print(f"img shape: {image['pixel_values'].shape}, ")
 
-            preds, intermediate_representations = model(
+            text_embedding, image_embedding, intermediate_representations = model(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -427,7 +427,7 @@ def get_visualisation_data(
                 measure_per_layer[layer]["vision_embeddings"].append(repr_dict["vision_embedding"])
                 measure_per_layer[layer]["is_cross_attention"] = repr_dict["is_cross_attention"]
 
-            del intermediate_representations, text, image, preds
+            del intermediate_representations, text, image, text_embedding, image_embedding
 
             sample_counter += batch_size
             if sample_counter >= num_samples:
@@ -495,7 +495,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
 
         with torch.no_grad():
-            preds, intermediate_representations =model.forward(
+            text_embedding, image_embedding, intermediate_representations =model.forward(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -514,7 +514,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             del intermediate_representations
             del text
             del image
-            del preds
+            del text_embedding, image_embedding
 
 
 
@@ -590,7 +590,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
             # print(f"img shape: {image['pixel_values'].shape}, ")
 
-            preds, intermediate_representations = model(
+            text_embedding, image_embedding, intermediate_representations = model(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),

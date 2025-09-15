@@ -1,8 +1,7 @@
 import torch
 from torch import nn
 
-from einops import rearrange, repeat        # functions for tensor dimension reordering and repeating
-from einops.layers.torch import Rearrange   # same as rearrange but works as a torch layer
+
 from transformers import (
     #BERT stuff
     BertModel,
@@ -33,16 +32,18 @@ from attention import(
 from config import *
 from logger import Logger
 
+
 logger = Logger()
 
 
 
+from abc import ABC, abstractmethod
+class Model(nn.Module, ABC):
 
-class ViLBERT(nn.Module):
-    def __init__(self, config: ViLBERTConfig):
-        super(ViLBERT, self).__init__()
+    def __init__(self, config):
+        super(Model, self).__init__()
+
         self.config = config
-
         # loads pretrained transformers, no head for task. with transformers.BertFor.... I
         # could download pretrained transformers for specific tasks
         self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
@@ -55,6 +56,126 @@ class ViLBERT(nn.Module):
             num_classes=0,       # num_classes=0 removes head
             global_pool="",      # we need whole sequence for mim
         )
+
+        # pretrain heads
+        self.alignment_fc = nn.Linear(2*self.config.embedding_dim , 1)
+        self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
+
+        # for hateful memes
+        self.fc = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, 1),
+        )
+
+        # TODO: unify, here i do multiplication in the other not
+        # for mmimdb
+        self.fc_imdb = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, MM_IMDB_NUM_GENRES),
+        )
+        self.fc_vqa = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),
+        )
+
+
+
+
+    @abstractmethod
+    def forward(self, *args, **kwargs):
+        pass
+
+
+# class BaselineConfig:
+#     def __init__(
+#         self,
+#         embedding_dim=EMBEDDING_DIM,
+#         vocab_size=VOCAB_SIZE,
+#         num_hidden_layers=NUM_HIDDEN_LAYERS,
+#         num_attention_heads=NUM_ATTENTION_HEADS,
+#         dropout_prob=DROPOUT_PROB,
+#     ):
+#         self.embedding_dim = embedding_dim
+#         self.vocab_size = vocab_size
+#         self.num_hidden_layers = num_hidden_layers
+#         self.num_attention_heads = num_attention_heads
+#         self.dropout_prob = dropout_prob
+
+
+class Baseline(Model):
+    def __init__(self, config: ViLBERTConfig):
+        super(Baseline, self).__init__(config)
+
+        # needed to work
+        self.depth = 1
+        self.config = config
+        cross_attention_layers = config.cross_attention_layers
+        self.cross_attention_layers = cross_attention_layers
+
+    def forward(self,
+        text_input_ids,
+        text_attention_mask=None,
+        text_token_type_ids=None,
+        image_pixel_values=None,
+        image_attention_mask=None,
+        output_attentions=False,
+        output_hidden_states=False,
+        save_intermediate_representations=False,
+    ):
+        text_output = self.bert(
+            input_ids=text_input_ids,
+            attention_mask=text_attention_mask,
+            token_type_ids=text_token_type_ids,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+        )
+
+        image_output = self.vit(
+            image_pixel_values,)
+
+        text_embedding = text_output.last_hidden_state
+        vision_embedding = image_output
+
+
+
+
+
+        if save_intermediate_representations:
+            intermediate_representations = []
+            current_dict = {
+                    "layer": 0,
+                    "text_embedding": text_embedding.clone(),
+                    "vision_embedding": vision_embedding.clone(),
+                    "is_cross_attention": False
+                }
+
+            intermediate_representations.append(current_dict)
+
+            text_embedding = text_embedding[:, 0, :]
+            vision_embedding = vision_embedding[:, 0, :]
+            return text_embedding, vision_embedding, intermediate_representations
+        text_embedding = text_embedding[:, 0, :]
+        vision_embedding = vision_embedding[:, 0, :]
+        return text_embedding, vision_embedding
+
+
+
+
+
+
+
+
+
+
+class ViLBERT(Model):
+    def __init__(self, config: ViLBERTConfig):
+        super(ViLBERT, self).__init__(config)
 
 
         self.bert = torch.compile(self.bert)
@@ -95,53 +216,9 @@ class ViLBERT(nn.Module):
                 ))
 
         self.attentions = nn.ModuleList(self.attentions)
-
-        # pretrain heads
-        self.alignment_fc = nn.Linear(2*self.config.embedding_dim , 1)
-        self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
-        # TODO: implement masked vision prediction, skip for now. i still need an object detector doing it
-        # self.mim = nn.Linear(EMBEDDING_DIM, NUM_VISUAL_CLASSES)
-
         for attn in self.attentions:
             attn.apply(self._init_weights)
 
-
-        # for hateful memes classifiction
-        # self.fc = nn.Sequential(
-        #     nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
-        #     nn.ReLU(inplace=True),
-        #     nn.Dropout(self.config.dropout_prob),
-        #     nn.Linear(FC_HIDDEN_DIM, FC_HIDDEN_DIM//2),
-        #     nn.ReLU(inplace=True),
-        #     nn.Dropout(self.config.dropout_prob),
-        #     nn.Linear(FC_HIDDEN_DIM//2, 1),
-        # )
-
-        # for hateful memes
-        self.fc = nn.Sequential(
-            nn.Linear(2*self.config.embedding_dim, FC_HIDDEN_DIM),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, 1),
-        )
-
-        # TODO: unify, here i do multiplication in the other not
-        # for mmimdb
-        self.fc_imdb = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, MM_IMDB_NUM_GENRES),
-        )
-        self.fc_vqa = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),
-        )
-        # self.fc_imdb = nn.Sequential(
-        #     nn.Linear(EMBEDDING_DIM, MM_IMDB_NUM_GENRES)
-        # )
 
     def _init_weights(self, module):
         if isinstance(module, (nn.Linear, nn.Embedding)):
@@ -164,7 +241,6 @@ class ViLBERT(nn.Module):
         output_attentions=False,
         output_hidden_states=False,
         save_intermediate_representations=False,
-        output_invididual_embeddings=False,   # for analysation
     ):
 
         if save_intermediate_representations:
@@ -193,14 +269,17 @@ class ViLBERT(nn.Module):
             )
         # print(f"shape of text_embedding: {text_embedding.shape}")
         # print(f"shape of image_embedding: {image_embedding.shape}")
-        concatted_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+        # concatted_embedding = torch.cat([text_embedding, image_embedding], dim=1)
         # print(f"shape of concatted_embedding: {concatted_embedding.shape}")
 
+
         #TODO: this should be called in
-        out = self.fc(concatted_embedding)
+        # out = self.fc(concatted_embedding)
 
         if save_intermediate_representations:
-            return out, intermediate_representations
+            return text_embedding, image_embedding, intermediate_representations
+
+        return text_embedding, image_embedding
 
         if output_invididual_embeddings:
             return out, text_embedding, image_embedding

@@ -102,14 +102,14 @@ class HatefulMemesTrainer(BaseTrainer):
 
             if self.use_contrastive_loss:
 
-                preds, text_embedding, vision_embedding = self.model(
+                text_embedding, vision_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
-                    output_invididual_embeddings=True
                 )
+                preds = self.model.fc(text_embedding * vision_embedding)
 
                 preds = preds.squeeze()
                 label = label.float()
@@ -122,14 +122,14 @@ class HatefulMemesTrainer(BaseTrainer):
 
             elif self.use_cosine_loss:
 
-                preds, text_embedding, vision_embedding = self.model(
+                text_embedding, vision_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
-                    output_invididual_embeddings=True
                 )
+                preds = self.model.fc(text_embedding * vision_embedding)
                 preds = preds.squeeze()
                 label = label.float()
 
@@ -143,13 +143,14 @@ class HatefulMemesTrainer(BaseTrainer):
 
             else:       # normal loss, no contrastive, no infonce loss term
 
-                preds = self.model(
+                text_embedding, image_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
                 )
+                preds = self.model.fc(text_embedding * image_embedding)
 
 
                 preds = preds.squeeze()
@@ -282,7 +283,7 @@ class HatefulMemesTrainer(BaseTrainer):
                 #     image_attention_mask= image.get("attention_mask", None),
                 #     save_intermediate_representations=True
                 # )
-                preds = self.model(
+                text_embedding, image_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
@@ -290,24 +291,7 @@ class HatefulMemesTrainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                     save_intermediate_representations=False
                 )
-
-
-                # len(list) = DEPTH;
-                # list[0]["vision_embedding"].shape: [ bs, dim]
-                # print(f"len intermediate_representations: {len(intermediate_representations)}")
-                # print(f"shape vision: {intermediate_representations[0]['vision_embedding'].shape}")
-                # print(f"shape text: {intermediate_representations[0]['text_embedding'].shape}")
-
-                # current_layer_sims: list[dict] = analysis.process_intermediate_repr(intermediate_representations)
-
-                # layer_sims.extend(current_layer_sims)
-
-                # avg_sim = sum(sims) / len(sims)
-                # info_str = f"acg cos sim: {avg_sim}"
-                # self.logger.info(info_str)
-                # print(info_str)
-
-
+                preds = self.model.fc(text_embedding * image_embedding)
 
                 preds = preds.squeeze()
                 label = label.float()
