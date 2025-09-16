@@ -25,6 +25,7 @@ import augments_transforms
 from .dataset_hateful_memes import HM_Dataset
 from .dataset_pretrain import *
 from .dataset_mm_imdb import *
+from .dataset_vqa import *
 
 from .dataset_utils import generate_data_list, generate_data_list_pretrain
 
@@ -376,7 +377,7 @@ def get_hateful_memes_datasets(
 
     if use_train_augmentation:
         # transform = augments_transforms.get_hateful_memes_train_augmentation()
-        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=True)
+        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=False)
     else:
         transform = None
 
@@ -429,6 +430,68 @@ def get_hateful_memes_datasets(
         prefetch_factor=prefetch_factor,
         num_workers=num_workers,
         pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
+    )
+
+    return train_dataloader, val_dataloader
+
+
+def get_easyvqa_datasets(
+    batch_size: int,
+    num_workers: int,
+    pin_memory: bool = False,
+    prefetch_factor: int = 4,
+    persistent_workers: bool = True,
+    use_train_augmentation: bool = False  # VQA typically doesn't need augmentation
+) -> typing.Tuple[DataLoader, DataLoader]:
+    """
+    Get the EasyVQA dataset for train and validation
+
+    Parameters:
+        batch_size: int
+        num_workers: int
+        pin_memory: bool
+        prefetch_factor: int
+        persistent_workers: bool
+        use_train_augmentation: bool (not used for VQA, kept for consistency)
+    """
+
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    train_dataset = VqaDataset(
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        is_train=True
+    )
+
+    val_dataset = VqaDataset(
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        is_train=False
+    )
+
+    train_dataloader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+        persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
+    )
+
+    val_dataloader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,  # Don't shuffle validation
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
         generator=utils.get_seeded_generator(SEED),
