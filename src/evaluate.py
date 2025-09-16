@@ -125,9 +125,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_contrastive
 def test_on_hm():
     utils.set_seeds(SEED)
     config = ViLBERTConfig()
-    # model = ViLBERT(config=config)
-    model = Baseline(config=config)
-
+    model = ViLBERT(config=config)
     utils.freeze_all_layers(model.vit)
     utils.freeze_all_layers(model.bert)
     config = ViLBERTConfig()

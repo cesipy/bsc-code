@@ -24,6 +24,8 @@ VIT_MODEL_NAME = "vit_base_patch16_224"
 DEPTH = 8          # how many co-attn layers in transformer
 # CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
 CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
+
+CROSS_ATTENTION_DROPOUT = 0.1
 # --------------------------------------------------
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4

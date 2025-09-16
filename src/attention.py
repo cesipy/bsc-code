@@ -25,8 +25,6 @@ class Attention_Block(nn.Module):
     self.softmax = nn.Softmax(dim=-1)
 
     self.rearrange_qkv = Rearrange('b n (h d) -> b h n d', h=heads)
-
-
     self.to_out = nn.Sequential(
         nn.Linear(dim, dim),
         nn.Dropout(dropout)

@@ -276,10 +276,10 @@ def get_dataloaders_pretrain(
 def get_mmimdb_datasets(
     train_test_ratio: float,
     batch_size: int,
-    num_workers: int,
+    num_workers: int=0,
     pin_memory: bool = False,
-    prefetch_factor: int = 4,
-    persistent_workers: bool = True,
+    prefetch_factor: int = None,
+    persistent_workers: bool = False,
     use_train_augmentation:bool=True
 ) -> typing.Tuple[DataLoader, DataLoader]:
     """

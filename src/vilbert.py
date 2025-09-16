@@ -1,7 +1,4 @@
-import torch
-from torch import nn
-
-
+import torch; from torch import nn
 from transformers import (
     #BERT stuff
     BertModel,
@@ -29,13 +26,11 @@ from attention import(
 )
 
 
+from datasets import MM_IMDB_Dataset; import datasets
+
+
 from config import *
 from logger import Logger
-
-
-logger = Logger()
-
-
 
 from abc import ABC, abstractmethod
 class Model(nn.Module, ABC):
@@ -90,23 +85,6 @@ class Model(nn.Module, ABC):
     @abstractmethod
     def forward(self, *args, **kwargs):
         pass
-
-
-# class BaselineConfig:
-#     def __init__(
-#         self,
-#         embedding_dim=EMBEDDING_DIM,
-#         vocab_size=VOCAB_SIZE,
-#         num_hidden_layers=NUM_HIDDEN_LAYERS,
-#         num_attention_heads=NUM_ATTENTION_HEADS,
-#         dropout_prob=DROPOUT_PROB,
-#     ):
-#         self.embedding_dim = embedding_dim
-#         self.vocab_size = vocab_size
-#         self.num_hidden_layers = num_hidden_layers
-#         self.num_attention_heads = num_attention_heads
-#         self.dropout_prob = dropout_prob
-
 
 class Baseline(Model):
     def __init__(self, config: ViLBERTConfig):
@@ -170,69 +148,104 @@ class Baseline(Model):
 
 
 
+class VisionEmbeddings(nn.Module):
+    """Process ViT outputs into ViLBERT format"""
+    def __init__(self,):
+        super().__init__()
+        # ViT already gives us 768-dim embeddings, just add normalization
+        self.LayerNorm = nn.LayerNorm(768, eps=1e-12)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, vit_features):
+        # vit_features: [batch, 197, 768] from ViT
+        # same as in vilbert
+        embeddings = self.LayerNorm(vit_features)
+        embeddings = self.dropout(embeddings)
+        return embeddings
+
+
+class ViLBERT(nn.Module):
+
+    def __init__(self, config):
+        super(ViLBERT, self).__init__()
+
+        self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
+        # apparently transformers vit implementatins is flawed.
+        # self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
+        self.vit = timm.create_model(
+            VIT_MODEL_NAME,
+            pretrained=True,
+            num_classes=0,       # num_classes=0 removes head
+            global_pool="",      # we need whole sequence for mim
+        )
+        self.bert_layers = self.bert.encoder.layer
+        self.bert_embeddings = self.bert.embeddings
+
+
+        self.vision_embeddings = VisionEmbeddings()
+
+
+        # bad naming, copied from og-vilbert
+
+        self.v_biattention_id = [4, 7]
+        self.t_biattention_id = [6, 8]
+
+        # for freezing, TODO
+        self.fixed_t_layer = 3
+        self.fixed_v_layer = 3
+
+        self.c_layers = nn.ModuleList()
+        self.config = config
+
+        for i in range(len(self.v_biattention_id)):
+            self.c_layers.append(CrossAttentionBlock(
+                dim=EMBEDDING_DIM,
+                heads=NUM_ATTENTION_HEADS,
+                dropout=CROSS_ATTENTION_DROPOUT
+            ))
+
+        # pretrain heads
+        self.alignment_fc = nn.Linear(2*self.config.embedding_dim , 1)
+        self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
+
+        # for hateful memes
+        self.fc = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, 1),
+        )
+
+        # TODO: unify, here i do multiplication in the other not
+        # for mmimdb
+        self.fc_imdb = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, MM_IMDB_NUM_GENRES),
+        )
+        self.fc_vqa = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),
+        )
 
 
 
-class ViLBERT(Model):
-    def __init__(self, config: ViLBERTConfig):
-        super(ViLBERT, self).__init__(config)
 
 
-        self.bert = torch.compile(self.bert)
-        self.vit = torch.compile(self.vit)
-
-        self.bert.gradient_checkpointing_enable()
-
-        # utils.freeze_all_layers(self.bert)
-        # utils.freeze_all_layers(self.vit)
-
-        # cross_attention_layers = [0, 2]     # starts with 0, not 1!
-        cross_attention_layers = config.cross_attention_layers
-        self.cross_attention_layers = cross_attention_layers
-
-        self.attention_layer = Attention_Block(
-            dim=self.config.embedding_dim,
-            heads=self.config.num_attention_heads,
-            dropout=self.config.dropout_prob)
-
-        self.attentions = []
-        self.depth = self.config.depth
-
-        assert len(cross_attention_layers)<= self.depth
-        for i in range(self.depth):
-
-            if i in cross_attention_layers:
-                self.attentions.append(CrossAttentionBlock(
-                    dim=self.config.embedding_dim,
-                    heads=self.config.num_attention_heads,
-                    dropout=self.config.dropout_prob,
-                ))
-
-            else:
-                self.attentions.append(DualAttention_Block(
-                    dim=self.config.embedding_dim,
-                    heads=self.config.num_attention_heads,
-                    dropout=self.config.dropout_prob,
-                ))
-
-        self.attentions = nn.ModuleList(self.attentions)
-        for attn in self.attentions:
-            attn.apply(self._init_weights)
 
 
-    def _init_weights(self, module):
-        if isinstance(module, (nn.Linear, nn.Embedding)):
-            # torch.nn.init.xavier_uniform_(module.weight)
-
-            # https://stats.stackexchange.com/a/637888
-            std = 0.02
-            torch.nn.init.normal_(module.weight, mean=0.0, std=std)
-        # if module.bias is not None:
-        #     torch.nn.init.zeros_(module.bias)
 
 
-    def forward(
-        self,
+
+
+
+
+
+
+    def forward(self,
         text_input_ids,
         text_attention_mask=None,
         text_token_type_ids=None,
@@ -243,354 +256,111 @@ class ViLBERT(Model):
         save_intermediate_representations=False,
     ):
 
-        if save_intermediate_representations:
-            text_embedding, image_embedding, intermediate_representations = self.forward_coattention(
-            text_input_ids=text_input_ids,
-            text_attention_mask=text_attention_mask,
-            text_token_type_ids=text_token_type_ids,
-            image_pixel_values=image_pixel_values,
-            image_attention_mask=image_attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            # extract_cls=True,
-            save_intermediate_representations=True
-            )
-
+        if text_attention_mask is not None:
+            text_attention_mask = text_attention_mask.float()
+            #[batch, 1, 1, seq_len]
+            extended_attention_mask = text_attention_mask.unsqueeze(1).unsqueeze(2)
+            #0 for attend, -10000 for ignore
+            extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
         else:
-            text_embedding, image_embedding = self.forward_coattention(
-                text_input_ids=text_input_ids,
-                text_attention_mask=text_attention_mask,
-                text_token_type_ids=text_token_type_ids,
-                image_pixel_values=image_pixel_values,
-                image_attention_mask=image_attention_mask,
-                output_attentions=output_attentions,
-                output_hidden_states=output_hidden_states,
-                save_intermediate_representations=save_intermediate_representations
-            )
-        # print(f"shape of text_embedding: {text_embedding.shape}")
-        # print(f"shape of image_embedding: {image_embedding.shape}")
-        # concatted_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-        # print(f"shape of concatted_embedding: {concatted_embedding.shape}")
+            extended_attention_mask = None
 
-
-        #TODO: this should be called in
-        # out = self.fc(concatted_embedding)
-
-        if save_intermediate_representations:
-            return text_embedding, image_embedding, intermediate_representations
-
-        return text_embedding, image_embedding
-
-        if output_invididual_embeddings:
-            return out, text_embedding, image_embedding
-
-        return out
-
-    def forward_coattention(
-        self,
-        text_input_ids,
-        text_attention_mask=None,
-        text_token_type_ids=None,
-        image_pixel_values=None,
-        image_attention_mask=None,
-        output_attentions=False,
-        output_hidden_states=False,
-        extract_cls=True ,          # used for pretraining. should the cls token be extracted?
-                                    # not extracted for pretraining, extracted for downstream tasks
-        save_intermediate_representations=False
-    ):
-        # with torch. ():
-        text_output = self.bert(
+        text_embedding = self.bert_embeddings(
             input_ids=text_input_ids,
-            attention_mask=text_attention_mask,
             token_type_ids=text_token_type_ids,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
         )
-
-        # image_output = self.vit(
-        #     pixel_values=image_pixel_values,
-        #     output_attentions=output_attentions,
-        #     output_hidden_states=output_hidden_states,
-        # )
-        # with torch.no_grad():
-        image_output = self.vit(image_pixel_values)
-
-        text_tensor = text_output.last_hidden_state
-        # image_tensor = image_output.last_hidden_state
-        image_tensor = image_output
-        # print(f"shape: {image_tensor.shape}")
-        # shape text: [bs, seq_len, embedding_dim
-        # shape image: [bs, num_patches+1, embedding_dim]
-
-        # text_embedding, vision_embedding = self.cross_attention(text_tensor, image_tensor)
-        # TODO: fix naming conflict - fix input param name
-        text_embedding = text_tensor
-        vision_embedding = image_tensor
-
-        # print(f"cls token shape: {vision_embedding[0,0].shape}")
-        # print(f"cls token: {text_embedding[0,0, : 5]}")
+        vit_outputs = self.vit.forward_features(
+            image_pixel_values,
+        )
+        vision_embeddings = self.vision_embeddings(vit_outputs)
 
 
-        intermediate_representations = [] if save_intermediate_representations else None
 
-        for i in range(len(self.attentions)):
-            text_embedding, vision_embedding = self.attentions[i](
-                text_tensor=text_embedding,
-                vision_tensor=vision_embedding
+        v_start = 0
+        t_start = 0
+        count   = 0
+
+        blocks = self.vit.blocks
+        # print(f"Number of vit blocks: {len(blocks)}")
+
+        for v_layer_id, t_layer_id in zip(self.v_biattention_id, self.t_biattention_id):
+            # needed for freezing layers
+            # v_end = v_layer_id
+            # t_end = t_layer_id
+            # print(f"v_start: {v_start}, v_end: {v_end}, t_start: {t_start}, t_end: {t_end}")
+            # # for idx in range(t_start, t_end)
+            # for idx in range (t_start, self.fixed_t_layer):
+            #     with torch.no_grad():
+            #         text_embedding = self.bert_layers[idx](
+            #             text_embedding,
+            #             attention_mask=text_attention_mask,
+            #         )[0]
+            #         t_start = self.fixed_t_layer
+            #         print(f"Text only layer {idx} done")
+
+            for i in range(t_start, t_layer_id):
+                text_embedding = self.bert_layers[i](
+                    text_embedding,
+                    attention_mask=extended_attention_mask,
+                )[0]
+
+            for i in range(v_start, v_layer_id):
+                vision_embeddings = self.vit.blocks[i](
+                    vision_embeddings,
+                )
+
+
+            text_embedding, vision_embeddings = self.c_layers[count](
+                text_embedding,
+                vision_embeddings,
             )
 
-            if save_intermediate_representations:
-                #TODO: return everything, choose strategy in analysation.
 
-                current_dict = {
-                    "layer": i,
-                    "text_embedding": text_embedding.clone(),
-                    "vision_embedding": vision_embedding.clone(),
-                    "is_cross_attention": i in self.config.cross_attention_layers,
-                }
+            t_start = t_layer_id
+            v_start = v_layer_id
+            count  += 1
 
-                intermediate_representations.append(current_dict)
+        # remains
+        for i in range(t_start, len(self.bert_layers)):
+            text_embedding = self.bert_layers[i](text_embedding, attention_mask=extended_attention_mask)[0]
 
+        for i in range(v_start, len(self.vit.blocks)):
+            vision_embeddings = self.vit.blocks[i](vision_embeddings)
 
-        if not extract_cls:
-            if save_intermediate_representations:
-                return text_embedding, vision_embedding, intermediate_representations
-            return text_embedding, vision_embedding
+        text_cls = text_embedding[:, 0, :]      # [batch_size, hidden_dim]
+        vision_cls = vision_embeddings[:, 0, :]  # [batch_size, hidden_dim]
 
-
-        #extract the cls token.
-        # TODO: implement also gap pooling for comparison (optional)
-        text_embedding = text_embedding[:, 0, :]
-        vision_embedding = vision_embedding[:, 0, :]
-
-        if save_intermediate_representations:
-            return text_embedding, vision_embedding, intermediate_representations
-        return text_embedding, vision_embedding
-
-    def forward_concat(
-        self,
-        text_input_ids,
-        text_attention_mask=None,
-        text_token_type_ids=None,
-        image_pixel_values=None,
-        image_attention_mask=None,
-        output_attentions=False,
-        output_hidden_states=False,
-    ):
-        text_output = self.bert(
-            input_ids=text_input_ids,
-            attention_mask=text_attention_mask,
-            token_type_ids=text_token_type_ids,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-        )
-
-        image_output = self.vit(
-            pixel_values=image_pixel_values,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-        )
-
-        text_tensor = text_output.last_hidden_state
-        image_tensor = image_output.last_hidden_state
-        # dim 1, bc we want to add the image embeddings to the text embeddings
-        # shape text: [bs, seq_len, embedding_dim
-        # shape image: [bs, num_patches, embedding_dim]
-        concat_embedding = torch.concat([text_tensor, image_tensor], dim=1)
-
-        return self.attention_layer(concat_embedding)
-
-
-    def forward_naive(
-        self,
-        text_input_ids,
-        text_attention_mask=None,
-        text_token_type_ids=None,
-        image_pixel_values=None,
-        image_attention_mask=None,
-        output_attentions=False,
-        output_hidden_states=False,
-    ):
-        text_output = self.bert(
-            input_ids=text_input_ids,
-            attention_mask=text_attention_mask,
-            token_type_ids=text_token_type_ids,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-        )
-
-        image_output = self.vit(
-            pixel_values=image_pixel_values,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-        )
-
-        return text_output.last_hidden_state, image_output.last_hidden_state
-
-    def forward_pretrain(
-        self,
-        text_input_ids,
-        text_attention_mask=None,
-        text_token_type_ids=None,
-        image_pixel_values=None,
-        image_attention_mask=None,
-        output_attentions=False,
-        output_hidden_states=False,
-        tasks:list[str]= None,      #TODO: make tasks an enunm
-    ):
-
-        assert len(tasks) == 1
-        if "mlm" in tasks:
-            # text_embedding_tensor = self.__forward_masked_text(
-            #     ...
-            # )
-            # TODO: is it here correct to only use the text_seqs alone? or some concattenation of both modalities?
-            text_seqs, vision_seqs = self.forward_coattention(
-                text_input_ids=text_input_ids,
-                text_attention_mask=text_attention_mask,
-                text_token_type_ids=text_token_type_ids,
-                image_pixel_values=image_pixel_values,
-                image_attention_mask=image_attention_mask,
-                output_attentions=output_attentions,
-                output_hidden_states=output_hidden_states,
-                extract_cls=False,  # do not extract cls token for pretraining
-            )
-            # for i, token in enumerate(text_input_ids):
-            #     if token != -1:
-            mlm_logits = self.mlm(text_seqs)
-            return mlm_logits
-
-
-
-        # TODO: later, needs an object regonition model to learn the output
-        # distribution from  - minimize kl div for this task
-        # if 'task_masked_image' in tasks:
-        #     image_embedding_tensor = self.__forward_masked_image(
-        #         ...
-        #     )
-
-        if "mim" in tasks:
-            text_seqs, vision_seqs = self.forward_coattention(
-                text_input_ids=text_input_ids,
-                text_attention_mask=text_attention_mask,
-                text_token_type_ids=text_token_type_ids,
-                image_pixel_values=image_pixel_values,
-                image_attention_mask=image_attention_mask,
-                output_attentions=output_attentions,
-                output_hidden_states=output_hidden_states,
-                extract_cls=False
-            )
-
-            return text_seqs, vision_seqs
-
-
-
-        if "alignment_prediction" in tasks:
-            text_embedding, image_embedding = self.forward_coattention(
-                text_input_ids=text_input_ids,
-                text_attention_mask=text_attention_mask,
-                text_token_type_ids=text_token_type_ids,
-                image_pixel_values=image_pixel_values,
-                image_attention_mask=image_attention_mask,
-                output_attentions=output_attentions,
-                output_hidden_states=output_hidden_states,
-                extract_cls=True, # only cls needed. nothing else
-            )
-            return text_embedding, image_embedding
-            # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-            # alignment_logits = self.alignment_fc(shared_embedding)
-            # return alignment_logits
-
-    @classmethod
-    def from_pretrained_checkpoint(cls, checkpoint_path, device='cuda'):
-        """Load a pretrained ViLBERT model from checkpoint
-        generated by GenAI"""
-        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-
-        # Handle config properly - it's saved as a dict, need to convert back to object
-        if 'config' in checkpoint and checkpoint['config'] is not None:
-            config_dict = checkpoint['config']
-
-
-            config = ViLBERTConfig.from_dict(config_dict)
-        else:
-            print("Warning: No config found in checkpoint, using default config")
-            logger.warn("No config found in checkpoint, using default config")
-            config = ViLBERTConfig()
-
-        model = cls(config)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        model = model.to(device)
-
-        print(f"Model loaded from {checkpoint_path}, epoch {checkpoint.get('epoch', 'unknown')}")
-        return model, checkpoint
-
-
-def main():
-    config = BertConfig()
-    model = ViLBERT(config)
-
-    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
-
-    text = "hello, what is you name?"
-    text_tokens = tokenizer(text, return_tensors="pt")
-
-    # can be simply passed to the model without further processing
-    #print(type(text_tokens))
-    # transformers.tokenization_utils_base.BatchEncoding, simple dictionary
-
-    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
-    image = Image.open("res/image.png").convert("RGB")
-    image_processed = image_processor(images=image, return_tensors="pt")
-
-    res_linguistic, res_visual = model.forward_naive(
-        text_input_ids=text_tokens["input_ids"],
-        text_attention_mask=text_tokens["attention_mask"],
-        text_token_type_ids=text_tokens.get("token_type_ids", None),
-        image_pixel_values=image_processed["pixel_values"],
-        image_attention_mask=image_processed.get("attention_mask", None),
-    )
-
-    concat = torch.cat((res_linguistic, res_visual), dim=1)
-    print(f"lingu shape: {res_linguistic.shape}")
-    print(f"visual shape: {res_visual.shape}")
-    print(f"concat shape: {concat.shape}")
-
-    # console outputs
-    # lingu shape: torch.Size([1, 9, 768])
-    # visual shape: torch.Size([1, 197, 768])
-    # concat shape: torch.Size([1, 206, 768])
-
-
-    print("-"*15)
-    print("concatted model now")
-    res = model.forward_concat(
-        text_input_ids=text_tokens["input_ids"],
-        text_attention_mask=text_tokens["attention_mask"],
-        text_token_type_ids=text_tokens.get("token_type_ids", None),
-        image_pixel_values=image_processed["pixel_values"],
-        image_attention_mask=image_processed.get("attention_mask", None),
-    )
-
-    print(f"concatted shape: {res.shape}")
-
-    print("-"*15)
-    print("cattention model now")
-    res_text, res_vision = model.forward_coattention(
-        text_input_ids=text_tokens["input_ids"],
-        text_attention_mask=text_tokens["attention_mask"],
-        text_token_type_ids=text_tokens.get("token_type_ids", None),
-        image_pixel_values=image_processed["pixel_values"],
-        image_attention_mask=image_processed.get("attention_mask", None),
-    )
-
-    print(f"text shape: {res_text.shape}")
-    print(f"vision shape: {res_vision.shape}")
-
+        return text_cls, vision_cls
 
 
 
 
 if __name__ == "__main__":
-    main()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = ViLBERT().to(device)
+    print(f"Model loaded successfully")
+
+    dataloader, _ = datasets.get_mmimdb_datasets(
+        train_test_ratio=0.8,
+        batch_size=1,
+        num_workers=0,
+        prefetch_factor=None
+    )
+
+    for data_dict in dataloader:
+        label = data_dict["label"].to(device)
+        # its not possible to send dicts to device, so do it for every value in dict.
+        text = {k: v.squeeze(1).to(device) for k, v in data_dict["text"].items()}
+        image = {k: v.squeeze(1).to(device) for k, v in data_dict["img"].items()}
+
+        model(
+            text_input_ids= text["input_ids"],
+            text_attention_mask= text["attention_mask"],
+            text_token_type_ids= text.get("token_type_ids", None),
+            image_pixel_values= image["pixel_values"],
+            image_attention_mask= image.get("attention_mask", None),
+        )
+
+        break
+
+
