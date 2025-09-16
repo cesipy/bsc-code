@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, Dataset
 
 class BaseTrainer(ABC):
 
+
     @abstractmethod
     def train(
         self,

@@ -110,7 +110,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_contrastive
         train_dataloader=train_loader,
         test_dataloader=val_loader,
         epochs=DOWNSTREAM_EPOCHS,
-        hm_dataloader=hm_dataloader,
+        dataloader=hm_dataloader,
         cc_dataloader=cc_dataloader,
     )
 
@@ -176,7 +176,7 @@ def test_on_hm():
         train_dataloader=train_loader,
         test_dataloader=val_loader,
         epochs=5,
-        hm_dataloader=hm_dataloader,
+        dataloader=hm_dataloader,
         cc_dataloader=cc_dataloader
     )
 

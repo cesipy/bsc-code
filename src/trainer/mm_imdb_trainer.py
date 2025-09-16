@@ -64,13 +64,18 @@ class MM_IMDB_Trainer(BaseTrainer):
 
         self.gradient_accumulation = gradient_accumulation
 
+        self.total_losses = []
+        self.info_losses = []
+        self.normal_losses = []
+
+
     def train(
         self,
         train_dataloader: DataLoader,
         test_dataloader: DataLoader,
         epochs: int,
-        #for alingment testing
-        hm_dataloader: HM_Dataset=None,
+        analyze_alignment: bool = False,
+        dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
 
@@ -83,6 +88,22 @@ class MM_IMDB_Trainer(BaseTrainer):
             min_lr_fraction=MIN_LR_FRACTION,
         )
 
+        if analyze_alignment and (dataloader is not None or cc_dataloader is not None):
+            info_str = "alignment for mm_imdb:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(dataloader, self.model)
+            # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+
+            info_str = "\n----------\nalignment for conceptual captions:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(cc_dataloader, self.model)
+            # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
+
+
+
+
         for epoch in range(epochs):
             train_loss = self.train_epoch(dataloader=train_dataloader)
             test_loss, acc  = self.evaluate(test_dataloader)
@@ -90,17 +111,19 @@ class MM_IMDB_Trainer(BaseTrainer):
             print(info_str)
             self.logger.info(info_str)
 
-            if hm_dataloader is not None:
-                analysis.analyse_alignment(
-                    model=self.model,
-                    dataloader=hm_dataloader,
-                )
-                analysis.visualize_cka(
-                    model=self.model,
-                    dataloader=hm_dataloader)
-                info_str = "alignment for hateful memes:"
+            if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
+                info_str = "alignment for mm_imdb:"
                 print(info_str)
                 self.logger.info(info_str)
+                analysis.analyse_alignment(dataloader, self.model)
+                # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+
+                info_str = "\n----------\nalignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+                analysis.analyse_alignment(cc_dataloader, self.model)
+                # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
+
 
     def setup_scheduler(self, epochs:int, train_dataloader: DataLoader, lr=None):
         if lr is None:
@@ -124,6 +147,10 @@ class MM_IMDB_Trainer(BaseTrainer):
         self.model.train()
         total_loss = 0
         num_batches = 0
+
+        buffer_info_loss = []
+        buffer_normal_loss = []
+        buffer_total_loss = []
 
         for batch_indx, batch in enumerate(tqdm(dataloader, desc="Training")):
             num_batches += 1
@@ -156,6 +183,26 @@ class MM_IMDB_Trainer(BaseTrainer):
                     normal_loss=loss_normal,
                     naive_weighting=True,
                 )
+
+                buffer_info_loss.append(loss_info.item())
+                buffer_normal_loss.append(loss_normal.item())
+                buffer_total_loss.append(loss.item())
+
+                if (batch_indx +1) % 10 == 0:
+                    avg_info_loss = sum(buffer_info_loss) / len(buffer_info_loss)
+                    avg_normal_loss = sum(buffer_normal_loss) / len(buffer_normal_loss)
+                    avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
+
+                    self.info_losses.append(avg_info_loss)
+                    self.normal_losses.append(avg_normal_loss)
+                    self.total_losses.append(avg_total_loss)
+
+                    buffer_info_loss = []
+                    buffer_normal_loss = []
+                    buffer_total_loss = []
+
+
+
 
 
             else:
@@ -193,6 +240,9 @@ class MM_IMDB_Trainer(BaseTrainer):
                 self.optimizer.zero_grad()
 
             total_loss += loss.item() * self.gradient_accumulation  # to account for division above
+
+        if self.use_contrastive_loss:
+            utils.visualize_loss(info_losses=self.info_losses, normal_losses=self.normal_losses, total_losses=self.total_losses)
 
         return total_loss / num_batches
 
@@ -314,7 +364,7 @@ def main():
         train_dataloader=train_dataloader,
         test_dataloader=val_dataloader,
         epochs=8,
-        hm_dataloader=hm_dataloader,
+        dataloader=hm_dataloader,
         cc_dataloader=cc_dataloader,
     )
 

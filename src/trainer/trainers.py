@@ -144,7 +144,7 @@ class HatefulMemesTrainer(BaseTrainer):
                 buffer_total_loss.append(loss.item())
 
 
-                if (batch_indx +1) % 5 == 0:
+                if (batch_indx +1) % 10 == 0:
                     avg_info_loss = sum(buffer_info_loss) / len(buffer_info_loss)
                     avg_normal_loss = sum(buffer_normal_loss) / len(buffer_normal_loss)
                     avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
@@ -220,24 +220,7 @@ class HatefulMemesTrainer(BaseTrainer):
 
         # temp:
         if self.use_contrastive_loss:
-            import matplotlib.pyplot as plt
-            import time
-
-            plt.figure(figsize=(10, 6))
-
-            plt.plot(self.info_losses, label='Info NCE Loss', color='blue')
-            plt.plot(self.normal_losses, label='Normal Loss', color='orange')
-            plt.plot(self.total_losses, label='Weighted Total Loss', color='green')
-
-            plt.title('Training Losses Over Time')
-            plt.xlabel('Batch (every 5)')
-            plt.ylabel('Loss')
-            plt.legend()
-            plt.grid(True)
-
-            tmsp = time.strftime("%Y%m%d-%H%M%S")
-            plt.savefig(f'loss_plot_epoch_{tmsp}.png', dpi=150, bbox_inches='tight')
-
+            utils.visualize_loss(info_losses=self.info_losses, normal_losses=self.normal_losses, total_losses=self.total_losses)
 
 
         return total_loss / num_batches
@@ -260,27 +243,27 @@ class HatefulMemesTrainer(BaseTrainer):
         train_dataloader: DataLoader,
         test_dataloader:  DataLoader,
         epochs: int,
-        hm_dataloader: HM_Dataset=None,
+        analyze_alignment: bool=False,
+        dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
         self.setup_scheduler(epochs=epochs, train_dataloader=train_dataloader)
         # analysis.analyse_alignment(dataloader=hm_dataloader, model=self.model)
         # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
-        if hm_dataloader is not None and cc_dataloader is not None:
-            ...
-            # info_str = "\n\nbefore training, evaluating on uninitialized model"
-            # print(info_str)
-            # self.logger.info(info_str)
-            # info_str = "alignment for hateful memes:"
-            # print(info_str)
-            # self.logger.info(info_str)
-            # analysis.analyse_alignment(hm_dataloader, self.model)
+        if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
+            info_str = "\n\nbefore training, evaluating on uninitialized model"
+            print(info_str)
+            self.logger.info(info_str)
+            info_str = "alignment for hateful memes:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(dataloader, self.model)
 
-                # info_str = "alignment for conceptual captions:"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # analysis.analyse_alignment(cc_dataloader, self.model)
+            info_str = "\n----------\nalignment for conceptual captions:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(cc_dataloader, self.model)
 
                 # info_str = "finished!" + "\n" + 20*"-"
                 # print(info_str)
@@ -295,17 +278,17 @@ class HatefulMemesTrainer(BaseTrainer):
             print(info_str)
             self.logger.info(info_str)
 
-            if hm_dataloader is not None and cc_dataloader is not None:
+            if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
                 info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
-                # analysis.analyse_alignment(hm_dataloader, self.model)
+                analysis.analyse_alignment(dataloader, self.model)
                 # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
-                # info_str = "alignment for conceptual captions:"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # analysis.analyse_alignment(cc_dataloader, self.model)
+                info_str = "\n----------\nalignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+                analysis.analyse_alignment(cc_dataloader, self.model)
                 # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
 
 

@@ -836,18 +836,18 @@ def analyse(
                 "procrustes_full_epoch": procrustes_measure
             }
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
-                    ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
+            # info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
+            #         ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
             info_str = (
-                f"layer {layer_name} (co-attn-{is_cross_attention}): "
-                f"cosine={avg_cosine:.4f}, "
-                f"CKA={avg_cka:.4f}, "
+                f"layer {layer_name} (co-attn-{is_cross_attention:2}): "
+                f"cosine={avg_cosine:7.4f}, "
+                f"CKA={avg_cka:.3f}, "
                 # f"max_sim_tp={avg_max_similarity_tp:.4f}, "
                 # f"max_sim_pt={avg_max_similarity_pt:.4f}, "
-                f"SVCCA={avg_svcca:.4f}, "
-                f"mknn={full_epoch_measure:.4f}, "
-                f"rank={rank_measure:.4f}, "
-                f"procrustes={procrustes_measure:.4f}"
+                f"SVCCA={avg_svcca:.3f}, "
+                f"mknn={full_epoch_measure:.3f}, "
+                f"rank={rank_measure:.3f}, "
+                f"procrustes={procrustes_measure:4.2f}"
 
             )
             print(info_str)
