@@ -18,6 +18,17 @@ from logger import Logger
 
 logger = Logger()
 
+def get_weighted_loss(info_nce_loss, normal_loss, weight=1., naive_weighting=False):
+
+    if naive_weighting:
+        return 0.1 * info_nce_loss +  normal_loss
+    temp_total_loss = info_nce_loss.detach() + normal_loss.detach()
+    weight_info  = normal_loss.detach() / temp_total_loss
+    weight_normal = info_nce_loss.detach() / temp_total_loss
+
+    loss = weight*weight_info * info_nce_loss + weight_normal * normal_loss
+    return loss
+
 def set_seeds(seed:int):
     # for more reproducability
     torch.backends.cudnn.deterministic = True

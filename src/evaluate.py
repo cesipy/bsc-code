@@ -46,8 +46,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_contrastive
         logger.info(info_str)
 
         config = ViLBERTConfig()
-        # model = ViLBERT(config=config)
-        model = Baseline(config=config)
+        model = ViLBERT(config=config)
+        # model = Baseline(config=config)
 
     else:
 
@@ -85,8 +85,8 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_contrastive
         pin_memory=PIN_MEMORY,
         prefetch_factor=PREFETCH,
         persistent_workers=PERSISTENT_WORKERS,
-        # use_train_augmentation=True   #TODO: for testing
-        use_train_augmentation=False,
+        use_train_augmentation=True   #TODO: for testing
+        # use_train_augmentation=False,
     )
 
     hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(

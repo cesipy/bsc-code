@@ -26,6 +26,8 @@ from datasets import HM_Dataset, PretrainDatasetAP, MM_IMDB_Dataset; import data
 
 import augments_transforms
 
+from info_nce import InfoNCE, info_nce
+
 
 
 
@@ -36,6 +38,7 @@ class MM_IMDB_Trainer(BaseTrainer):
         model: ViLBERT,
         config: ViLBERTConfig,
         gradient_accumulation:int=1,        # how many batches to accumulate!
+        use_contrastive_loss:bool=False,
         ):
         self.lr = config.learning_rate
         self.model = model
@@ -43,6 +46,8 @@ class MM_IMDB_Trainer(BaseTrainer):
         self.logger = Logger()
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.use_contrastive_loss = use_contrastive_loss
 
         self.scheduler = None
 
@@ -55,6 +60,7 @@ class MM_IMDB_Trainer(BaseTrainer):
         self.model = self.model.to(self.device)
 
         self.loss_fn = nn.BCEWithLogitsLoss()
+        self.info_nce = InfoNCE()
 
         self.gradient_accumulation = gradient_accumulation
 
@@ -129,22 +135,49 @@ class MM_IMDB_Trainer(BaseTrainer):
             text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
             image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
-            text_embedding, image_embedding = self.model(
-                text_input_ids= text["input_ids"],
-                text_attention_mask= text["attention_mask"],
-                text_token_type_ids= text.get("token_type_ids", None),
-                image_pixel_values= image["pixel_values"],
-                image_attention_mask= image.get("attention_mask", None),
-            )
+            if self.use_contrastive_loss:
+                text_embedding, image_embedding = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                )
+                combined = text_embedding * image_embedding
+                pred = self.model.fc_imdb(combined)
+                pred = pred.squeeze()
+                label = label.float()
 
-            combined = text_embedding * image_embedding
+                loss_normal = self.loss_fn(pred, label)
+                loss_info = self.info_nce(text_embedding, image_embedding)
 
-            pred = self.model.fc_imdb(combined)
-            # print(f"pred shape: {pred.shape}")
+                loss = utils.get_weighted_loss(
+                    info_nce_loss=loss_info,
+                    normal_loss=loss_normal,
+                    naive_weighting=True,
+                )
 
-            # print(pred)
 
-            loss = self.loss_fn(pred, label.float())
+            else:
+                text_embedding, image_embedding = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                )
+
+                combined = text_embedding * image_embedding
+
+                pred = self.model.fc_imdb(combined)
+                # print(f"pred shape: {pred.shape}")
+
+                # print(pred)
+
+                loss = self.loss_fn(pred, label.float())
+
+
+
 
             loss /= self.gradient_accumulation
             loss.backward()

@@ -32,6 +32,8 @@ def alignment_loss_cosine(text_emb, vision_emb):
 
 
 class HatefulMemesTrainer(BaseTrainer):
+
+
     def __init__(
         self,
         model: ViLBERT,
@@ -70,10 +72,15 @@ class HatefulMemesTrainer(BaseTrainer):
 
         self.gradient_accumulation = gradient_accumulation
 
+        self.total_losses = []
+        self.info_losses = []
+        self.normal_losses = []
+
 
 
 
     def train_epoch(self, dataloader: DataLoader):
+
 
         info_str = f"simulated batchsize: {dataloader.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader.batch_size}"
         print(info_str)
@@ -83,6 +90,10 @@ class HatefulMemesTrainer(BaseTrainer):
         total_loss = 0
 
         num_batches = 0
+
+        buffer_info_loss = []
+        buffer_normal_loss = []
+        buffer_total_loss = []
         for batch_indx,batch in enumerate(tqdm(dataloader,total=len(dataloader), desc="training")):
             num_batches += 1
 
@@ -110,14 +121,44 @@ class HatefulMemesTrainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                 )
                 preds = self.model.fc(text_embedding * vision_embedding)
+                preds = preds.squeeze()     #[bs]
+                label = label.float()       #[bs]
 
-                preds = preds.squeeze()
-                label = label.float()
 
                 loss_info = self.info_nce(text_embedding, vision_embedding)
                 loss_normal = self.loss_fn(preds, label)
+                # print(f"loss info: {loss_info}, loss normal: {loss_normal}")
 
-                loss = loss_normal + 0.3 * loss_info   # with info nce
+                # loss = loss_normal + 0.3 * loss_info   # with info nce
+                # #loss info: 1.9934707880020142, loss normal: 0.6653898358345032
+
+                loss = utils.get_weighted_loss(
+                    info_nce_loss=loss_info,
+                    normal_loss=loss_normal,
+                    naive_weighting=True,
+                )
+                # print(f"weighted loss: {loss}", end="\n\n------\n")
+
+                buffer_info_loss.append(loss_info.item())
+                buffer_normal_loss.append(loss_normal.item())
+                buffer_total_loss.append(loss.item())
+
+
+                if (batch_indx +1) % 5 == 0:
+                    avg_info_loss = sum(buffer_info_loss) / len(buffer_info_loss)
+                    avg_normal_loss = sum(buffer_normal_loss) / len(buffer_normal_loss)
+                    avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
+
+                    self.info_losses.append(avg_info_loss)
+                    self.normal_losses.append(avg_normal_loss)
+                    self.total_losses.append(avg_total_loss)
+
+                    buffer_info_loss = []
+                    buffer_normal_loss = []
+                    buffer_total_loss = []
+
+
+
 
 
             elif self.use_cosine_loss:
@@ -130,11 +171,14 @@ class HatefulMemesTrainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                 )
                 preds = self.model.fc(text_embedding * vision_embedding)
+
                 preds = preds.squeeze()
                 label = label.float()
 
+
                 loss_cosine = self.cosine_loss(text_embedding, vision_embedding)
                 loss_normal = self.loss_fn(preds, label)
+
 
                 loss = loss_normal + 0.3 * loss_cosine  #cosine loss
 
@@ -173,6 +217,29 @@ class HatefulMemesTrainer(BaseTrainer):
             total_loss += loss.item() * self.gradient_accumulation  # to account for division above
 
 
+
+        # temp:
+        if self.use_contrastive_loss:
+            import matplotlib.pyplot as plt
+            import time
+
+            plt.figure(figsize=(10, 6))
+
+            plt.plot(self.info_losses, label='Info NCE Loss', color='blue')
+            plt.plot(self.normal_losses, label='Normal Loss', color='orange')
+            plt.plot(self.total_losses, label='Weighted Total Loss', color='green')
+
+            plt.title('Training Losses Over Time')
+            plt.xlabel('Batch (every 5)')
+            plt.ylabel('Loss')
+            plt.legend()
+            plt.grid(True)
+
+            tmsp = time.strftime("%Y%m%d-%H%M%S")
+            plt.savefig(f'loss_plot_epoch_{tmsp}.png', dpi=150, bbox_inches='tight')
+
+
+
         return total_loss / num_batches
 
     def setup_scheduler(self, epochs:int, train_dataloader: DataLoader, lr=None):
@@ -201,14 +268,14 @@ class HatefulMemesTrainer(BaseTrainer):
         # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
         if hm_dataloader is not None and cc_dataloader is not None:
-
-            info_str = "\n\nbefore training, evaluating on uninitialized model"
-            print(info_str)
-            self.logger.info(info_str)
-            info_str = "alignment for hateful memes:"
-            print(info_str)
-            self.logger.info(info_str)
-            analysis.analyse_alignment(hm_dataloader, self.model)
+            ...
+            # info_str = "\n\nbefore training, evaluating on uninitialized model"
+            # print(info_str)
+            # self.logger.info(info_str)
+            # info_str = "alignment for hateful memes:"
+            # print(info_str)
+            # self.logger.info(info_str)
+            # analysis.analyse_alignment(hm_dataloader, self.model)
 
                 # info_str = "alignment for conceptual captions:"
                 # print(info_str)
@@ -232,7 +299,7 @@ class HatefulMemesTrainer(BaseTrainer):
                 info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
-                analysis.analyse_alignment(hm_dataloader, self.model)
+                # analysis.analyse_alignment(hm_dataloader, self.model)
                 # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
                 # info_str = "alignment for conceptual captions:"
