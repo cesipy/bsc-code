@@ -186,18 +186,22 @@ class ViLBERT(nn.Module):
 
 
         # bad naming, copied from og-vilbert
-
-        self.v_biattention_id = [4, 7]
-        self.t_biattention_id = [6, 8]
+        # self.v_biattention_ids = [4, 7, 10, 11]
+        # self.t_biattention_ids = [6, 8, 10, 11]
+        self.v_biattention_ids = config.vision_cross_attention_layers
+        self.t_biattention_ids = config.text_cross_attention_layers
+        assert len(self.v_biattention_ids) == len(self.t_biattention_ids)
 
         # for freezing, TODO
         self.fixed_t_layer = 3
         self.fixed_v_layer = 3
+        self.depth = config.depth
+        # there are the original 12 layers per encoder
+        # self.depth = config.depth + len(self.v_biattention_ids)
 
-        self.c_layers = nn.ModuleList()
         self.config = config
-
-        for i in range(len(self.v_biattention_id)):
+        self.c_layers = nn.ModuleList()
+        for i in range(len(self.v_biattention_ids)):
             self.c_layers.append(CrossAttentionBlock(
                 dim=EMBEDDING_DIM,
                 heads=NUM_ATTENTION_HEADS,
@@ -241,7 +245,14 @@ class ViLBERT(nn.Module):
 
 
 
-
+    def get_extended_attention_mask(self, attention_mask: torch.Tensor, dtype=None):
+        if attention_mask is not None:
+            attention_mask = attention_mask.float()
+            extended_attention_mask = attention_mask[:, None, None, :]
+            extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(dtype).min
+        else:
+            extended_attention_mask = None
+        return extended_attention_mask
 
 
 
@@ -255,15 +266,13 @@ class ViLBERT(nn.Module):
         output_hidden_states=False,
         save_intermediate_representations=False,
     ):
+        #TODO: debugging
+        # save_intermediate_representations= True
 
-        if text_attention_mask is not None:
-            text_attention_mask = text_attention_mask.float()
-            #[batch, 1, 1, seq_len]
-            extended_attention_mask = text_attention_mask.unsqueeze(1).unsqueeze(2)
-            #0 for attend, -10000 for ignore
-            extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
-        else:
-            extended_attention_mask = None
+        extended_attention_mask = self.get_extended_attention_mask(
+            text_attention_mask,
+            dtype=next(self.bert.parameters()).dtype
+        )
 
         text_embedding = self.bert_embeddings(
             input_ids=text_input_ids,
@@ -281,9 +290,12 @@ class ViLBERT(nn.Module):
         count   = 0
 
         blocks = self.vit.blocks
-        # print(f"Number of vit blocks: {len(blocks)}")
 
-        for v_layer_id, t_layer_id in zip(self.v_biattention_id, self.t_biattention_id):
+        intermediate_representations = [] if save_intermediate_representations else None
+        # print(f"Number of vit blocks: {len(blocks)}")
+        tmp_t = []
+        tmp_v = []
+        for v_layer_id, t_layer_id in zip(self.v_biattention_ids, self.t_biattention_ids):
             # needed for freezing layers
             # v_end = v_layer_id
             # t_end = t_layer_id
@@ -303,17 +315,48 @@ class ViLBERT(nn.Module):
                     text_embedding,
                     attention_mask=extended_attention_mask,
                 )[0]
+                if save_intermediate_representations:
+                    dict_entry = {
+                        "layer": f"t{i}",
+                        "text_embedding": text_embedding.clone(),
+                        "is_cross_attention": False
+                    }
+                    tmp_t.append(dict_entry)
+
 
             for i in range(v_start, v_layer_id):
                 vision_embeddings = self.vit.blocks[i](
                     vision_embeddings,
                 )
+                if save_intermediate_representations:
+                    dict_entry = {
+                        "layer": f"v{i}",
+                        "vision_embedding": vision_embeddings.clone(),
+                        "is_cross_attention": False
+                    }
+                    tmp_v.append(dict_entry)
+
 
 
             text_embedding, vision_embeddings = self.c_layers[count](
                 text_embedding,
                 vision_embeddings,
+                text_mask=extended_attention_mask,
             )
+            ## skip coats for now
+            # dict_entry_t = {
+            #     "layer": f"c{count}",
+            #     "text_embedding": text_embedding.clone(),
+            #     "is_cross_attention": True
+            # }
+            # dict_entry_v = {
+            #     "layer": f"c{count}",
+            #     "vision_embedding": vision_embeddings.clone(),
+            #     "is_cross_attention": True
+            # }
+            # if save_intermediate_representations:
+            #     tmp_t.append(dict_entry_t)
+            #     tmp_v.append(dict_entry_v)
 
 
             t_start = t_layer_id
@@ -323,13 +366,40 @@ class ViLBERT(nn.Module):
         # remains
         for i in range(t_start, len(self.bert_layers)):
             text_embedding = self.bert_layers[i](text_embedding, attention_mask=extended_attention_mask)[0]
+            if save_intermediate_representations:
+                dict_entry = {
+                    "layer": f"t{i}",
+                    "text_embedding": text_embedding.clone(),
+                    "is_cross_attention": False
+                }
+                tmp_t.append(dict_entry)
 
         for i in range(v_start, len(self.vit.blocks)):
             vision_embeddings = self.vit.blocks[i](vision_embeddings)
+            if save_intermediate_representations:
+                dict_entry = {
+                    "layer": f"v{i}",
+                    "vision_embedding": vision_embeddings.clone(),
+                    "is_cross_attention": False
+                }
+                tmp_v.append(dict_entry)
 
         text_cls = text_embedding[:, 0, :]      # [batch_size, hidden_dim]
         vision_cls = vision_embeddings[:, 0, :]  # [batch_size, hidden_dim]
 
+        # print(len(tmp_t), len(tmp_v))
+        # currently only the 12 layers in analysis
+
+        if save_intermediate_representations:
+            for i, tup in enumerate(zip(tmp_t, tmp_v)):
+                dict_entry = {
+                    "layer": i,
+                    "text_embedding": tup[0]["text_embedding"],
+                    "vision_embedding": tup[1]["vision_embedding"],
+                    "is_cross_attention": i in self.v_biattention_ids or i in self.t_biattention_ids
+                }
+                intermediate_representations.append(dict_entry)
+            return text_cls, vision_cls, intermediate_representations
         return text_cls, vision_cls
 
 

@@ -21,9 +21,11 @@ NUM_ATTENTION_HEADS = 12
 DROPOUT_PROB        = 0.08
 VIT_MODEL_NAME = "vit_base_patch16_224"
 #default vals for them
-DEPTH = 8          # how many co-attn layers in transformer
+DEPTH = 12          # how many co-attn layers in transformer
 # CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
 CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
+VISION_CROSS_ATTENTION_LAYERS = [4, 7, 10, 11]
+TEXT_CROSS_ATTENTION_LAYERS   = [6, 8, 10, 11]
 
 CROSS_ATTENTION_DROPOUT = 0.1
 # --------------------------------------------------
@@ -53,7 +55,7 @@ PERSISTENT_WORKERS = False
 PIN_MEMORY = False
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
-DOWNSTREAM_EPOCHS = 10
+DOWNSTREAM_EPOCHS = 6
 DOWNSTREAM_LR     = 3.5e-5
 
 if machine == "remote":
@@ -73,12 +75,7 @@ KNN_K = 15      #value for k in knn
 NUM_SAMPLES_CLS =   2000
 NUM_SAMPLES_FULL_SEQ= 200 # lower, as this is full seq; mainly used for cka
 
-
-
-
 FC_HIDDEN_DIM = 512       # what hidden size in fc head
-
-
 
 
 # --------------------------------------------------
@@ -109,6 +106,8 @@ class ViLBERTConfig:
         gradient_accumulation=GRADIENT_ACCUMULATION,
         pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
         cross_attention_layers: list[int]= CROSS_ATTENTION_LAYERS,
+        text_cross_attention_layers: list[int] = TEXT_CROSS_ATTENTION_LAYERS,
+        vision_cross_attention_layers: list[int] = VISION_CROSS_ATTENTION_LAYERS,
         seed:int = SEED,
     ):
         self.embedding_dim = embedding_dim
@@ -126,6 +125,8 @@ class ViLBERTConfig:
         self.pretraining_tasks = pretraining_tasks
         self.cross_attention_layers = cross_attention_layers
         self.seed = seed
+        self.text_cross_attention_layers = text_cross_attention_layers
+        self.vision_cross_attention_layers = vision_cross_attention_layers
         assert depth >= len(cross_attention_layers)
 
 

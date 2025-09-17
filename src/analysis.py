@@ -482,7 +482,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
         layers[i] = {
             "text_embeddings": [],
             "vision_embeddings": [],
-            "is_cross_attention": i in model.cross_attention_layers,
+            "is_cross_attention": True,#i in model.cross_attention_layers,
             "layer": i
         }
 
@@ -839,7 +839,7 @@ def analyse(
             # info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
             #         ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
             info_str = (
-                f"layer {layer_name} (co-attn-{is_cross_attention:2}): "
+                f"layer {layer_name:7} (co-attn-{is_cross_attention:2}): "
                 f"cosine={avg_cosine:7.4f}, "
                 f"CKA={avg_cka:.3f}, "
                 # f"max_sim_tp={avg_max_similarity_tp:.4f}, "
