@@ -26,6 +26,8 @@ from datasets import HM_Dataset, PretrainDatasetAP, MM_IMDB_Dataset; import data
 
 import augments_transforms
 
+from info_nce import InfoNCE, info_nce
+
 
 
 
@@ -36,6 +38,7 @@ class MM_IMDB_Trainer(BaseTrainer):
         model: ViLBERT,
         config: ViLBERTConfig,
         gradient_accumulation:int=1,        # how many batches to accumulate!
+        use_contrastive_loss:bool=False,
         ):
         self.lr = config.learning_rate
         self.model = model
@@ -43,6 +46,8 @@ class MM_IMDB_Trainer(BaseTrainer):
         self.logger = Logger()
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.use_contrastive_loss = use_contrastive_loss
 
         self.scheduler = None
 
@@ -55,16 +60,22 @@ class MM_IMDB_Trainer(BaseTrainer):
         self.model = self.model.to(self.device)
 
         self.loss_fn = nn.BCEWithLogitsLoss()
+        self.info_nce = InfoNCE()
 
         self.gradient_accumulation = gradient_accumulation
+
+        self.total_losses = []
+        self.info_losses = []
+        self.normal_losses = []
+
 
     def train(
         self,
         train_dataloader: DataLoader,
         test_dataloader: DataLoader,
         epochs: int,
-        #for alingment testing
-        hm_dataloader: HM_Dataset=None,
+        analyze_alignment: bool = False,
+        dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
 
@@ -77,6 +88,22 @@ class MM_IMDB_Trainer(BaseTrainer):
             min_lr_fraction=MIN_LR_FRACTION,
         )
 
+        if analyze_alignment and (dataloader is not None or cc_dataloader is not None):
+            info_str = "alignment for mm_imdb:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(dataloader, self.model)
+            # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+
+            info_str = "\n----------\nalignment for conceptual captions:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(cc_dataloader, self.model)
+            # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
+
+
+
+
         for epoch in range(epochs):
             train_loss = self.train_epoch(dataloader=train_dataloader)
             test_loss, acc  = self.evaluate(test_dataloader)
@@ -84,17 +111,19 @@ class MM_IMDB_Trainer(BaseTrainer):
             print(info_str)
             self.logger.info(info_str)
 
-            if hm_dataloader is not None:
-                analysis.analyse_alignment(
-                    model=self.model,
-                    dataloader=hm_dataloader,
-                )
-                analysis.visualize_cka(
-                    model=self.model,
-                    dataloader=hm_dataloader)
-                info_str = "alignment for hateful memes:"
+            if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
+                info_str = "alignment for mm_imdb:"
                 print(info_str)
                 self.logger.info(info_str)
+                analysis.analyse_alignment(dataloader, self.model)
+                # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+
+                info_str = "\n----------\nalignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+                analysis.analyse_alignment(cc_dataloader, self.model)
+                # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
+
 
     def setup_scheduler(self, epochs:int, train_dataloader: DataLoader, lr=None):
         if lr is None:
@@ -119,6 +148,10 @@ class MM_IMDB_Trainer(BaseTrainer):
         total_loss = 0
         num_batches = 0
 
+        buffer_info_loss = []
+        buffer_normal_loss = []
+        buffer_total_loss = []
+
         for batch_indx, batch in enumerate(tqdm(dataloader, desc="Training")):
             num_batches += 1
 
@@ -129,23 +162,69 @@ class MM_IMDB_Trainer(BaseTrainer):
             text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
             image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
-            preds, text_embedding, image_embedding = self.model(
-                text_input_ids= text["input_ids"],
-                text_attention_mask= text["attention_mask"],
-                text_token_type_ids= text.get("token_type_ids", None),
-                image_pixel_values= image["pixel_values"],
-                image_attention_mask= image.get("attention_mask", None),
-                output_invididual_embeddings=True
-            )
+            if self.use_contrastive_loss:
+                text_embedding, image_embedding = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                )
+                combined = text_embedding * image_embedding
+                pred = self.model.fc_imdb(combined)
+                pred = pred.squeeze()
+                label = label.float()
 
-            combined = text_embedding * image_embedding
+                loss_normal = self.loss_fn(pred, label)
+                loss_info = self.info_nce(text_embedding, image_embedding)
 
-            pred = self.model.fc_imdb(combined)
-            # print(f"pred shape: {pred.shape}")
+                loss = utils.get_weighted_loss(
+                    info_nce_loss=loss_info,
+                    normal_loss=loss_normal,
+                    naive_weighting=True,
+                )
 
-            # print(pred)
+                buffer_info_loss.append(loss_info.item())
+                buffer_normal_loss.append(loss_normal.item())
+                buffer_total_loss.append(loss.item())
 
-            loss = self.loss_fn(pred, label.float())
+                if (batch_indx +1) % 10 == 0:
+                    avg_info_loss = sum(buffer_info_loss) / len(buffer_info_loss)
+                    avg_normal_loss = sum(buffer_normal_loss) / len(buffer_normal_loss)
+                    avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
+
+                    self.info_losses.append(avg_info_loss)
+                    self.normal_losses.append(avg_normal_loss)
+                    self.total_losses.append(avg_total_loss)
+
+                    buffer_info_loss = []
+                    buffer_normal_loss = []
+                    buffer_total_loss = []
+
+
+
+
+
+            else:
+                text_embedding, image_embedding = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                )
+
+                combined = text_embedding * image_embedding
+
+                pred = self.model.fc_imdb(combined)
+                # print(f"pred shape: {pred.shape}")
+
+                # print(pred)
+
+                loss = self.loss_fn(pred, label.float())
+
+
+
 
             loss /= self.gradient_accumulation
             loss.backward()
@@ -161,6 +240,9 @@ class MM_IMDB_Trainer(BaseTrainer):
                 self.optimizer.zero_grad()
 
             total_loss += loss.item() * self.gradient_accumulation  # to account for division above
+
+        if self.use_contrastive_loss:
+            utils.visualize_loss(info_losses=self.info_losses, normal_losses=self.normal_losses, total_losses=self.total_losses)
 
         return total_loss / num_batches
 
@@ -181,13 +263,12 @@ class MM_IMDB_Trainer(BaseTrainer):
                 text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
                 image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
 
-                preds, text_embedding, image_embedding = self.model(
+                text_embedding, image_embedding = self.model(
                     text_input_ids=text["input_ids"],
                     text_attention_mask=text["attention_mask"],
                     text_token_type_ids=text.get("token_type_ids", None),
                     image_pixel_values=image["pixel_values"],
                     image_attention_mask=image.get("attention_mask", None),
-                    output_invididual_embeddings=True
                 )
 
                 combined = text_embedding * image_embedding
@@ -253,6 +334,8 @@ def main():
         shuffle=True,
         prefetch_factor=4,
         num_workers=4,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
     val_dataloader = DataLoader(
         val_dataset,
@@ -260,6 +343,8 @@ def main():
         shuffle=False,
         prefetch_factor=4,
         num_workers=4,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
 
     config = ViLBERTConfig()
@@ -279,7 +364,7 @@ def main():
         train_dataloader=train_dataloader,
         test_dataloader=val_dataloader,
         epochs=8,
-        hm_dataloader=hm_dataloader,
+        dataloader=hm_dataloader,
         cc_dataloader=cc_dataloader,
     )
 

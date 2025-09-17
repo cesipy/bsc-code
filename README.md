@@ -30,6 +30,8 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 ```
 
 
+
+
 ## Implementation Decisions
 
 This section covers implementation decisions.
@@ -86,7 +88,82 @@ The optimization for this thesis consists of two task. i) to get the best hyperp
 currently those parts are seperated by modules (might be different in newer implementations). `hyperparameter_optimizer.py` is used for hyperparam optimization and `experiment_tracker.py` for neural architecture search.
 
 
-## TODO
+
+
+### Pretraining
+
+There are three pretraining tasks in ViLBERT: Masked Language Modelling, Masked Image Modelling, Alignment Prediction
+
+### MLM
+for 15% of all tokens:
+- 80% replaced with [MASK]
+- 10% replaced with random token
+- 10% unchanged
+
+array of length of tokens is returned. if masked: masked token, if not `token[i] = -100`(value for lossfunction to ignore it)
+
+### Alignment Prediction
+predict if images and caption are aligned. Is a dataset of 50/50 balance.
+- "research has been focused on two main schemes, either reconstructing the masked signal, or comparing two latent representations, one for the unaltered input signal and one for the masked input."
+
+
+
+
+### MIM
+
+Two options: reconstruct masked patches, contrastive comparision of hidden representations.
+
+Basd on my research I go for the contrastice approach, as this seems more interesting for me to implement.
+
+<figure>
+    <img src="./res/markdown_res/contrastive_mim.png" width=400>
+</figure>
+
+the workflow is the following:
+1) augment the data. Not yes timplemented
+2) mask image => (image, masked_image)
+3) encode(masked_image); encode(image)
+4) compute infoNCE on the representations, ONLY FOR UNMASKED tokens.
+
+
+dataset returned from dataloader/dataset:
+```python
+{
+    "task": task.value,
+    "img" : img_embedding,      # og img, as tensor
+    "masked_img": masked_img, # masked image as tensor
+    "masked_patches_idxs": masked_patches_idxs, # indices of the masked patches,
+    "text": text_embeddings,
+}
+```
+
+## ViLBERT
+original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
+
+
+---
+
+
+
+## TODO#
+**immediate:**
+- [x] vqa
+- [ ] wasserstein
+- [x] optuna- remove pruning, not necessary
+	- [x] optuna rerun wit smaller lr range
+	- [ ] include easyvqa in optuna
+
+- [ ] analysis of pretrained models: discrepancies in end representation of streams
+- [x] better seeding
+- [ ] variable cka in analysis.
+- [ ] fix the alignment string to have same lenght
+- [ ] `src/evaluate.py` more flexible
+	- [ ] contrastive loss for other datasets; include in trainer
+
+- [ ] finetune bert and vit alone, without additional layers of vilbert
+	- [ ] abstr class for model, include all the heads.
+
+**other**
 - [ ] tools to look into:
 	- [ ] captum
 	- [ ] alibi
@@ -106,16 +183,14 @@ currently those parts are seperated by modules (might be different in newer impl
 		- [ ] optimize for alignment, not for loss
 
 
-- [ ] unify hyperparam_optimizer and experiment_tracker.
+- [x] unify hyperparam_optimizer and experiment_tracker.
 - [ ] arparse for experimenttracker: whenever I want to test alignment
+- [x] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
 
 
-- [ ] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
-
-
-- [ ] implement experiment tracker
+- [x] implement experiment tracker
 	- [ ] use test sets for alignment; no training on it. - currently on mmimdb, not on hm, still TODO!
-	- [ ] abstract class für trainer; hm, und mmimdb anpassen
+	- [x] abstract class für trainer; hm, und mmimdb anpassen
 
 
 
@@ -310,7 +385,7 @@ currently those parts are seperated by modules (might be different in newer impl
 	Layer 6: mKNN (CLS) = 0.5957, mKNN (Seq) = 0.1597
 	^CTraceback (most recent call last):
 	</details>
-- [ ] fix spelling issue in "costrative"
+- [x] fix spelling issue in "costrative"
 - [ ] problem with contrastive term in pretraining: combined approach!
 
 
@@ -392,61 +467,121 @@ currently those parts are seperated by modules (might be different in newer impl
 - [x] hateful memes downsize to 224
 - [x] unify the alignment measurements
 
-## ViLBERT
-original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under `vilbert/vilbert.py`.
-
-
-## Pretraining
-
-There are three pretraining tasks in ViLBERT: Masked Language Modelling, Masked Image Modelling, Alignment Prediction
-
-### MLM
-for 15% of all tokens:
-- 80% replaced with [MASK]
-- 10% replaced with random token
-- 10% unchanged
-
-array of length of tokens is returned. if masked: masked token, if not `token[i] = -100`(value for lossfunction to ignore it)
-
-### Alignment Prediction
-predict if images and caption are aligned. Is a dataset of 50/50 balance.
-- "research has been focused on two main schemes, either reconstructing the masked signal, or comparing two latent representations, one for the unaltered input signal and one for the masked input."
-
-
-
-
-### MIM
-
-Two options: reconstruct masked patches, contrastive comparision of hidden representations.
-
-Basd on my research I go for the contrastice approach, as this seems more interesting for me to implement.
-
-<figure>
-    <img src="./res/markdown_res/contrastive_mim.png" width=400>
-</figure>
-
-the workflow is the following:
-1) augment the data. Not yes timplemented
-2) mask image => (image, masked_image)
-3) encode(masked_image); encode(image)
-4) compute infoNCE on the representations, ONLY FOR UNMASKED tokens.
-
-
-dataset returned from dataloader/dataset:
-```python
-{
-    "task": task.value,
-    "img" : img_embedding,      # og img, as tensor
-    "masked_img": masked_img, # masked image as tensor
-    "masked_patches_idxs": masked_patches_idxs, # indices of the masked patches,
-    "text": text_embeddings,
-}
-```
-
-
 
 
 ## Results
+
+## 15.09
+hateful memes: contrastive vs. non-contrastive training (with alignment analysis):
+```
+❯ python src/evaluate.py
+Pretrained model path None does not exist, using fresh model.
+trainable params: 297148768/297148768
+bs_alignment_analysis: 128, batchsize: 8
+dirname:  res/data/hateful_memes_data
+dirname:  res/data/hateful_memes_data
+using contrastive: False
+
+
+before training, evaluating on uninitialized model
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0111, CKA=0.0647, SVCCA=0.0000, mknn=0.3555, rank=0.3063, procrustes=889.0625
+layer layer1 (co-attn-True): cosine=-0.0158, CKA=0.0634, SVCCA=0.0000, mknn=0.4302, rank=0.3481, procrustes=837.0211
+layer layer2 (co-attn-False): cosine=0.0037, CKA=0.0629, SVCCA=0.0000, mknn=0.4402, rank=0.3542, procrustes=837.7579
+layer layer3 (co-attn-False): cosine=-0.0094, CKA=0.0631, SVCCA=0.0000, mknn=0.4275, rank=0.3582, procrustes=840.1173
+layer layer4 (co-attn-True): cosine=-0.0193, CKA=0.0620, SVCCA=0.0000, mknn=0.5005, rank=0.4117, procrustes=780.5077
+simulated batchsize: 512, actual batchsize: 8
+training:   0%|                                                                                                                | 0/850 [00:00<?, ?it/s]W0915 12:53:39.220000 13388 torch/_inductor/utils.py:1250] [0/2] Not enough SMs to use max_autotune_gemm mode
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:36<00:00,  3.92it/s]
+Epoch 1/4, train loss: 0.6406, test loss: 0.5981,  accuracy: 0.6912
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0172, CKA=0.0694, SVCCA=0.0000, mknn=0.2463, rank=0.2246, procrustes=940.3904
+layer layer1 (co-attn-True): cosine=-0.0278, CKA=0.0686, SVCCA=0.0000, mknn=0.3056, rank=0.2745, procrustes=883.2986
+layer layer2 (co-attn-False): cosine=-0.0064, CKA=0.0675, SVCCA=0.0000, mknn=0.3123, rank=0.2872, procrustes=872.7472
+layer layer3 (co-attn-False): cosine=-0.0143, CKA=0.0676, SVCCA=0.0000, mknn=0.3109, rank=0.2876, procrustes=864.3787
+layer layer4 (co-attn-True): cosine=-0.0222, CKA=0.0661, SVCCA=0.0000, mknn=0.3793, rank=0.3351, procrustes=797.9633
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:16<00:00,  4.33it/s]
+Epoch 2/4, train loss: 0.5507, test loss: 0.5576,  accuracy: 0.7206
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0064, CKA=0.0774, SVCCA=0.0000, mknn=0.2041, rank=0.1798, procrustes=997.1100
+layer layer1 (co-attn-True): cosine=-0.0159, CKA=0.0767, SVCCA=0.0000, mknn=0.2514, rank=0.2290, procrustes=931.9759
+layer layer2 (co-attn-False): cosine=-0.0001, CKA=0.0753, SVCCA=0.0000, mknn=0.2544, rank=0.2226, procrustes=925.4233
+layer layer3 (co-attn-False): cosine=-0.0040, CKA=0.0752, SVCCA=0.0000, mknn=0.2544, rank=0.2176, procrustes=927.3590
+layer layer4 (co-attn-True): cosine=-0.0125, CKA=0.0742, SVCCA=0.0000, mknn=0.3194, rank=0.2590, procrustes=861.3385
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:16<00:00,  4.32it/s]
+Epoch 3/4, train loss: 0.4926, test loss: 0.5535,  accuracy: 0.7218
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0074, CKA=0.0771, SVCCA=0.0000, mknn=0.1935, rank=0.1762, procrustes=1000.3672
+layer layer1 (co-attn-True): cosine=-0.0166, CKA=0.0764, SVCCA=0.0000, mknn=0.2453, rank=0.2207, procrustes=935.7963
+layer layer2 (co-attn-False): cosine=-0.0022, CKA=0.0752, SVCCA=0.0000, mknn=0.2498, rank=0.2243, procrustes=932.4207
+layer layer3 (co-attn-False): cosine=-0.0047, CKA=0.0750, SVCCA=0.0000, mknn=0.2487, rank=0.2137, procrustes=938.6042
+layer layer4 (co-attn-True): cosine=-0.0138, CKA=0.0741, SVCCA=0.0000, mknn=0.3141, rank=0.2649, procrustes=875.0054
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:16<00:00,  4.32it/s]
+Epoch 4/4, train loss: 0.4747, test loss: 0.5541,  accuracy: 0.7282
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0064, CKA=0.0770, SVCCA=0.0000, mknn=0.1983, rank=0.1767, procrustes=1003.5676
+layer layer1 (co-attn-True): cosine=-0.0154, CKA=0.0763, SVCCA=0.0000, mknn=0.2444, rank=0.2203, procrustes=939.5178
+layer layer2 (co-attn-False): cosine=-0.0013, CKA=0.0751, SVCCA=0.0000, mknn=0.2536, rank=0.2170, procrustes=936.4628
+layer layer3 (co-attn-False): cosine=-0.0037, CKA=0.0750, SVCCA=0.0000, mknn=0.2496, rank=0.2193, procrustes=943.2543
+layer layer4 (co-attn-True): cosine=-0.0139, CKA=0.0742, SVCCA=0.0000, mknn=0.3127, rank=0.2676, procrustes=880.3727
+❯ python src/evaluate.py --use-constrastive
+Pretrained model path None does not exist, using fresh model.
+trainable params: 297148768/297148768
+bs_alignment_analysis: 128, batchsize: 8
+dirname:  res/data/hateful_memes_data
+dirname:  res/data/hateful_memes_data
+using contrastive: True
+using contrastive loss: True, using cosine loss: False
+
+
+before training, evaluating on uninitialized model
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0111, CKA=0.0647, SVCCA=0.0000, mknn=0.3555, rank=0.3063, procrustes=889.0625
+layer layer1 (co-attn-True): cosine=-0.0158, CKA=0.0634, SVCCA=0.0000, mknn=0.4302, rank=0.3481, procrustes=837.0211
+layer layer2 (co-attn-False): cosine=0.0037, CKA=0.0629, SVCCA=0.0000, mknn=0.4402, rank=0.3542, procrustes=837.7579
+layer layer3 (co-attn-False): cosine=-0.0094, CKA=0.0631, SVCCA=0.0000, mknn=0.4275, rank=0.3582, procrustes=840.1173
+layer layer4 (co-attn-True): cosine=-0.0193, CKA=0.0620, SVCCA=0.0000, mknn=0.5005, rank=0.4117, procrustes=780.5077
+simulated batchsize: 512, actual batchsize: 8
+training:   0%|                                                                                                                | 0/850 [00:00<?, ?it/s]W0915 13:20:15.148000 14098 torch/_inductor/utils.py:1250] [0/2] Not enough SMs to use max_autotune_gemm mode
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:35<00:00,  3.95it/s]
+Epoch 1/4, train loss: 1.2018, test loss: 0.6125,  accuracy: 0.6606
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=0.0195, CKA=0.0732, SVCCA=0.0000, mknn=0.3556, rank=0.2702, procrustes=899.3615
+layer layer1 (co-attn-True): cosine=0.0291, CKA=0.0717, SVCCA=0.0000, mknn=0.4185, rank=0.2961, procrustes=844.7163
+layer layer2 (co-attn-False): cosine=0.0652, CKA=0.0706, SVCCA=0.0000, mknn=0.4246, rank=0.3090, procrustes=845.7498
+layer layer3 (co-attn-False): cosine=0.0856, CKA=0.0705, SVCCA=0.0000, mknn=0.4250, rank=0.3107, procrustes=848.6807
+layer layer4 (co-attn-True): cosine=0.1310, CKA=0.0696, SVCCA=0.0000, mknn=0.4873, rank=0.3411, procrustes=792.5574
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:16<00:00,  4.32it/s]
+Epoch 2/4, train loss: 0.8464, test loss: 0.5748,  accuracy: 0.7147
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=0.0551, CKA=0.0756, SVCCA=0.0000, mknn=0.4521, rank=0.3073, procrustes=833.6205
+layer layer1 (co-attn-True): cosine=0.0963, CKA=0.0744, SVCCA=0.0000, mknn=0.5226, rank=0.3633, procrustes=773.4784
+layer layer2 (co-attn-False): cosine=0.1747, CKA=0.0729, SVCCA=0.0000, mknn=0.5431, rank=0.3657, procrustes=771.3981
+layer layer3 (co-attn-False): cosine=0.2642, CKA=0.0727, SVCCA=0.0000, mknn=0.5533, rank=0.3839, procrustes=771.6022
+layer layer4 (co-attn-True): cosine=0.4028, CKA=0.0719, SVCCA=0.0000, mknn=0.6259, rank=0.4472, procrustes=713.6843
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:17<00:00,  4.31it/s]
+Epoch 3/4, train loss: 0.6900, test loss: 0.5619,  accuracy: 0.7200
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=0.0590, CKA=0.0756, SVCCA=0.0000, mknn=0.4637, rank=0.3183, procrustes=823.3411
+layer layer1 (co-attn-True): cosine=0.1091, CKA=0.0746, SVCCA=0.0000, mknn=0.5353, rank=0.3590, procrustes=759.4251
+layer layer2 (co-attn-False): cosine=0.1972, CKA=0.0730, SVCCA=0.0000, mknn=0.5620, rank=0.3776, procrustes=757.6245
+layer layer3 (co-attn-False): cosine=0.3008, CKA=0.0728, SVCCA=0.0000, mknn=0.5747, rank=0.4059, procrustes=758.6730
+layer layer4 (co-attn-True): cosine=0.4565, CKA=0.0721, SVCCA=0.0000, mknn=0.6460, rank=0.4579, procrustes=696.7313
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████| 850/850 [03:17<00:00,  4.31it/s]
+Epoch 4/4, train loss: 0.6611, test loss: 0.5607,  accuracy: 0.7218
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=0.0624, CKA=0.0756, SVCCA=0.0000, mknn=0.4728, rank=0.3157, procrustes=824.0780
+layer layer1 (co-attn-True): cosine=0.1136, CKA=0.0746, SVCCA=0.0000, mknn=0.5496, rank=0.3581, procrustes=759.1529
+layer layer2 (co-attn-False): cosine=0.2032, CKA=0.0730, SVCCA=0.0000, mknn=0.5776, rank=0.3800, procrustes=756.7299
+layer layer3 (co-attn-False): cosine=0.3075, CKA=0.0728, SVCCA=0.0000, mknn=0.5919, rank=0.3883, procrustes=758.0289
+layer layer4 (co-attn-True): cosine=0.4631, CKA=0.0722, SVCCA=0.0000, mknn=0.6614, rank=0.4299, procrustes=695.6163
+```
 
 ## 13.09
 Implemented optuna param optimization aswell as an experiment tracker to track all experiments wit proper directories.

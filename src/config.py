@@ -6,7 +6,7 @@ from task import Task
 
 machine = os.environ.get("MACHINE_TYPE", "local")  # local or remote: local - my gaming pc (16gb), remote - university gpu (24gb)
 
-SEED = 1335 #TODO INTEGRATE EVERYWHERE
+SEED = 1334  #TODO INTEGRATE EVERYWHERE
 
 
 MM_IMDB_NUM_GENRES = 23
@@ -18,12 +18,12 @@ EMBEDDING_DIM = 768
 VOCAB_SIZE    = 30522
 NUM_HIDDEN_LAYERS = 12
 NUM_ATTENTION_HEADS = 12
-DROPOUT_PROB        = 0.4
+DROPOUT_PROB        = 0.08
 VIT_MODEL_NAME = "vit_base_patch16_224"
 #default vals for them
-DEPTH = 5           # how many co-attn layers in transformer
+DEPTH = 8          # how many co-attn layers in transformer
 # CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
-CROSS_ATTENTION_LAYERS = [0,1,4]      # first and 3rd layer are coattn
+CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
 # --------------------------------------------------
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4
@@ -51,8 +51,8 @@ PERSISTENT_WORKERS = False
 PIN_MEMORY = False
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
-DOWNSTREAM_EPOCHS = 7
-DOWNSTREAM_LR     = 2e-5
+DOWNSTREAM_EPOCHS = 10
+DOWNSTREAM_LR     = 3.5e-5
 
 if machine == "remote":
     BATCH_SIZE_DOWNSTREAM = 24
@@ -63,11 +63,11 @@ else:
 # --------------------------------------------------
 # analysis.py
 if machine == "remote":
-    BATCH_SIZE_ANALYSIS = 48
+    BATCH_SIZE_ANALYSIS = 128
 else:
-    BATCH_SIZE_ANALYSIS = 16
+    BATCH_SIZE_ANALYSIS = 128
 
-KNN_K = 10      #value for k in knn
+KNN_K = 15      #value for k in knn
 NUM_SAMPLES_CLS =   2000
 NUM_SAMPLES_FULL_SEQ= 200 # lower, as this is full seq; mainly used for cka
 
@@ -83,7 +83,7 @@ FC_HIDDEN_DIM = 512       # what hidden size in fc head
 # LR SCHEDULER
 WARMUP_ITERATIONS = 0.1     #what fraction of total training steps is in warmup?
 DECAY_ITERATIONS  = 0.9     #what fraction of total training steps is in decay?
-MIN_LR_FRACTION   = 0.06    #fraction of original lr => min_lr
+MIN_LR_FRACTION   = 0.1    #fraction of original lr => min_lr
 
 # --------------------------------------------------
 

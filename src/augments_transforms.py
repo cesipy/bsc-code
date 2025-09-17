@@ -5,7 +5,7 @@ from timm.data import resolve_data_config
 
 import albumentations as A
 
-from config import VIT_MODEL_NAME
+from config import VIT_MODEL_NAME, SEED
 
 
 def get_transform_unmasked():
@@ -85,6 +85,7 @@ def get_hateful_memes_train_augmentation():
 
 
 def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
+
     hm_transforms = A.Compose([
         A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15, p=.6),
         A.RandomResizedCrop(size=(224, 224), scale=(0.92, 1.0), ratio=(0.95, 1.05), p=1.0),
@@ -98,7 +99,7 @@ def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
         A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 0.5), p=0.2),
         A.Perspective(scale=(0.05, 0.08), p=0.25),
         A.ToGray(p=0.1),
-    ])
+    ], seed=SEED)
 
     hm_transforms_improved = A.Compose([
         # Your existing transforms (keep these)
@@ -126,7 +127,7 @@ def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
         ], p=0.25),
 
         A.Perspective(scale=(0.05, 0.08), p=0.25),
-    ])
+    ], seed=SEED)
 
     if get_advanced:
         return hm_transforms_improved

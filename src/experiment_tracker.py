@@ -376,9 +376,9 @@ class ExperimentTracker:
         )
         hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
+            num_workers=0,
+            pin_memory=False,
+            prefetch_factor=None,
             num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
@@ -441,9 +441,9 @@ class ExperimentTracker:
         #TODO: get alignment data loader for mmimdb
         hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
+            num_workers=0,
+            pin_memory=False,
+            prefetch_factor=None,
             num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,

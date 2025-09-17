@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch
-from torch.utils.data import DataLoader
 from ckatorch import CKA
 
 

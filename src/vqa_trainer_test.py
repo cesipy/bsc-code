@@ -47,6 +47,8 @@ def main():
         num_workers=NUM_WORKERS,
         pin_memory=PIN_MEMORY,
         persistent_workers=PERSISTENT_WORKERS,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
     val_dataloader = DataLoader(
         val_dataset,
@@ -56,6 +58,8 @@ def main():
         num_workers=NUM_WORKERS,
         pin_memory=PIN_MEMORY,
         persistent_workers=PERSISTENT_WORKERS,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
     )
     config = ViLBERTConfig()
     model = ViLBERT(config=config)

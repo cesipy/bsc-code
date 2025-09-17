@@ -32,6 +32,8 @@ def alignment_loss_cosine(text_emb, vision_emb):
 
 
 class HatefulMemesTrainer(BaseTrainer):
+
+
     def __init__(
         self,
         model: ViLBERT,
@@ -70,10 +72,15 @@ class HatefulMemesTrainer(BaseTrainer):
 
         self.gradient_accumulation = gradient_accumulation
 
+        self.total_losses = []
+        self.info_losses = []
+        self.normal_losses = []
+
 
 
 
     def train_epoch(self, dataloader: DataLoader):
+
 
         info_str = f"simulated batchsize: {dataloader.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader.batch_size}"
         print(info_str)
@@ -83,6 +90,10 @@ class HatefulMemesTrainer(BaseTrainer):
         total_loss = 0
 
         num_batches = 0
+
+        buffer_info_loss = []
+        buffer_normal_loss = []
+        buffer_total_loss = []
         for batch_indx,batch in enumerate(tqdm(dataloader,total=len(dataloader), desc="training")):
             num_batches += 1
 
@@ -102,39 +113,72 @@ class HatefulMemesTrainer(BaseTrainer):
 
             if self.use_contrastive_loss:
 
-                preds, text_embedding, vision_embedding = self.model(
+                text_embedding, vision_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
-                    output_invididual_embeddings=True
                 )
+                preds = self.model.fc(text_embedding * vision_embedding)
+                preds = preds.squeeze()     #[bs]
+                label = label.float()       #[bs]
 
-                preds = preds.squeeze()
-                label = label.float()
 
                 loss_info = self.info_nce(text_embedding, vision_embedding)
                 loss_normal = self.loss_fn(preds, label)
+                # print(f"loss info: {loss_info}, loss normal: {loss_normal}")
 
-                loss = loss_normal + 0.3 * loss_info   # with info nce
+                # loss = loss_normal + 0.3 * loss_info   # with info nce
+                # #loss info: 1.9934707880020142, loss normal: 0.6653898358345032
+
+                loss = utils.get_weighted_loss(
+                    info_nce_loss=loss_info,
+                    normal_loss=loss_normal,
+                    naive_weighting=True,
+                )
+                # print(f"weighted loss: {loss}", end="\n\n------\n")
+
+                buffer_info_loss.append(loss_info.item())
+                buffer_normal_loss.append(loss_normal.item())
+                buffer_total_loss.append(loss.item())
+
+
+                if (batch_indx +1) % 10 == 0:
+                    avg_info_loss = sum(buffer_info_loss) / len(buffer_info_loss)
+                    avg_normal_loss = sum(buffer_normal_loss) / len(buffer_normal_loss)
+                    avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
+
+                    self.info_losses.append(avg_info_loss)
+                    self.normal_losses.append(avg_normal_loss)
+                    self.total_losses.append(avg_total_loss)
+
+                    buffer_info_loss = []
+                    buffer_normal_loss = []
+                    buffer_total_loss = []
+
+
+
 
 
             elif self.use_cosine_loss:
 
-                preds, text_embedding, vision_embedding = self.model(
+                text_embedding, vision_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
-                    output_invididual_embeddings=True
                 )
+                preds = self.model.fc(text_embedding * vision_embedding)
+
                 preds = preds.squeeze()
                 label = label.float()
 
+
                 loss_cosine = self.cosine_loss(text_embedding, vision_embedding)
                 loss_normal = self.loss_fn(preds, label)
+
 
                 loss = loss_normal + 0.3 * loss_cosine  #cosine loss
 
@@ -143,13 +187,14 @@ class HatefulMemesTrainer(BaseTrainer):
 
             else:       # normal loss, no contrastive, no infonce loss term
 
-                preds = self.model(
+                text_embedding, image_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
                 )
+                preds = self.model.fc(text_embedding * image_embedding)
 
 
                 preds = preds.squeeze()
@@ -172,6 +217,12 @@ class HatefulMemesTrainer(BaseTrainer):
             total_loss += loss.item() * self.gradient_accumulation  # to account for division above
 
 
+
+        # temp:
+        if self.use_contrastive_loss:
+            utils.visualize_loss(info_losses=self.info_losses, normal_losses=self.normal_losses, total_losses=self.total_losses)
+
+
         return total_loss / num_batches
 
     def setup_scheduler(self, epochs:int, train_dataloader: DataLoader, lr=None):
@@ -192,27 +243,27 @@ class HatefulMemesTrainer(BaseTrainer):
         train_dataloader: DataLoader,
         test_dataloader:  DataLoader,
         epochs: int,
-        hm_dataloader: HM_Dataset=None,
+        analyze_alignment: bool=False,
+        dataloader: HM_Dataset=None,
         cc_dataloader: PretrainDatasetAP=None,
     ):
         self.setup_scheduler(epochs=epochs, train_dataloader=train_dataloader)
         # analysis.analyse_alignment(dataloader=hm_dataloader, model=self.model)
         # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
         # do one check with the alignment dataloaders before starting training
-        if hm_dataloader is not None and cc_dataloader is not None:
-            ...
-                # info_str = "\n\nbefore training, evaluating on uninitialized model"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # info_str = "alignment for hateful memes:"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # analysis.analyse_alignment(hm_dataloader, self.model)
+        if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
+            info_str = "\n\nbefore training, evaluating on uninitialized model"
+            print(info_str)
+            self.logger.info(info_str)
+            info_str = "alignment for hateful memes:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(dataloader, self.model)
 
-                # info_str = "alignment for conceptual captions:"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # analysis.analyse_alignment(cc_dataloader, self.model)
+            info_str = "\n----------\nalignment for conceptual captions:"
+            print(info_str)
+            self.logger.info(info_str)
+            analysis.analyse_alignment(cc_dataloader, self.model)
 
                 # info_str = "finished!" + "\n" + 20*"-"
                 # print(info_str)
@@ -227,17 +278,17 @@ class HatefulMemesTrainer(BaseTrainer):
             print(info_str)
             self.logger.info(info_str)
 
-            if hm_dataloader is not None and cc_dataloader is not None:
+            if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
                 info_str = "alignment for hateful memes:"
                 print(info_str)
                 self.logger.info(info_str)
-                # analysis.analyse_alignment(hm_dataloader, self.model)
+                analysis.analyse_alignment(dataloader, self.model)
                 # analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
 
-                # info_str = "alignment for conceptual captions:"
-                # print(info_str)
-                # self.logger.info(info_str)
-                # analysis.analyse_alignment(cc_dataloader, self.model)
+                info_str = "\n----------\nalignment for conceptual captions:"
+                print(info_str)
+                self.logger.info(info_str)
+                analysis.analyse_alignment(cc_dataloader, self.model)
                 # analysis.visualize_cka(dataloader=cc_dataloader, model=self.model)
 
 
@@ -282,7 +333,7 @@ class HatefulMemesTrainer(BaseTrainer):
                 #     image_attention_mask= image.get("attention_mask", None),
                 #     save_intermediate_representations=True
                 # )
-                preds = self.model(
+                text_embedding, image_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
                     text_token_type_ids= text.get("token_type_ids", None),
@@ -290,24 +341,7 @@ class HatefulMemesTrainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                     save_intermediate_representations=False
                 )
-
-
-                # len(list) = DEPTH;
-                # list[0]["vision_embedding"].shape: [ bs, dim]
-                # print(f"len intermediate_representations: {len(intermediate_representations)}")
-                # print(f"shape vision: {intermediate_representations[0]['vision_embedding'].shape}")
-                # print(f"shape text: {intermediate_representations[0]['text_embedding'].shape}")
-
-                # current_layer_sims: list[dict] = analysis.process_intermediate_repr(intermediate_representations)
-
-                # layer_sims.extend(current_layer_sims)
-
-                # avg_sim = sum(sims) / len(sims)
-                # info_str = f"acg cos sim: {avg_sim}"
-                # self.logger.info(info_str)
-                # print(info_str)
-
-
+                preds = self.model.fc(text_embedding * image_embedding)
 
                 preds = preds.squeeze()
                 label = label.float()

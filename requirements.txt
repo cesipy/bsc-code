@@ -16,3 +16,4 @@ optuna
 optuna-dashboard
 albumentations
 easy-vqa
+argcomplete

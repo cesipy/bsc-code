@@ -391,7 +391,7 @@ def get_visualisation_data(
 
             # print(f"img shape: {image['pixel_values'].shape}, ")
 
-            preds, intermediate_representations = model(
+            text_embedding, image_embedding, intermediate_representations = model(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -427,7 +427,7 @@ def get_visualisation_data(
                 measure_per_layer[layer]["vision_embeddings"].append(repr_dict["vision_embedding"])
                 measure_per_layer[layer]["is_cross_attention"] = repr_dict["is_cross_attention"]
 
-            del intermediate_representations, text, image, preds
+            del intermediate_representations, text, image, text_embedding, image_embedding
 
             sample_counter += batch_size
             if sample_counter >= num_samples:
@@ -495,7 +495,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
 
         with torch.no_grad():
-            preds, intermediate_representations =model.forward(
+            text_embedding, image_embedding, intermediate_representations =model.forward(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -514,7 +514,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             del intermediate_representations
             del text
             del image
-            del preds
+            del text_embedding, image_embedding
 
 
 
@@ -590,7 +590,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
             # print(f"img shape: {image['pixel_values'].shape}, ")
 
-            preds, intermediate_representations = model(
+            text_embedding, image_embedding, intermediate_representations = model(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -673,7 +673,7 @@ def process_intermediate_repr(
     for i, representation in enumerate(intermediate_reprs):
         # print(f"shape text: {representation['text_embedding'].shape}, shape image: {representation['vision_embedding'].shape}")
 
-
+        # logger.info(f"dim before calculating cka: {representation['text_embedding'].shape}, {representation['vision_embedding'].shape}")
         cka_sim = measures.cka(
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
@@ -836,18 +836,18 @@ def analyse(
                 "procrustes_full_epoch": procrustes_measure
             }
 
-            info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
-                    ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
+            # info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
+            #         ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
             info_str = (
-                f"layer {layer_name} (co-attn-{is_cross_attention}): "
-                f"cosine={avg_cosine:.4f}, "
-                f"CKA={avg_cka:.4f}, "
+                f"layer {layer_name} (co-attn-{is_cross_attention:2}): "
+                f"cosine={avg_cosine:7.4f}, "
+                f"CKA={avg_cka:.3f}, "
                 # f"max_sim_tp={avg_max_similarity_tp:.4f}, "
                 # f"max_sim_pt={avg_max_similarity_pt:.4f}, "
-                f"SVCCA={avg_svcca:.4f}, "
-                f"mknn={full_epoch_measure:.4f}, "
-                f"rank={rank_measure:.4f}, "
-                f"procrustes={procrustes_measure:.4f}"
+                f"SVCCA={avg_svcca:.3f}, "
+                f"mknn={full_epoch_measure:.3f}, "
+                f"rank={rank_measure:.3f}, "
+                f"procrustes={procrustes_measure:4.2f}"
 
             )
             print(info_str)
