@@ -25,8 +25,8 @@ SKIP_ALIGNMENT = True
 
 @dataclasses.dataclass
 class ExperimentConfig:
-    cross_attention_layers: list[int]
-    depth:int
+    t_biattention_ids: list
+    v_biattention_ids: list
 
     epochs: int = EPOCHS
     batch_size: int = BATCH_SIZE_DOWNSTREAM
@@ -39,10 +39,11 @@ class ExperimentConfig:
 
 
     def __post_init__(self):
-        if self.cross_attention_layers != []:
-            assert self.depth >= max(self.cross_attention_layers)
-            assert self.depth >= len(self.cross_attention_layers)
-
+        if self.t_biattention_ids:
+            assert 12 >= max(self.t_biattention_ids)
+        if self.v_biattention_ids:
+            assert 12 >= max(self.v_biattention_ids)
+        assert len(self.t_biattention_ids) == len(self.v_biattention_ids)
 
 """
 training_results = {
@@ -194,33 +195,62 @@ class ExperimentTracker:
 
     #     return best_hm_acc, best_imdb_acc
 
+    def construct_coattn_configs(self, strat:str) -> Tuple[list, list]:
+        if strat == "early":
+            return [0,1,2], [0, 1, 2]
+        elif strat == "mid":
+            return [4,5,6], [4,5,6]
+        elif strat == "late":
+            return [9,10,11], [9,10,11]
+        elif strat == "early-mid":
+            return [1,5,6], [1,5,6]
+        elif strat == "early-late":
+            return [1,10,11], [1,10,11]
+        elif strat == "mid-late":
+            return [5,10,11], [5,10,11]
+        elif strat == "mixed":
+            return [1,4,10], [2,6,11]
+        else:
+            raise ValueError(f"unknown fusion_strat: {strat}")
+
     def optimize_parameters_multi(self, n_trials, optimization_objective: str = "acc"):
         assert optimization_objective in ["acc", "loss"]
         import optuna
 
         def objective(trial):
             lr = trial.suggest_float("learning_rate", 5e-6, 5e-5, log=True)
-            dropout = trial.suggest_float("dropout", 0.0, 0.4)
+            # analysis with optuna resulted in dropout of about 0.08.
+            # this is roughly the same as in vilbert implementation of 0.1
+            # therefore, no further tuning on it
+            # dropout = trial.suggest_float("dropout", 0.0, 0.4)
             epochs = trial.suggest_int("epochs", 2, 9)
             depth = trial.suggest_int("depth", 4, 8)
-            first_layer_coattn = trial.suggest_categorical("coattn_0", [True, False])
-            last_layer_coattn = trial.suggest_categorical(f"coattn_middle", [True, False])
-            middle_layer_coattn = trial.suggest_categorical(f"coattn_last", [True, False])
+            # TODO: learning rate scheduler settings
 
-            coattn_list = []
-            if first_layer_coattn:
-                coattn_list.append(0)
-            if middle_layer_coattn and depth//2 not in coattn_list:
-                coattn_list.append(depth//2)
-            if last_layer_coattn and (depth-1) not in coattn_list:
-                coattn_list.append(depth-1)
+            fusion_strat:str = trial.suggest_categorical("fusion_strat",
+                ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
+
+            t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
+
+
+            # for old config, now new one
+            # first_layer_coattn = trial.suggest_categorical("coattn_0", [True, False])
+            # last_layer_coattn = trial.suggest_categorical(f"coattn_middle", [True, False])
+            # middle_layer_coattn = trial.suggest_categorical(f"coattn_last", [True, False])
+
+            # coattn_list = []
+            # if first_layer_coattn:
+            #     coattn_list.append(0)
+            # if middle_layer_coattn and depth//2 not in coattn_list:
+            #     coattn_list.append(depth//2)
+            # if last_layer_coattn and (depth-1) not in coattn_list:
+            #     coattn_list.append(depth-1)
 
             config = ExperimentConfig(
-                cross_attention_layers=coattn_list,
-                depth=depth,
+                t_biattention_ids=t_biattention_ids,
+                v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
-                dropout=dropout,
                 # train_test_ratio=0.1
             )
 
@@ -277,7 +307,7 @@ class ExperimentTracker:
         return pareto_trials[0].params if pareto_trials else {}
 
 
-
+    #TODO: adapt to new architecture
     def optimize_coattn_for_accuracy(self, depth, n_trials, optimization_objective:list[str]= "acc"):
         assert optimization_objective in ["acc", "loss"]
         import optuna
@@ -486,11 +516,12 @@ class ExperimentTracker:
     def _get_filename(self, config: ExperimentConfig):
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         # coattn_pix: str =""
-        if config.cross_attention_layers == []:
+        if config.v_biattention_ids  == []:
             coattn_fix = "no_coattn"
         else:
             coattn_fix = "coattn_"
-            for i in config.cross_attention_layers:
+            #TODO: only temporary, fix!
+            for i in config.v_biattention_ids:
                 coattn_fix += str(i)
                 coattn_fix += "-"
             coattn_fix = coattn_fix[:-1]
@@ -595,11 +626,9 @@ class ExperimentTracker:
 
     def create_config(self, experiment_config: ExperimentConfig):
         config = ViLBERTConfig()
-        config.cross_attention_layers = experiment_config.cross_attention_layers
-        config.depth = experiment_config.depth
-        if config.cross_attention_layers != []:
-            assert config.depth >= max(config.cross_attention_layers)
-        assert config.depth >= len(config.cross_attention_layers)
+        config.text_cross_attention_layers = experiment_config.t_biattention_ids
+        config.vision_cross_attention_layers = experiment_config.v_biattention_ids
+
         config.epochs = experiment_config.epochs
         config.batch_size = experiment_config.batch_size
         config.gradient_accumulation = experiment_config.gradient_accumulation
@@ -614,8 +643,8 @@ class ExperimentTracker:
 
 
         training_results["config"] = {
-            "cross_attention_layers": config.cross_attention_layers,
-            "depth": config.depth,
+            "t_biattention_ids": config.t_biattention_ids,
+            "v_biattention_ids": config.v_biattention_ids,
             "epochs": config.epochs,
             "batch_size": config.batch_size,
             "gradient_accumulation": config.gradient_accumulation,
@@ -667,7 +696,7 @@ def get_experiments():
 
 def main():
     tracker = ExperimentTracker()
-    tracker.optimize_parameters_multi(n_trials=60, optimization_objective="loss")
+    tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()

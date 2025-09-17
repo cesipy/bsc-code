@@ -27,7 +27,8 @@ CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
 VISION_CROSS_ATTENTION_LAYERS = [4,5,9,11]
 TEXT_CROSS_ATTENTION_LAYERS   = [6,8,10,11 ]
 
-CROSS_ATTENTION_DROPOUT = 0.1
+TEXT_ATTENTION_DROPOUT = 0.1
+VISION_ATTENTION_DROPOUT = 0.1
 # --------------------------------------------------
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4
@@ -102,7 +103,6 @@ class ViLBERTConfig:
         preprocessed_path=PREPROCESSED_PATH,
         train_test_ratio=TRAIN_TEST_RATIO,
         batch_size=BATCH_SIZE_PRETRAIN,
-        depth=DEPTH,
         gradient_accumulation=GRADIENT_ACCUMULATION,
         pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
         cross_attention_layers: list[int]= CROSS_ATTENTION_LAYERS,
@@ -110,6 +110,7 @@ class ViLBERTConfig:
         vision_cross_attention_layers: list[int] = VISION_CROSS_ATTENTION_LAYERS,
         seed:int = SEED,
     ):
+        assert len(text_cross_attention_layers) == len(vision_cross_attention_layers)
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
         self.num_hidden_layers = num_hidden_layers
@@ -121,13 +122,12 @@ class ViLBERTConfig:
         self.train_test_ratio = train_test_ratio
         self.batch_size = batch_size
         self.gradient_accumulation = gradient_accumulation
-        self.depth = depth
+        self.depth = DEPTH + len(text_cross_attention_layers)  # total number of layers in transformer
         self.pretraining_tasks = pretraining_tasks
-        self.cross_attention_layers = cross_attention_layers
         self.seed = seed
         self.text_cross_attention_layers = text_cross_attention_layers
         self.vision_cross_attention_layers = vision_cross_attention_layers
-        assert depth >= len(cross_attention_layers)
+        assert len(self.text_cross_attention_layers) <= DEPTH
 
 
     def items(self):

@@ -205,7 +205,7 @@ class ViLBERT(nn.Module):
             self.c_layers.append(CrossAttentionBlock(
                 dim=EMBEDDING_DIM,
                 heads=NUM_ATTENTION_HEADS,
-                dropout=CROSS_ATTENTION_DROPOUT
+                dropout=config.dropout_prob,
             ))
 
         # pretrain heads
