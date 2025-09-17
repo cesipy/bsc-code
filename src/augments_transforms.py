@@ -4,8 +4,12 @@ from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import resolve_data_config
 
 import albumentations as A
+import cv2
 
 from config import VIT_MODEL_NAME, SEED
+
+##https://explore.albumentations.ai/
+# to test out augmentations
 
 
 def get_transform_unmasked():
@@ -87,18 +91,50 @@ def get_hateful_memes_train_augmentation():
 def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
 
     hm_transforms = A.Compose([
-        A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.15, p=.6),
-        A.RandomResizedCrop(size=(224, 224), scale=(0.92, 1.0), ratio=(0.95, 1.05), p=1.0),
-        A.Affine(
-            rotate=(-5, 5),
-            translate_percent=(0.05, 0.05),
-            scale=(0.95, 1.05),
-            shear=(-2, 2),
-            p=1.0
-        ),
-        A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 0.5), p=0.2),
-        A.Perspective(scale=(0.05, 0.08), p=0.25),
+        A.ColorJitter(
+            brightness=(0.7,1.3),
+            contrast=(0.7,1.3),
+            saturation=(0.8, 1.2),
+            hue=(-0.01, 0.01),
+            p=.6
+            ),
+        # A.RandomResizedCrop(size=(224, 224), scale=(0.92, 1.0), ratio=(0.95, 1.05), p=1.0),
+
+        # A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 0.5), p=0.2),
+        # A.Perspective(scale=(0.05, 0.08), p=0.25),
         A.ToGray(p=0.1),
+        A.OneOf([
+            A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 0.5), p=1.0),
+            A.MotionBlur(
+                blur_limit=(1,5),
+                allow_shifted=False,
+                angle_range=(0,45)
+            ),
+            A.ImageCompression(quality_range=(65, 90)),
+        ], p=0.25),
+        A.OneOf([
+            A.CoarseDropout(
+                num_holes_range=(1, 2),
+                hole_height_range=(0.05, 0.2),
+                hole_width_range=(0.05, 0.2),
+                fill=0,
+                p=1.
+            ),
+            A.CoarseDropout(
+                num_holes_range=(1, 2),
+                hole_height_range=(0.05, 0.2),
+                hole_width_range=(0.05, 0.2),
+                fill="random_uniform",
+                p=1.
+            )
+        ], p=0.25),
+        A.Affine(
+            scale=(0.7,0.98 ),
+            rotate=(-10,10),
+            shear=(0.05,0.05),
+            border_mode=cv2.BORDER_REPLICATE,
+            p=0.5,
+        ),
     ], seed=SEED)
 
     hm_transforms_improved = A.Compose([
@@ -114,16 +150,15 @@ def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
         ),
         A.ToGray(p=0.1),
 
-        # Add selective sophisticated augmentations
+
         A.CLAHE(clip_limit=2.0, tile_grid_size=(4, 4), p=0.3),  # Better contrast
         A.GridDistortion(num_steps=5, distort_limit=0.05, p=0.2),  # Mild geometric distortion
-        A.GaussNoise(var_limit=(5.0, 10.0), p=0.15),  # Light noise
+        A.GaussNoise(std_range=(0.1, 0.1)),
 
-        # One strong augmentation (mutually exclusive)
         A.OneOf([
             A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 0.5), p=1.0),
             A.MotionBlur(blur_limit=3, p=1.0),
-            A.ImageCompression(quality_lower=70, quality_upper=90, p=1.0),
+            A.ImageCompression(quality_range=(65, 90)),
         ], p=0.25),
 
         A.Perspective(scale=(0.05, 0.08), p=0.25),

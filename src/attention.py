@@ -290,11 +290,9 @@ class CrossAttention(nn.Module):
             text_qk_scaled = text_qk_scaled + vision_mask
         text_attention_qk = self.softmax(text_qk_scaled)
 
-        # TODO: add attention dropout
-        # vision_attention_qk = self.dropout(vision_attention_qk)
-        # text_attention_qk = self.dropout(text_attention_qk)
-
-        text_attention_qk = self.attnn_dropout(text_attention_qk)
+        # This is actually dropping out entire tokens to attend to, which might
+        # seem a bit unusual, but is taken from the original Transformer paper.
+        text_attention_qk = self.attn_dropout(text_attention_qk)
 
         attention_1 = torch.matmul(text_attention_qk, vision_v)
         attention_1 = rearrange(attention_1, 'b h n d -> b n (h d)')
@@ -307,7 +305,9 @@ class CrossAttention(nn.Module):
             # mask padding tokens, to not attent to it!
             vision_qk_scaled = vision_qk_scaled + text_mask
         vision_attention_qk = self.softmax(vision_qk_scaled)
-        vision_attention_qk = self.attnn_dropout(vision_attention_qk)
+        # This is actually dropping out entire tokens to attend to, which might
+        # seem a bit unusual, but is taken from the original Transformer paper.
+        vision_attention_qk = self.attn_dropout(vision_attention_qk)
 
 
 
