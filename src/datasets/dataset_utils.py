@@ -71,6 +71,14 @@ def _process_image(img: Image.Image, transform=None):
     elif transform:
         img = transform(img)
 
+
+    # used to inspect augmentations
+    # import time
+    # tmsp = round(time.time() * 1000)
+    # img = Image.fromarray(np.uint8(img)).convert("RGB")
+    # img.save(f"aug-test/img_{str(tmsp)}.png")
+    img = Image.fromarray(np.uint8(img)).convert("RGB")
+
     # performs only normlalization
 
     img_t : torch.tensor = basic_vit_transform(img).unsqueeze(0)

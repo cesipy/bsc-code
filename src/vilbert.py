@@ -234,6 +234,12 @@ class ViLBERT(nn.Module):
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),
         )
+        self.fc_upmc = nn.Sequential(
+            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.ReLU(inplace=True),
+            nn.Dropout(self.config.dropout_prob),
+            nn.Linear(FC_HIDDEN_DIM, UPMC_NUM_CLASSES),
+        )
 
 
 

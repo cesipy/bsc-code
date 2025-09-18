@@ -11,6 +11,7 @@ SEED = 13310  #TODO INTEGRATE EVERYWHERE
 
 MM_IMDB_NUM_GENRES = 23
 EASY_VQA_NUM_CLASSES = 13
+UPMC_NUM_CLASSES = 101
 
 # --------------------------------------------------
 # ViLBERT
@@ -24,8 +25,8 @@ VIT_MODEL_NAME = "vit_base_patch16_224"
 DEPTH = 12          # how many co-attn layers in transformer
 # CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
 CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
-VISION_CROSS_ATTENTION_LAYERS = [4,5,9,11]
-TEXT_CROSS_ATTENTION_LAYERS   = [6,8,10,11 ]
+VISION_CROSS_ATTENTION_LAYERS = [4,8]
+TEXT_CROSS_ATTENTION_LAYERS   = [10,11]
 
 TEXT_ATTENTION_DROPOUT = 0.1
 VISION_ATTENTION_DROPOUT = 0.1
@@ -57,7 +58,7 @@ PIN_MEMORY = False
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
 DOWNSTREAM_EPOCHS = 8
-DOWNSTREAM_LR     = 5e-5
+DOWNSTREAM_LR     = 3.5e-5
 
 if machine == "remote":
     BATCH_SIZE_DOWNSTREAM = 24
