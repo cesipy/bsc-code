@@ -18,7 +18,7 @@ import utils
 import random
 
 from logger import Logger
-from config import *
+from config import *; import config
 from .dataset_utils import get_image_embedding, get_text_embedding
 import augments_transforms
 
@@ -26,6 +26,7 @@ from .dataset_hateful_memes import HM_Dataset
 from .dataset_pretrain import *
 from .dataset_mm_imdb import *
 from .dataset_vqa import *
+from .dataset_upmc import *
 
 from .dataset_utils import generate_data_list, generate_data_list_pretrain
 
@@ -498,3 +499,91 @@ def get_easyvqa_datasets(
     )
 
     return train_dataloader, val_dataloader
+
+def get_upmc_datasets(
+    train_test_ratio: float,
+    batch_size: int,
+    num_workers: int,
+    pin_memory: bool = False,
+    prefetch_factor: int = 4,
+    persistent_workers: bool = False,
+    use_train_augmentation:bool=True,
+    max_samples: typing.Optional[int] = None,
+) -> typing.Tuple[DataLoader, DataLoader]:
+    """
+    get the UPMC food-101 dataset. per default enables data augmentation on testset
+
+    parameters:
+        train_test_ratio: float
+        batch_size: int
+        num_workers: int
+        pin_memory: bool
+        prefetch_factor: int
+        persistent_workers: bool
+        use_train_augmentation: bool, whether to use data augmentation on the training set. defaults to True
+        max_samples: Optional[int], maximum number of samples to use from the dataset. Useful for quick experiments.
+    """
+
+    assert 0< train_test_ratio <1
+
+    if use_train_augmentation:
+        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=False)
+    else: transform = None
+
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    if config.machine == "remote":
+        csv_path = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_trainval.csv"
+        img_path = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+    else:
+        csv_path = "res/data/UPMC_Food-101/upmcfood_trainval.csv"
+        img_path = "res/data/UPMC_Food-101/images"
+
+    train_dataset = UPMC_Dataset(
+        csv_path=csv_path,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        is_train=True,
+        img_path=img_path,
+        train_test_ratio=train_test_ratio,
+        transform=transform,
+        max_samples=max_samples,       # TODO
+    )
+    val_dataset = UPMC_Dataset(
+        csv_path=csv_path,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        is_train=False,
+        img_path=img_path,
+        train_test_ratio=train_test_ratio,
+    )
+
+    print(f"num of trainsamples: {len(train_dataset)}")
+    print(f"num of valsamples: {len(val_dataset)}")
+
+    train_dataloader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
+    )
+
+    val_dataloader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        prefetch_factor=prefetch_factor,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(SEED),
+    )
+
+    return  train_dataloader, val_dataloader

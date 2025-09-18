@@ -224,7 +224,7 @@ class ExperimentTracker:
             # therefore, no further tuning on it
             # dropout = trial.suggest_float("dropout", 0.0, 0.4)
             epochs = trial.suggest_int("epochs", 2, 9)
-            depth = trial.suggest_int("depth", 4, 8)
+            # depth = trial.suggest_int("depth", 4, 8)
             # TODO: learning rate scheduler settings
 
             fusion_strat:str = trial.suggest_categorical("fusion_strat",
