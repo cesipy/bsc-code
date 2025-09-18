@@ -179,6 +179,20 @@ class UPMCTrainer(BaseTrainer):
                 buffer_info_loss.append(loss_info.item())
                 buffer_normal_loss.append(loss_normal.item())
                 buffer_total_loss.append(loss.item())
+
+
+                if (batch_indx +1) % 10 == 0:
+                    avg_info_loss = sum(buffer_info_loss) / len(buffer_info_loss)
+                    avg_normal_loss = sum(buffer_normal_loss) / len(buffer_normal_loss)
+                    avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
+
+                    self.info_losses.append(avg_info_loss)
+                    self.normal_losses.append(avg_normal_loss)
+                    self.total_losses.append(avg_total_loss)
+
+                    buffer_info_loss = []
+                    buffer_normal_loss = []
+                    buffer_total_loss = []
             else:
                 text_embedding, image_embedding = self.model(
                     text_input_ids = text["input_ids"],
@@ -212,9 +226,9 @@ class UPMCTrainer(BaseTrainer):
 
         if self.use_contrastive_loss:
             utils.visualize_loss(
-                info_losses=buffer_info_loss,
-                normal_losses=buffer_normal_loss,
-                total_losses=buffer_total_loss,
+                info_losses=self.info_losses,
+                normal_losses=self.normal_losses,
+                total_losses=self.total_losses,
             )
         return total_loss / num_batches
 
