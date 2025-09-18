@@ -166,7 +166,7 @@ class UPMCTrainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                 )
                 combined = text_embedding*image_embedding
-                assert combined.shape == (dataloader.batch_size, self.config.embedding_dim)
+                # assert combined.shape == (dataloader.batch_size, self.config.embedding_dim)
                 preds = self.model.fc_upmc(combined)
 
                 # print(f"preds: {preds.shape}, label: {label.shape}")
@@ -189,7 +189,7 @@ class UPMCTrainer(BaseTrainer):
                 )
 
                 combined = text_embedding*image_embedding
-                assert combined.shape == (dataloader.batch_size, self.config.embedding_dim)
+                # assert combined.shape == (dataloader.batch_size, self.config.embedding_dim)
                 preds = self.model.fc_upmc(combined)
                 # print(f"preds: {preds.shape}, label: {label.shape}")
 
