@@ -20,6 +20,12 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
 ```
 
 
+For the basic evaluation program `argcomplete` is installed. This is for tab completion.  Its included in the `requirements.txt` file, to install run:
+```bash
+activate-global-python-argcomplete
+```
+
+
 ## Optuna parameter tuning
 To perform either hyperparam-optimization or neural architecture search (NAS), simply run:
 ```bash
@@ -147,6 +153,11 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## TODO#
 **immediate:**
+- [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
+- [ ] fix coattentions not really saved in intermediate_representations
+- [ ] compare ap contrastive with the contrastive in downstream
+- [ ] fix vilbert architecture
+- [ ] upmc datatset
 - [x] vqa
 - [ ] wasserstein
 - [x] optuna- remove pruning, not necessary
@@ -154,16 +165,15 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 	- [ ] include easyvqa in optuna
 
 - [ ] analysis of pretrained models: discrepancies in end representation of streams
-- [x] better seeding
-- [ ] variable cka in analysis.
+
+- [x] variable cka in analysis.
 - [ ] fix the alignment string to have same lenght
 - [ ] `src/evaluate.py` more flexible
 	- [ ] contrastive loss for other datasets; include in trainer
 
-- [ ] finetune bert and vit alone, without additional layers of vilbert
-	- [ ] abstr class for model, include all the heads.
 
 **other**
+- [ ] uinfy weighted loss for infonce in trainers
 - [ ] tools to look into:
 	- [ ] captum
 	- [ ] alibi
@@ -183,9 +193,8 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 		- [ ] optimize for alignment, not for loss
 
 
-- [x] unify hyperparam_optimizer and experiment_tracker.
 - [ ] arparse for experimenttracker: whenever I want to test alignment
-- [x] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
+
 
 
 - [x] implement experiment tracker
@@ -385,7 +394,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 	Layer 6: mKNN (CLS) = 0.5957, mKNN (Seq) = 0.1597
 	^CTraceback (most recent call last):
 	</details>
-- [x] fix spelling issue in "costrative"
+
 - [ ] problem with contrastive term in pretraining: combined approach!
 
 
@@ -421,7 +430,13 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 ### past TODOs
+- [x] finetune bert and vit alone, without additional layers of vilbert
+	- [x] abstr class for model, include all the heads.
 
+- [x] unify hyperparam_optimizer and experiment_tracker.
+- [x] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
+- [x] better seeding
+- [x] fix spelling issue in "costrative"
 - [x] visualization of all the other measueres
 	- [x] mknn
 	- [x] jaccard - add to analysis
@@ -472,6 +487,98 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 ## Results
 
 ## 15.09
+**interesting observation**:
+baseline (only hadamard between vit and BERT) has really high performance in comparison to the more complex vilbert!
+
+baseline:
+```bash
+before training, evaluating on uninitialized model
+alignment for hateful memes:
+layer layer0 (co-attn-False): cosine=-0.0055, CKA=0.0618, SVCCA=0.0000, mknn=0.0956, rank=0.0711, procrustes=1948.8162
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|█████████████████████████████████████████████████████| 850/850 [02:42<00:00,  5.24it/s]
+Epoch 1/4, train loss: 0.6449, test loss: 0.5963,  accuracy: 0.7082
+alignment for hateful memes:
+layer layer0 (co-attn-False): cosine=-0.0107, CKA=0.0621, SVCCA=0.0000, mknn=0.0592, rank=0.0674, procrustes=1049.5791
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|█████████████████████████████████████████████████████| 850/850 [02:42<00:00,  5.24it/s]
+Epoch 2/4, train loss: 0.5617, test loss: 0.5412,  accuracy: 0.7306
+alignment for hateful memes:
+layer layer0 (co-attn-False): cosine=-0.0012, CKA=0.0823, SVCCA=0.0000, mknn=0.0639, rank=0.0710, procrustes=1270.4775
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|█████████████████████████████████████████████████████| 850/850 [02:42<00:00,  5.23it/s]
+Epoch 3/4, train loss: 0.5074, test loss: 0.5379,  accuracy: 0.7341
+alignment for hateful memes:
+layer layer0 (co-attn-False): cosine=0.0095, CKA=0.0818, SVCCA=0.0000, mknn=0.0675, rank=0.0678, procrustes=1502.3615
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|█████████████████████████████████████████████████████| 850/850 [02:42<00:00,  5.23it/s]
+Epoch 4/4, train loss: 0.4817, test loss: 0.5386,  accuracy: 0.7394
+alignment for hateful memes:
+layer layer0 (co-attn-False): cosine=0.0056, CKA=0.0822, SVCCA=0.0000, mknn=0.0673, rank=0.0757, procrustes=1581.5077
+```
+
+*vs:*
+
+vilbert:
+```bash
+python src/evaluate.py
+Pretrained model path None does not exist, using fresh model.
+trainable params: 296755552/296755552
+bs_alignment_analysis: 128, batchsize: 8
+dirname:  res/data/hateful_memes_data
+dirname:  res/data/hateful_memes_data
+using contrastive: False
+
+
+before training, evaluating on uninitialized model
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0056, CKA=0.0628, SVCCA=0.0000, mknn=0.3674, rank=0.3002, procrustes=889.1853
+layer layer1 (co-attn-True): cosine=-0.0049, CKA=0.0625, SVCCA=0.0000, mknn=0.4345, rank=0.3842, procrustes=839.5596
+layer layer2 (co-attn-False): cosine=-0.0029, CKA=0.0615, SVCCA=0.0000, mknn=0.4267, rank=0.3579, procrustes=841.2892
+layer layer3 (co-attn-False): cosine=-0.0006, CKA=0.0624, SVCCA=0.0000, mknn=0.4204, rank=0.3894, procrustes=845.1613
+layer layer4 (co-attn-True): cosine=-0.0033, CKA=0.0625, SVCCA=0.0000, mknn=0.4759, rank=0.4327, procrustes=797.9229
+simulated batchsize: 512, actual batchsize: 8
+training:   0%|                                                               | 0/850 [00:00<?, ?it/s]/home/cedric/coding/github/bachelor-thesis/bsc-code/venv310/lib/python3.10/site-packages/torch/_inductor/compile_fx.py:236: UserWarning: TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled. Consider setting `torch.set_float32_matmul_precision('high')` for better performance.
+  warnings.warn(
+W0915 19:05:54.854000 40049 torch/_inductor/utils.py:1250] [0/2] Not enough SMs to use max_autotune_gemm mode
+training: 100%|█████████████████████████████████████████████████████| 850/850 [04:52<00:00,  2.91it/s]
+Epoch 1/4, train loss: 0.6306, test loss: 0.6117,  accuracy: 0.6535
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0316, CKA=0.0489, SVCCA=0.0000, mknn=0.1419, rank=0.1735, procrustes=947.6616
+layer layer1 (co-attn-True): cosine=-0.0228, CKA=0.0484, SVCCA=0.0000, mknn=0.1749, rank=0.1994, procrustes=870.5939
+layer layer2 (co-attn-False): cosine=-0.0345, CKA=0.0475, SVCCA=0.0000, mknn=0.1820, rank=0.2260, procrustes=833.2436
+layer layer3 (co-attn-False): cosine=-0.0228, CKA=0.0483, SVCCA=0.0000, mknn=0.1871, rank=0.2318, procrustes=795.6479
+layer layer4 (co-attn-True): cosine=-0.0336, CKA=0.0476, SVCCA=0.0000, mknn=0.2268, rank=0.2759, procrustes=697.4583
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|█████████████████████████████████████████████████████| 850/850 [04:34<00:00,  3.09it/s]
+Epoch 2/4, train loss: 0.5227, test loss: 0.5356,  accuracy: 0.7465
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0172, CKA=0.0540, SVCCA=0.0000, mknn=0.1589, rank=0.1660, procrustes=1058.3779
+layer layer1 (co-attn-True): cosine=-0.0166, CKA=0.0536, SVCCA=0.0000, mknn=0.1990, rank=0.1759, procrustes=982.0504
+layer layer2 (co-attn-False): cosine=-0.0314, CKA=0.0529, SVCCA=0.0000, mknn=0.2046, rank=0.2072, procrustes=949.4791
+layer layer3 (co-attn-False): cosine=-0.0272, CKA=0.0540, SVCCA=0.0000, mknn=0.2137, rank=0.2014, procrustes=917.3548
+layer layer4 (co-attn-True): cosine=-0.0396, CKA=0.0535, SVCCA=0.0000, mknn=0.2601, rank=0.2679, procrustes=813.4399
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|█████████████████████████████████████████████████████| 850/850 [04:34<00:00,  3.09it/s]
+Epoch 3/4, train loss: 0.4364, test loss: 0.5425,  accuracy: 0.7453
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0219, CKA=0.0534, SVCCA=0.0000, mknn=0.1808, rank=0.1645, procrustes=1047.8995
+layer layer1 (co-attn-True): cosine=-0.0203, CKA=0.0532, SVCCA=0.0000, mknn=0.2207, rank=0.1923, procrustes=976.6376
+layer layer2 (co-attn-False): cosine=-0.0323, CKA=0.0526, SVCCA=0.0000, mknn=0.2253, rank=0.2112, procrustes=951.6035
+layer layer3 (co-attn-False): cosine=-0.0296, CKA=0.0537, SVCCA=0.0000, mknn=0.2303, rank=0.2133, procrustes=927.0833
+layer layer4 (co-attn-True): cosine=-0.0454, CKA=0.0533, SVCCA=0.0000, mknn=0.2810, rank=0.2693, procrustes=828.4471
+simulated batchsize: 512, actual batchsize: 8
+training: 100%|█████████████████████████████████████████████████████| 850/850 [04:34<00:00,  3.09it/s]
+Epoch 4/4, train loss: 0.3921, test loss: 0.5487,  accuracy: 0.7394
+alignment for hateful memes:
+layer layer0 (co-attn-True): cosine=-0.0220, CKA=0.0540, SVCCA=0.0000, mknn=0.1748, rank=0.1499, procrustes=1048.1293
+layer layer1 (co-attn-True): cosine=-0.0210, CKA=0.0538, SVCCA=0.0000, mknn=0.2150, rank=0.1910, procrustes=978.0315
+layer layer2 (co-attn-False): cosine=-0.0330, CKA=0.0532, SVCCA=0.0000, mknn=0.2178, rank=0.2080, procrustes=954.5532
+layer layer3 (co-attn-False): cosine=-0.0299, CKA=0.0543, SVCCA=0.0000, mknn=0.2269, rank=0.2106, procrustes=931.1603
+layer layer4 (co-attn-True): cosine=-0.0462, CKA=0.0539, SVCCA=0.0000, mknn=0.2760, rank=0.2586, procrustes=834.6483
+```
+
+
 hateful memes: contrastive vs. non-contrastive training (with alignment analysis):
 ```
 ❯ python src/evaluate.py
