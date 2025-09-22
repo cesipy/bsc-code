@@ -173,6 +173,17 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 **other**
+- [ ] attn entropy:
+- Analyzing Multi-Head Self-Attention
+- What Does BERT Look At?
+- Is Attention Interpretable?
+- Probing Multimodal Embeddings for Linguistic Properties
+
+- [ ] gradient based attribution
+- Grad-CAM: Visual Explanations from Deep Networks
+- Generic Attention-model Explainability for Interpreting Bi-Modal Transformers
+- Transformer Interpretability Beyond Attention Visualization"
+
 - [ ] uinfy weighted loss for infonce in trainers
 - [ ] tools to look into:
 	- [ ] captum
