@@ -27,7 +27,7 @@ def main():
         pin_memory=PIN_MEMORY,
         prefetch_factor=PREFETCH,
         train_test_ratio=TRAIN_TEST_RATIO,
-        max_samples=10000,
+        max_samples=None,
     )
     # for batch in train_dataloader:
     #     print("batch")
@@ -56,7 +56,7 @@ def main():
     trainer.train(
         train_dataloader=train_dataloader,
         test_dataloader=val_dataloader,
-        epochs=8,
+        epochs=15,
 
     )
 

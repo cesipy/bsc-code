@@ -18,7 +18,7 @@ from logger import Logger
 import analysis
 
 logger = Logger()
-EPOCHS = 7
+EPOCHS_ = 8
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = True
 
@@ -28,7 +28,7 @@ class ExperimentConfig:
     t_biattention_ids: list
     v_biattention_ids: list
 
-    epochs: int = EPOCHS
+    epochs: int = EPOCHS_
     batch_size: int = BATCH_SIZE_DOWNSTREAM
     gradient_accumulation: int = GRADIENT_ACCUMULATION_DOWNSTREAM
     learning_rate: float = DOWNSTREAM_LR
@@ -218,12 +218,15 @@ class ExperimentTracker:
         import optuna
 
         def objective(trial):
-            lr = trial.suggest_float("learning_rate", 5e-6, 5e-5, log=True)
+            lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
             # analysis with optuna resulted in dropout of about 0.08.
             # this is roughly the same as in vilbert implementation of 0.1
             # therefore, no further tuning on it
             # dropout = trial.suggest_float("dropout", 0.0, 0.4)
-            epochs = trial.suggest_int("epochs", 2, 9)
+            # epochs = trial.suggest_int("epochs", 2, 9)
+
+            # also epoch 7 is really good, like 7 - 10 based on optuna
+            epochs = EPOCHS_
             # depth = trial.suggest_int("depth", 4, 8)
             # TODO: learning rate scheduler settings
 
@@ -232,19 +235,6 @@ class ExperimentTracker:
 
             t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
 
-
-            # for old config, now new one
-            # first_layer_coattn = trial.suggest_categorical("coattn_0", [True, False])
-            # last_layer_coattn = trial.suggest_categorical(f"coattn_middle", [True, False])
-            # middle_layer_coattn = trial.suggest_categorical(f"coattn_last", [True, False])
-
-            # coattn_list = []
-            # if first_layer_coattn:
-            #     coattn_list.append(0)
-            # if middle_layer_coattn and depth//2 not in coattn_list:
-            #     coattn_list.append(depth//2)
-            # if last_layer_coattn and (depth-1) not in coattn_list:
-            #     coattn_list.append(depth-1)
 
             config = ExperimentConfig(
                 t_biattention_ids=t_biattention_ids,
@@ -267,7 +257,7 @@ class ExperimentTracker:
                 for epoch, (hm_acc, imdb_acc) in enumerate(zip(val_accs_hm, val_accs_imdb)):
                     combined_metric = (hm_acc + imdb_acc) / 2
                     # trial.report(combined_metric, epoch)
-                return max(val_accs_hm), max(val_accs_imdb)
+                result=  max(val_accs_hm), max(val_accs_imdb)
                 # return val_accs_hm[-1], val_accs_imdb[-1]
             else:
                 val_losses_hm = [training_results["hateful_memes"]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
@@ -277,8 +267,10 @@ class ExperimentTracker:
                 for epoch, (hm_loss, imdb_loss) in enumerate(zip(val_losses_hm, val_losses_imdb)):
                     combined_metric = -(hm_loss + imdb_loss) / 2
                     # trial.report(combined_metric, epoch)
-                return -min(val_losses_hm), -min(val_losses_imdb)
+                result=  -min(val_losses_hm), -min(val_losses_imdb)
                 # return -val_losses_hm[-1], -val_losses_imdb[-1]
+            logger.info(f"completed: {str(trial)}")
+            return result
 
         tmsp = time.strftime("%Y%m%d-%H%M%S")
         storage_path = f"sqlite:///{self.save_dir}multi_task_optim_{tmsp}.db"
@@ -303,8 +295,89 @@ class ExperimentTracker:
 
         # TODO: add
         # self._save_multi_optimization_results(study, optimization_objective, tmsp)
-
         return pareto_trials[0].params if pareto_trials else {}
+
+    def optimize_parameters_single(self, n_trials, optimization_objective: str = "acc", task: str = "hateful_memes"):
+        """ optimize parameters for one task"""
+        assert optimization_objective in ["acc", "loss"]
+        assert task in ["hateful_memes", "mm_imdb"]
+        import optuna
+
+        def objective(trial):
+            lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
+            # analysis with optuna resulted in dropout of about 0.08.
+            # this is roughly the same as in vilbert implementation of 0.1
+            # therefore, no further tuning on it
+            # dropout = trial.suggest_float("dropout", 0.0, 0.4)
+            # epochs = trial.suggest_int("epochs", 2, 9)
+
+            # also epoch 7 is really good, like 7 - 10 based on optuna
+            epochs = EPOCHS_
+            # depth = trial.suggest_int("depth", 4, 8)
+            # TODO: learning rate scheduler settings
+
+            fusion_strat:str = trial.suggest_categorical("fusion_strat",
+                ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
+
+            t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
+
+
+            config = ExperimentConfig(
+                t_biattention_ids=t_biattention_ids,
+                v_biattention_ids=v_biattention_ids,
+                epochs=epochs,
+                learning_rate=lr,
+                # train_test_ratio=0.1
+            )
+
+            training_results = self.run_single_experiment(
+                config,
+                run_visualization=False,  # is too compute intensive, not wanted here,
+                single_task=[task]
+            )
+
+            if optimization_objective == "acc":
+                val_accs = [training_results[task]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+
+                # report intermediate results for dashboard. not quite sure about it
+                for epoch, acc in enumerate(val_accs):
+                    trial.report(acc, epoch)
+                result =  max(val_accs)
+                # return val_accs_hm[-1], val_accs_imdb[-1]
+            else:
+                val_losses = [training_results[task]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
+
+
+
+                for epoch, loss in enumerate(val_losses):
+                    trial.report(-loss, epoch)
+                result =  -min(val_losses)
+                # return -val_losses_hm[-1], -val_losses_imdb[-1]
+            logger.info(f"trial {trial.number}: params={trial.params}, result={result:.4f}")
+            return result
+
+        tmsp = time.strftime("%Y%m%d-%H%M%S")
+        storage_path = f"sqlite:///{self.save_dir}multi_task_optim_{tmsp}.db"
+        study_name = f"multi_task_study_{tmsp}"
+
+
+        study = optuna.create_study(
+            direction="maximize",
+            storage=storage_path,
+            study_name=study_name,
+            load_if_exists=True
+        )
+
+        study.optimize(objective, n_trials=n_trials)
+        pareto_trials = study.best_trials
+        print(f"{len(pareto_trials)} optimal solutions:")
+
+        print(f"Best trial: {study.best_trial.value:.4f}")
+        print(f"Best params: {study.best_trial.params}")
+
+        return study.best_trial.params
+
+
 
 
     #TODO: adapt to new architecture
@@ -533,7 +606,8 @@ class ExperimentTracker:
 
 
 
-    def run_single_experiment(self, experiment_config: ExperimentConfig, run_visualization:bool=True):
+    def run_single_experiment(self, experiment_config: ExperimentConfig, run_visualization:bool=True,
+        single_task:Optional[list[str]]=None):
         filename = self._get_filename(config=experiment_config)
 
         print(f"Saving results to {filename}")
@@ -544,33 +618,53 @@ class ExperimentTracker:
         os.makedirs(exp_dir_name_hm, exist_ok=True)
         os.makedirs(exp_dir_name_imdb, exist_ok=True)
 
-
+        # TODO: also include use_contrastive as param to optimize
         config = self.create_config(experiment_config)
         utils.set_seeds(experiment_config.seed)
 
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
 
-        training_results = self.run_single_experiment_mm_imdb(
-            config=config,
-            training_results=training_results,
-            epochs=experiment_config.epochs,
-            dir_name=exp_dir_name_imdb,
-            run_visualization=run_visualization,
-            skip_alignment_analysis=SKIP_ALIGNMENT,
-        )
-        training_results = self.run_single_experiment_hateful_memes(
-            config=config,
-            training_results=training_results,
-            epochs=experiment_config.epochs,
-            dir_name=exp_dir_name_hm,
-            run_visualization=run_visualization,
-            skip_alignment_analysis=SKIP_ALIGNMENT,
-        )
+        if single_task == None:     #run both
+            training_results = self.run_single_experiment_mm_imdb(
+                config=config,
+                training_results=training_results,
+                epochs=experiment_config.epochs,
+                dir_name=exp_dir_name_imdb,
+                run_visualization=run_visualization,
+                skip_alignment_analysis=SKIP_ALIGNMENT,
+            )
+            training_results = self.run_single_experiment_hateful_memes(
+                config=config,
+                training_results=training_results,
+                epochs=experiment_config.epochs,
+                dir_name=exp_dir_name_hm,
+                run_visualization=run_visualization,
+                skip_alignment_analysis=SKIP_ALIGNMENT,
+            )
+        elif "mm_imdb" in single_task:
+            training_results = self.run_single_experiment_mm_imdb(
+                config=config,
+                training_results=training_results,
+                epochs=experiment_config.epochs,
+                dir_name=exp_dir_name_imdb,
+                run_visualization=run_visualization,
+                skip_alignment_analysis=SKIP_ALIGNMENT,
+            )
+        elif "hateful_memes" in single_task:
+            training_results = self.run_single_experiment_hateful_memes(
+                config=config,
+                training_results=training_results,
+                epochs=experiment_config.epochs,
+                dir_name=exp_dir_name_hm,
+                run_visualization=run_visualization,
+                skip_alignment_analysis=SKIP_ALIGNMENT,
+            )
+        else:
+            raise ValueError(f"unknown single_task: {single_task}")
         self.save_results(
             training_results=training_results,
             config=experiment_config,
             filename=filename,
-
         )
         return training_results
 
@@ -679,7 +773,7 @@ def get_experiments():
         exp = ExperimentConfig(
             cross_attention_layers=i,
             depth=depth,
-            epochs=EPOCHS,
+            epochs=EPOCHS_,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             gradient_accumulation=GRADIENT_ACCUMULATION_DOWNSTREAM,
             learning_rate=DOWNSTREAM_LR,
@@ -695,8 +789,10 @@ def get_experiments():
 
 
 def main():
+    logger.info("test!!!!")
     tracker = ExperimentTracker()
-    tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
+    # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
+    tracker.optimize_parameters_single(n_trials=80, optimization_objective="loss", task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()
