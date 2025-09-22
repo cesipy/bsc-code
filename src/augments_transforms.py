@@ -106,7 +106,7 @@ def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
         A.OneOf([
             A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 0.5), p=1.0),
             A.MotionBlur(
-                blur_limit=(1,5),
+                blur_limit=(3,5),
                 allow_shifted=False,
                 angle_range=(0,45)
             ),
