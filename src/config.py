@@ -57,8 +57,8 @@ PERSISTENT_WORKERS = False
 PIN_MEMORY = False
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
-DOWNSTREAM_EPOCHS = 8
-DOWNSTREAM_LR     = 3.5e-5
+DOWNSTREAM_EPOCHS = 15
+DOWNSTREAM_LR     = 3e-5
 
 if machine == "remote":
     BATCH_SIZE_DOWNSTREAM = 24

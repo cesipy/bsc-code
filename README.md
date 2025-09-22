@@ -471,6 +471,9 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## Results
 
+## 22.09
+finished run for hyperparam optim for hm and mm-imdb in `res/experiments/multi_task_optim_20250918-134352.db`.
+
 ## 15.09
 hateful memes: contrastive vs. non-contrastive training (with alignment analysis):
 ```
