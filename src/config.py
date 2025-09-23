@@ -110,6 +110,7 @@ class ViLBERTConfig:
         text_cross_attention_layers: list[int] = TEXT_CROSS_ATTENTION_LAYERS,
         vision_cross_attention_layers: list[int] = VISION_CROSS_ATTENTION_LAYERS,
         seed:int = SEED,
+        use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS,
     ):
         assert len(text_cross_attention_layers) == len(vision_cross_attention_layers)
         self.embedding_dim = embedding_dim
@@ -128,6 +129,7 @@ class ViLBERTConfig:
         self.seed = seed
         self.text_cross_attention_layers = text_cross_attention_layers
         self.vision_cross_attention_layers = vision_cross_attention_layers
+        self.use_contrastive_loss = use_contrastive_loss
         assert len(self.text_cross_attention_layers) <= DEPTH
 
 

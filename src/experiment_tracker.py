@@ -27,6 +27,7 @@ SKIP_ALIGNMENT = True
 class ExperimentConfig:
     t_biattention_ids: list
     v_biattention_ids: list
+    use_contrastive_loss: bool
 
     epochs: int = EPOCHS_
     batch_size: int = BATCH_SIZE_DOWNSTREAM
@@ -228,7 +229,10 @@ class ExperimentTracker:
             # also epoch 7 is really good, like 7 - 10 based on optuna
             epochs = EPOCHS_
             # depth = trial.suggest_int("depth", 4, 8)
-            # TODO: learning rate scheduler settings
+
+            use_contrastive = trial.suggest_categorical("use_contrastive",
+                [True, False])
+
 
             fusion_strat:str = trial.suggest_categorical("fusion_strat",
                 ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
@@ -241,6 +245,7 @@ class ExperimentTracker:
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
+                use_contrastive_loss=use_contrastive
                 # train_test_ratio=0.1
             )
 
@@ -314,7 +319,10 @@ class ExperimentTracker:
             # also epoch 7 is really good, like 7 - 10 based on optuna
             epochs = EPOCHS_
             # depth = trial.suggest_int("depth", 4, 8)
-            # TODO: learning rate scheduler settings
+
+            use_contrastive = trial.suggest_categorical("use_contrastive",
+                [True, False])
+
 
             fusion_strat:str = trial.suggest_categorical("fusion_strat",
                 ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
@@ -327,6 +335,8 @@ class ExperimentTracker:
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
+                use_contrastive_loss=use_contrastive
+
                 # train_test_ratio=0.1
             )
 
@@ -464,7 +474,8 @@ class ExperimentTracker:
         trainer = HatefulMemesTrainer(
             model=model,
             config=config,
-            gradient_accumulation=GRADIENT_ACCUMULATION
+            gradient_accumulation=GRADIENT_ACCUMULATION,
+            use_contrastive_loss=config.use_contrastive_loss,
         )
 
         train_loader, val_loader = datasets.get_hateful_memes_datasets(
@@ -529,6 +540,7 @@ class ExperimentTracker:
             model=model,
             config=config,
             gradient_accumulation=GRADIENT_ACCUMULATION,
+            use_contrastive_loss=config.use_contrastive_loss,
         )
 
         train_loader, val_loader = datasets.get_mmimdb_datasets(
@@ -730,6 +742,7 @@ class ExperimentTracker:
         config.seed = experiment_config.seed
         config.train_test_ratio = experiment_config.train_test_ratio
         config.dropout_prob = experiment_config.dropout
+        config.use_contrastive_loss = experiment_config.use_contrastive_loss
         return config
 
 
@@ -792,7 +805,8 @@ def main():
     logger.info("test!!!!")
     tracker = ExperimentTracker()
     # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
-    tracker.optimize_parameters_single(n_trials=80, optimization_objective="loss", task="hateful_memes")
+    tracker.optimize_parameters_single(n_trials=80, optimization_objective="loss",
+        task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()

@@ -153,6 +153,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## TODO#
 **immediate:**
+- [ ] double and triple check if new architecture-fix is correct
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 - [ ] fix coattentions not really saved in intermediate_representations
 - [ ] compare ap contrastive with the contrastive in downstream
