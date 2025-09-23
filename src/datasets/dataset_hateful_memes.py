@@ -107,7 +107,6 @@ class HM_Dataset(Dataset):
         label_tensor = torch.tensor(label, dtype=torch.long)
 
 
-
         return {
             "img": img_embeddings,
             "label": label_tensor,

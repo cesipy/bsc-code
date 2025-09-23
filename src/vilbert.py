@@ -241,12 +241,26 @@ class ViLBERT(nn.Module):
             nn.Linear(FC_HIDDEN_DIM, UPMC_NUM_CLASSES),
         )
 
+    def save_model(self, save_path):
+        """Save model state dict and config"""
+        checkpoint = {
+            'model_state_dict': self.state_dict(),
+            'config': self.config.__dict__,
+        }
+        torch.save(checkpoint, save_path)
+        print(f"model saved to {save_path}")
 
+    @classmethod
+    def load_model(cls, load_path, device='cpu'):
+        """Load model from saved checkpoint"""
+        checkpoint = torch.load(load_path, map_location=device, weights_only=False)
+        config = ViLBERTConfig()
+        config.__dict__.update(checkpoint['config'])
+        model = cls(config)
+        model.load_state_dict(checkpoint['model_state_dict'])
 
-
-
-
-
+        print(f"model loaded from {load_path}1")
+        return model
 
 
 
