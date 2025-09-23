@@ -47,7 +47,7 @@ def get_weighted_loss(info_nce_loss, normal_loss, weight=1., naive_weighting=Fal
     weight_info  = normal_loss.detach() / temp_total_loss
     weight_normal = info_nce_loss.detach() / temp_total_loss
 
-    loss = weight*weight_info * info_nce_loss + weight_normal * normal_loss
+    loss = weight*weight_info * info_nce_loss + weight_normal*normal_loss
     return loss
 
 def set_seeds(seed:int):

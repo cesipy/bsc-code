@@ -25,8 +25,6 @@ class Attention_Block(nn.Module):
     self.softmax = nn.Softmax(dim=-1)
 
     self.rearrange_qkv = Rearrange('b n (h d) -> b h n d', h=heads)
-
-
     self.to_out = nn.Sequential(
         nn.Linear(dim, dim),
         nn.Dropout(dropout)
@@ -204,6 +202,8 @@ class DualBiAttention(nn.Module):
         text_qk_scaled = torch.matmul(text_q, text_k.transpose(-1, -2)) * self.dk ** -0.5
         text_attention_qk = self.softmax(text_qk_scaled)
 
+
+
         attn1 = torch.matmul(text_attention_qk, text_v)
         attn1 = rearrange(attn1, 'b h n d -> b n (h d)')
 
@@ -252,7 +252,12 @@ class CrossAttention(nn.Module):
             nn.Dropout(dropout)
         )
 
-    def forward(self, text_tensor, vision_tensor):
+        # TODO: in config, also maybe different for two models
+        self.t_attn_dropout = nn.Dropout(TEXT_ATTENTION_DROPOUT)
+        self.v_attn_dropout = nn.Dropout(VISION_ATTENTION_DROPOUT)
+
+
+    def forward(self, text_tensor, vision_tensor, text_mask=None, vision_mask=None):
 
         # store the inputs for later residuals
         text_residual = text_tensor
@@ -281,21 +286,30 @@ class CrossAttention(nn.Module):
         # attention mechanism softmax(Q, K) /sqrt(dk)
         # text query, vision key and value
         text_qk_scaled = torch.matmul(text_q, vision_k.transpose(-1, -2)) * self.dk ** -0.5
+        # not used, as vit should not use vit i guess
+        if vision_mask is not None:
+            text_qk_scaled = text_qk_scaled + vision_mask
         text_attention_qk = self.softmax(text_qk_scaled)
 
-        # TODO: add attention dropout
-        # vision_attention_qk = self.dropout(vision_attention_qk)
-        # text_attention_qk = self.dropout(text_attention_qk)
+        # This is actually dropping out entire tokens to attend to, which might
+        # seem a bit unusual, but is taken from the original Transformer paper.
+        text_attention_qk = self.t_attn_dropout(text_attention_qk)
 
         attention_1 = torch.matmul(text_attention_qk, vision_v)
         attention_1 = rearrange(attention_1, 'b h n d -> b n (h d)')
 
         # vision query, text key and value
         vision_qk_scaled = torch.matmul(vision_q, text_k.transpose(-1, -2)) * self.dk ** -0.5
-        vision_attention_qk = self.softmax(vision_qk_scaled)
 
-        # TODO: add attention dropout
-        # vision_attention_qk = self.dropout(vision_attention_qk)
+
+        if text_mask is not None:
+            # mask padding tokens, to not attent to it!
+            vision_qk_scaled = vision_qk_scaled + text_mask
+        vision_attention_qk = self.softmax(vision_qk_scaled)
+        # This is actually dropping out entire tokens to attend to, which might
+        # seem a bit unusual, but is taken from the original Transformer paper.
+        vision_attention_qk = self.v_attn_dropout(vision_attention_qk)
+
 
 
         attention_2 = torch.matmul(vision_attention_qk, text_v)
@@ -362,27 +376,31 @@ class CrossAttentionBlock(nn.Module):
         self.ff_vision = FeedForward_Block(dim=dim, mlp_factor=4, dropout=dropout)
 
 
-    def forward(self, text_tensor, vision_tensor):
+    def forward(self, text_tensor, vision_tensor, text_mask=None, vision_mask=None):
 
         text_attn, vision_attn, text_residual, vision_residual = self.cross_attention(
             text_tensor=text_tensor,
-            vision_tensor=vision_tensor
+            vision_tensor=vision_tensor,
+            text_mask=text_mask,
+            vision_mask=vision_mask
         )
-        text_output, vision_output = self.output(
+        text_attn_output, vision_attn_output = self.output(
             text_attn=text_attn,
             vision_attn=vision_attn,
             text_input=text_residual,
             vision_input=vision_residual
         )
 
-        text_ff_output = self.ff_text(text_output)
-        vision_ff_output = self.ff_vision(vision_output)
+        text_ff_output = self.ff_text(text_attn_output)
+        vision_ff_output = self.ff_vision(vision_attn_output)
 
-        text_output = text_output + text_ff_output
-        vision_output = vision_output + vision_ff_output
+        # text_output = text_output + text_ff_output
+        # vision_output = vision_output + vision_ff_output
+        text_final = text_attn_output + text_ff_output
+        vision_final = vision_attn_output + vision_ff_output
 
 
-        return text_output, vision_output
+        return text_final, vision_final
 
 
 class FeedForward_Block(nn.Module):

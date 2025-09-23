@@ -6,11 +6,12 @@ from task import Task
 
 machine = os.environ.get("MACHINE_TYPE", "local")  # local or remote: local - my gaming pc (16gb), remote - university gpu (24gb)
 
-SEED = 1334  #TODO INTEGRATE EVERYWHERE
+SEED = 13310  #TODO INTEGRATE EVERYWHERE
 
 
 MM_IMDB_NUM_GENRES = 23
 EASY_VQA_NUM_CLASSES = 13
+UPMC_NUM_CLASSES = 101
 
 # --------------------------------------------------
 # ViLBERT
@@ -21,9 +22,14 @@ NUM_ATTENTION_HEADS = 12
 DROPOUT_PROB        = 0.08
 VIT_MODEL_NAME = "vit_base_patch16_224"
 #default vals for them
-DEPTH = 8          # how many co-attn layers in transformer
+DEPTH = 12          # how many co-attn layers in transformer
 # CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
 CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
+VISION_CROSS_ATTENTION_LAYERS = [4,8]
+TEXT_CROSS_ATTENTION_LAYERS   = [10,11]
+
+TEXT_ATTENTION_DROPOUT = 0.1
+VISION_ATTENTION_DROPOUT = 0.1
 # --------------------------------------------------
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4
@@ -51,8 +57,8 @@ PERSISTENT_WORKERS = False
 PIN_MEMORY = False
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
-DOWNSTREAM_EPOCHS = 10
-DOWNSTREAM_LR     = 3.5e-5
+DOWNSTREAM_EPOCHS = 15
+DOWNSTREAM_LR     = 3e-5
 
 if machine == "remote":
     BATCH_SIZE_DOWNSTREAM = 24
@@ -71,12 +77,7 @@ KNN_K = 15      #value for k in knn
 NUM_SAMPLES_CLS =   2000
 NUM_SAMPLES_FULL_SEQ= 200 # lower, as this is full seq; mainly used for cka
 
-
-
-
 FC_HIDDEN_DIM = 512       # what hidden size in fc head
-
-
 
 
 # --------------------------------------------------
@@ -103,12 +104,15 @@ class ViLBERTConfig:
         preprocessed_path=PREPROCESSED_PATH,
         train_test_ratio=TRAIN_TEST_RATIO,
         batch_size=BATCH_SIZE_PRETRAIN,
-        depth=DEPTH,
         gradient_accumulation=GRADIENT_ACCUMULATION,
         pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
         cross_attention_layers: list[int]= CROSS_ATTENTION_LAYERS,
+        text_cross_attention_layers: list[int] = TEXT_CROSS_ATTENTION_LAYERS,
+        vision_cross_attention_layers: list[int] = VISION_CROSS_ATTENTION_LAYERS,
         seed:int = SEED,
+        use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS,
     ):
+        assert len(text_cross_attention_layers) == len(vision_cross_attention_layers)
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
         self.num_hidden_layers = num_hidden_layers
@@ -120,11 +124,13 @@ class ViLBERTConfig:
         self.train_test_ratio = train_test_ratio
         self.batch_size = batch_size
         self.gradient_accumulation = gradient_accumulation
-        self.depth = depth
+        self.depth = DEPTH + len(text_cross_attention_layers)  # total number of layers in transformer
         self.pretraining_tasks = pretraining_tasks
-        self.cross_attention_layers = cross_attention_layers
         self.seed = seed
-        assert depth >= len(cross_attention_layers)
+        self.text_cross_attention_layers = text_cross_attention_layers
+        self.vision_cross_attention_layers = vision_cross_attention_layers
+        self.use_contrastive_loss = use_contrastive_loss
+        assert len(self.text_cross_attention_layers) <= DEPTH
 
 
     def items(self):
