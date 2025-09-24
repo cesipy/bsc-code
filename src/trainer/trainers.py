@@ -278,6 +278,11 @@ class HatefulMemesTrainer(BaseTrainer):
             print(info_str)
             self.logger.info(info_str)
 
+            #TODO: only temp!
+            checkpoints_path = "res/checkpoints"
+            self.model.save_model(save_path=checkpoints_path + f"/hm_finetuned_e{epoch}.pt")
+
+
             if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
                 info_str = "alignment for hateful memes:"
                 print(info_str)

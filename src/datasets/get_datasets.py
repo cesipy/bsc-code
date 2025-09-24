@@ -37,10 +37,10 @@ def get_alignment_dataloaders(
     pin_memory: bool,
     prefetch_factor: int,
     num_samples:int = 1000
-    )-> typing.Tuple[DataLoader, DataLoader]:
+    )-> typing.Tuple[DataLoader, DataLoader, DataLoader]:
     """
     returns tuple of dataloader in the following order:
-    dataloader-hateful-memes, dataloader-conceputal-captions
+    dataloader-hateful-memes, dataloader-conceputal-captions, dataloader-mmimdb
     """
 
     path_cc       = "res/data/conceptual-captions/validation.csv"

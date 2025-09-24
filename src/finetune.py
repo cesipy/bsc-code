@@ -108,21 +108,20 @@ def finetune_down_stream_task(
         cc_dataloader=dataloader_cc,
     )
 
-    checkpoints_path = "res/chechpoints"
-
+    checkpoints_path = "res/checkpoints"
     trainer.model.save_model(save_path=checkpoints_path + f"/{task_name}_finetuned.pt")
 
     # TODO: fix alignment dataset, add easy vqa
 
 
 if __name__ == "__main__":
-    task_name = "mm_imdb"#"hateful_memes"
+    task_name = "mm_imdb"    #"hateful_memes"
     use_contrastive = True
 
     p = argparse.ArgumentParser("train on different downstream tasks")
     p.add_argument("--use_contrastive", action="store_true",)
     p.add_argument("--task", type=str, default="mm_imdb",
-                   choices=["hateful_memes", "mm_imdb", "easy_vqa"],  
+                   choices=["hateful_memes", "mm_imdb", "easy_vqa"],
                    help="which downstream task to finetune on; hateful_memes, mm_imdb, easy_vqa")
     p.add_argument("--analyze", action="store_true",
                    help="run alignment analysis")
