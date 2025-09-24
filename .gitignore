@@ -18,3 +18,4 @@ res/data/mm-imdb/
 res/experiments/*.json
 res/experiments/visualizations/*
 res/hyperparameter_optimization/*.json
+res/attn-plots
