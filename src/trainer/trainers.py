@@ -385,7 +385,7 @@ class PretrainingTrainer:
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=config.learning_rate,
-            weight_decay=0.01
+            weight_decay=0.01,
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = model.to(self.device)
@@ -423,7 +423,7 @@ class PretrainingTrainer:
                 image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
                 label = batch["label"].to(self.device)
 
-                mlm_logits = self.model.forward_pretrain(
+                text_seqs, img_seqs = self.model.forward_pretrain(
                     text_input_ids=text["input_ids"],
                     text_attention_mask=text["attention_mask"],
                     text_token_type_ids=text.get("token_type_ids", None),
@@ -431,6 +431,7 @@ class PretrainingTrainer:
                     image_attention_mask=image.get("attention_mask", None),
                     tasks=["mlm"]
                 )
+                mlm_logits = self.model.mlm(text_seqs)
                 preds = mlm_logits.view(-1, mlm_logits.size(-1))
                 label_flat = label.view(-1)
                 loss = self.loss_fn_mlm(preds, label_flat)
@@ -648,7 +649,7 @@ class PretrainingTrainer:
         label = label      # [bs,  TOKENIZER_MAX_LEN]
 
         with torch.amp.autocast(device_type=self.device):
-            mlm_logits = self.model.forward_pretrain(
+            text_seqs, vision_seqs = self.model.forward_pretrain(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -656,6 +657,9 @@ class PretrainingTrainer:
                 image_attention_mask=image.get("attention_mask", None),
                 tasks=task
             )
+
+            # in vilbert they only use text_seqs alone
+            mlm_logits = self.model.mlm(text_seqs)
 
             preds = mlm_logits                      # [bs, seq_len, vocab_size]
             preds = preds.view(-1, preds.size(-1))  # [bs*seq_len, vocab_size]
@@ -674,7 +678,6 @@ class PretrainingTrainer:
         return loss.item() * self.gradient_accumulation
 
     def train_mim_batch(self, batch, flag_optimizer:bool=True):
-
 
         task = ["mim"]
 
@@ -792,7 +795,6 @@ class PretrainingTrainer:
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = lr
 
-                print(f"current learning rate: {lr}")
 
                 self.scaler.step(self.optimizer)
                 self.scaler.update()

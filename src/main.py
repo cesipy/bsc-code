@@ -36,7 +36,7 @@ machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 
 
 @utils.memory_cleanup
-def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]):
+def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]):
 
     utils.set_seeds(SEED)
     path = "res/data/conceptual-captions/train.csv"
@@ -50,7 +50,7 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
     train_data = data_list
-    val_data   = validation_list
+    val_data   = validation_list[:1_000]
 
     print(len(train_data), len(val_data))
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         # pretain()
 
         tasks = parse_args()
-        pretrain_(tasks=tasks)
+        pretrain(tasks=tasks)
 
         # train_and_eval_on_downstream_task(pretrained_model_path=None)
         # train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_4.pt")

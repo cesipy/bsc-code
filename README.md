@@ -153,6 +153,13 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## TODO#
 **immediate:**
+- [ ] pretrainAP is wrong for my alignment analysis. half of the time it switches (like in the pretrain task). create separate class for analysis on conceptual captions.
+	- [ ] current workaround: probab in get_items is at 0
+	-             if random.random() < 0.0:       # TODO: remove
+
+- [ ] fix pretraining, several things are wrong
+
+
 - [ ] double and triple check if new architecture-fix is correct
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 - [ ] fix coattentions not really saved in intermediate_representations

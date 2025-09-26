@@ -174,7 +174,7 @@ class PretrainDatasetAP(Dataset):
         assert task == Task.ALIGNMENT_PREDICTION, "something is completely wrong in the data processing step"
 
         if not self.preprocessing_prediction_alignment and not self.use_contrastive_ap_loss:
-            if random.random() < 0.5:
+            if random.random() < 0.5:       # TODO: create cc evaluation dataset
 
                 # swap out text with some other caption
                 random_idx = index
@@ -189,7 +189,7 @@ class PretrainDatasetAP(Dataset):
         img_embeddings = dataset_utils.process_image(img=img_path, transform=None)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
-        if random.random() <0.35:
+        if random.random() <0.5:   
             transform = torchvision.transforms.Compose(
                 [
                 # transforms.RandomResizedCrop(224, scale=(0.6, 1.0)),

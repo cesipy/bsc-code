@@ -94,15 +94,15 @@ def analyse_batch(grayscale_cam, image_pixels_copy,text_list,  filename:str, lay
     for i in range(s):
         curr_grayscale_cam = grayscale_cam[i, :]
 
-        # entr = calculate_entropy(curr_grayscale_cam)
-        # entrs[i] = entr
+        entr = calculate_entropy(curr_grayscale_cam)
+        entrs[i] = entr
 
         current_text = text_list[i]
         with open(f"{dir}/{filename}_b{i}_text.txt", "w") as f:
             f.write(current_text)
 
         og_photo = convert_original_photo(image_pixels_copy[i:i+1])
-        cv2.imwrite(f"{dir}/{filename}_b{i}_og.jpg", cv2.cvtColor(np.uint8(og_photo[0]*255), cv2.COLOR_RGB2BGR))x
+        cv2.imwrite(f"{dir}/{filename}_b{i}_og.jpg", cv2.cvtColor(np.uint8(og_photo[0]*255), cv2.COLOR_RGB2BGR))
 
         curr_cam_image = convert_to_display(image_pixels_copy.clone(), curr_grayscale_cam, i=i)
         if layer_indx == None:
@@ -111,7 +111,7 @@ def analyse_batch(grayscale_cam, image_pixels_copy,text_list,  filename:str, lay
             cv2.imwrite(f"{dir}/{filename}_b{i}_{layer_indx}.jpg", cv2.cvtColor(curr_cam_image, cv2.COLOR_RGB2BGR))
 
 
-    # print(f"Avg entropy for {filename}, layer {layer_indx}: {np.mean(entrs)}")
+    print(f"Avg entropy for {filename}, layer {layer_indx}: {np.mean(entrs)}")
 
 
 # .---------------------------------------------------------------
@@ -128,7 +128,7 @@ utils.set_seeds(SEED)
 
 # )
 hm_dl, dl, imdb_dl = datasets.get_alignment_dataloaders(
-    batch_size=5,
+    batch_size=50,
     num_workers=NUM_WORKERS,
     pin_memory=PIN_MEMORY,
     prefetch_factor=PREFETCH,
