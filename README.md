@@ -159,6 +159,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 - [ ] fix pretraining, several things are wrong
 
+- [ ] mixed saving of intermediates: sometimes cls, sometimes full_seq
 
 - [ ] double and triple check if new architecture-fix is correct
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
@@ -181,6 +182,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 **other**
+- [ ] adamw adjusted to the typical vilbert params: https://github.com/facebookresearch/vilbert-multi-task/blob/f22b84a9918a9aea2106e14ac1f6b32ad71492e3/train_concap.py#L465
 
 - [ ] Statistical test: do cross-attention layers have significantly lower entropy (more focused)?
 - [ ] attn entropy:

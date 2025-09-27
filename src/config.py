@@ -41,7 +41,7 @@ else:
     BATCH_SIZE_PRETRAIN = 8
     GRADIENT_ACCUMULATION = 64    # simulated batches of 128
 
-USE_CONTRASTIVE_LOSS=True
+USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
 # --------------------------------------------------
 # data specific

@@ -4,6 +4,7 @@ import typing
 import torchvision; from torchvision import transforms
 import random
 
+from . import dataset_utils
 
 from transformers import (
      # ViT stuff
@@ -19,8 +20,53 @@ import utils
 
 from logger import Logger
 from config import *
-from .dataset_utils import get_image_embedding, get_text_embedding;  from . import dataset_utils
+from .dataset_utils import get_image_embedding, get_text_embedding, process_image;  from . import dataset_utils
 import augments_transforms
+from task import Task
+
+class ConceptualCaptionsDataset(Dataset):
+    """ dataset for alignment analysis and other downstream operstions. """
+
+    def __init__(
+        self,
+        data: typing.List[typing.Tuple[str, str]], # path, text/caption
+        tokenizer: PreTrainedTokenizerFast,
+        image_processor: BaseImageProcessor,
+    ):
+        self.data =self.__generate_data(data)
+        self.tokenizer = tokenizer
+        self.image_processor = image_processor
+
+    def __generate_data(self, data):
+        # placeholder task, path, text, placeholder label
+        data_ = [ ( Task.PLACEHOLDER, dp[0], dp[1], 3)  for dp in data ]
+        p = data_[0]
+        print( f" dp0:{p[1]}, dp1:{p[2]}" )
+
+        return data_
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+
+        tup = self.data[idx]
+
+        img_embedding = process_image(img=tup[1], transform=None)
+        text_embedding = get_text_embedding(text=tup[2], tokenizer=self.tokenizer)
+
+        label = torch.tensor(tup[3], dtype=torch.long)
+
+
+        dict_entry = {
+            "img": img_embedding,
+            "text": text_embedding,
+            "label": label,
+        }
+        return dict_entry
+
+
+
 
 class PretrainDatasetAP(Dataset):
     def __init__(
@@ -189,7 +235,7 @@ class PretrainDatasetAP(Dataset):
         img_embeddings = dataset_utils.process_image(img=img_path, transform=None)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
-        if random.random() <0.5:   
+        if random.random() <0.5:
             transform = torchvision.transforms.Compose(
                 [
                 # transforms.RandomResizedCrop(224, scale=(0.6, 1.0)),
@@ -214,10 +260,10 @@ class PretrainDatasetAP(Dataset):
         label_tensor = torch.tensor(label, dtype=torch.long)
 
         return {
-            "task": task.value,     # torch cannot handle custom classes
             "img": img_embeddings,
-            "label": label_tensor,
             "text": text_embeddings,
+            "task": task.value,     # torch cannot handle custom classes
+            "label": label_tensor,
         }
 
     def __len__(self,):
@@ -468,3 +514,7 @@ class PretrainDatasetMIM(Dataset):
             "masked_patches_idxs": masked_patches_idxs,
             "text": text_embeddings,
         }
+
+
+
+

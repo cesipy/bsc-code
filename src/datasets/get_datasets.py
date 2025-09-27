@@ -28,6 +28,7 @@ from .dataset_mm_imdb import *
 from .dataset_vqa import *
 from .dataset_upmc import *
 
+
 from .dataset_utils import generate_data_list, generate_data_list_pretrain
 
 
@@ -85,6 +86,9 @@ def get_alignment_dataloaders(
         tokenizer=tokenizer,
         image_processor=image_processor,
         preprocessing_prediction_alignment=False
+    )
+    dataset_cc = ConceptualCaptionsDataset(
+        data=data_list_cc, tokenizer=tokenizer, image_processor=image_processor,
     )
 
     dataloader_hm = DataLoader(

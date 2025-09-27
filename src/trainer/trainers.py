@@ -487,8 +487,8 @@ class PretrainingTrainer:
                     total_preds += len(similarities)
                     total_loss += loss.item()
                 else:
-                    shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-                    prediction_logits = self.model.alignment_fc(shared_embedding)
+                    # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+                    prediction_logits = self.model.alignment_fc(text_embedding)
                     loss = self.loss_fn_alignment(prediction_logits, label)
 
                     preds = torch.sigmoid(prediction_logits)
@@ -618,8 +618,9 @@ class PretrainingTrainer:
 
             else:
                 # both embeddings are only cls, so shape is [bs, dim]
-                shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-                prediction_logits = self.model.alignment_fc(shared_embedding)
+                # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+                # only on text representation
+                prediction_logits = self.model.alignment_fc(text_embedding)
                 loss = self.loss_fn_alignment(prediction_logits, label)
 
             loss /= self.gradient_accumulation
