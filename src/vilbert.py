@@ -244,9 +244,16 @@ class ViLBERT(nn.Module):
 
     def save_model(self, save_path):
         """Save model state dict and config"""
+        if hasattr(self, "_orig_mod"):
+            # even if model is compiled, the orig_mod is also updated when training
+            # compiled model cannot be loaded.
+            model_state_dict = self._orig_mod.state_dict()
+        else:
+            model_state_dict = self.state_dict()
+
         checkpoint = {
-            'model_state_dict': self.state_dict(),
-            'config': self.config.__dict__,
+            "model_state_dict": model_state_dict,
+            "config": self.config.__dict__,
         }
         torch.save(checkpoint, save_path)
         print(f"model saved to {save_path}")
@@ -260,7 +267,7 @@ class ViLBERT(nn.Module):
         model = cls(config)
         model.load_state_dict(checkpoint['model_state_dict'])
 
-        print(f"model loaded from {load_path}1")
+        print(f"model loaded from {load_path}")
         return model
 
 
@@ -468,6 +475,8 @@ class ViLBERT(nn.Module):
             extract_cls=True,
             save_intermediate_representations=False
         )
+
+        return text_embedding, image_embedding
 
 
 

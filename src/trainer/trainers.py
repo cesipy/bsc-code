@@ -935,20 +935,7 @@ class PretrainingTrainer:
         else:
             model_state_dict = self.model.state_dict()
 
-        config_dict = self.config.to_dict()
-
-        checkpoint = {
-            "epoch": epoch,
-            "model_state_dict": model_state_dict,
-            "optimizer_state_dict": self.optimizer.state_dict(),
-            "scaler_state_dict": self.scaler.state_dict(),
-            "train_loss_ap": train_loss_ap,
-            "train_loss_mlm": train_loss_mlm,
-            "config": config_dict
-        }
-        torch.save(checkpoint, filepath)
-        print(f"Checkpoint saved to {filepath}")
-        self.logger.info(f"Checkpoint saved to {filepath}")
+        self.model.save_model(save_path=filepath)
 
 
 

@@ -4,6 +4,7 @@ class Task(Enum):
     ALIGNMENT_PREDICTION = 1
     MASKED_LM = 2
     MASKED_IM = 3       # masked image modelling
+    PLACEHOLDER = -1
 
     #aliases
     MLM = 2
