@@ -407,6 +407,11 @@ class PretrainingTrainer:
 
         self.gradient_accumulation = gradient_accumulation
 
+        self.total_losses = []
+        self.info_losses = []
+        self.normal_losses = []
+
+
 
     def evaluate_mlm(self, dataloader: DataLoader):
         self.model.eval()
@@ -762,6 +767,10 @@ class PretrainingTrainer:
         info_str = f"simulated batchsize: {dataloader_ap.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader_ap.batch_size}"
         print(info_str)
         self.logger.info(info_str)
+        buffer_total_loss  = []
+        buffer_normal_loss = []
+        buffer_contrastive_loss = []
+
 
 
         for batch_indx, (batch_ap, batch_mlm, batch_mim) in enumerate(
@@ -790,6 +799,18 @@ class PretrainingTrainer:
             if Task.MASKED_IM in tasks:
                 loss_mim = self.train_mim_batch(batch_mim, flag_optimizer=flag_optimizer)
 
+            buffer_total_loss.append(loss_ap + loss_mlm + loss_mim)
+            #TODO: contrastive loss, currently same as total_loss
+            buffer_contrastive_loss.append(loss_ap + loss_mlm + loss_mim)
+
+            if (batch_indx % 10 == 0):
+                avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
+                self.total_losses.append(avg_total_loss)
+                buffer_total_loss = []
+
+                self.info_losses = self.total_losses[:]
+                self.normal_losses = self.total_losses[:]
+
 
             if (batch_indx+1) % self.gradient_accumulation == 0 or (batch_indx + 1) == total_batches:
                 lr = self.scheduler.get_lr()
@@ -809,6 +830,12 @@ class PretrainingTrainer:
         avg_loss_ap = total_loss_ap / num_batches
         avg_loss_mlm = total_loss_mlm / num_batches
         avg_loss_mim = total_loss_mim / num_batches
+
+        utils.visualize_loss(
+            total_losses=self.total_losses,
+            normal_losses=self.normal_losses,
+            info_losses=self.info_losses
+        )
         return avg_loss_ap, avg_loss_mlm, avg_loss_mim
 
 

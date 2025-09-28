@@ -137,6 +137,7 @@ if __name__ == "__main__":
                    help="which downstream task to finetune on; hateful_memes, mm_imdb, easy_vqa")
     p.add_argument("--analyze", action="store_true",
                    help="run alignment analysis")
+    p.add_argument("--path", type=str, default=None)
 
     argcomplete.autocomplete(p)
     args = p.parse_args()
@@ -146,6 +147,6 @@ if __name__ == "__main__":
         task_name=args.task,
         use_contrastive_loss=args.use_contrastive,
         analyze_alignment=args.analyze,
-        pretrained_path="test.pt"
+        pretrained_path=args.path
         )
 

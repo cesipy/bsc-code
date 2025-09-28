@@ -34,9 +34,11 @@ def visualize_loss(info_losses, normal_losses, total_losses):
     plt.ylabel('Loss')
     plt.legend()
     plt.grid(True)
+    save_dir = "res/plots/loss-plots"
+    os.makedirs(save_dir, exist_ok=True)
 
     tmsp = time.strftime("%Y%m%d-%H%M%S")
-    plt.savefig(f'loss_plot_epoch_{tmsp}.png', dpi=150, bbox_inches='tight')
+    plt.savefig(f"loss_plot_epoch_{tmsp}.png", dpi=150, bbox_inches='tight')
 
 
 def get_weighted_loss(info_nce_loss, normal_loss, weight=1., naive_weighting=False):

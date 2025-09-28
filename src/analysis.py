@@ -526,7 +526,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
 
     for i in range(model.depth):
-        print(f"curr i: {i}\n")
+        # print(f"curr i: {i}\n")
         # print(f"shape of collected embeddings for layer {i}: text {layers[i]['text_embeddings'][0].shape}, vision {layers[i]['vision_embeddings'][0].shape}")
         layers[i]["text_embeddings"] = torch.cat(layers[i]["text_embeddings"], dim=0)
         layers[i]["vision_embeddings"] = torch.cat(layers[i]["vision_embeddings"], dim=0)

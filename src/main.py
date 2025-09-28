@@ -1,5 +1,5 @@
 import sys, os; sys.path.append('src')
-
+import time
 import os
 # problem when running training on loaded models after pretraining.
 # occurs because of parallelism in data loaders
@@ -43,14 +43,14 @@ def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Ta
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:1000]
+    data_list = data_list[:800]
     # validation_list = validation_list[:1000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
     train_data = data_list
-    val_data   = validation_list[:1000]
+    val_data   = validation_list[:800]
 
     print(len(train_data), len(val_data))
 
@@ -111,7 +111,14 @@ def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Ta
         cc_dataloader=cc_dataloader
     )
 
-    trainer.model.save_model("test.pt")
+    task_string = ""
+    tasks_vals = [task.value for task in tasks]
+    tasks_vals.sort()
+    for val in tasks_vals:
+        task_string += f"{val}"
+    tmsp = time.strftime("%Y%m%d-%H%M%S")
+    filename = f"res/checkpoints/pretrained_{task_string}_{tmsp}.pt"
+    trainer.model.save_model(save_path=filename)
 
     del model
 
