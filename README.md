@@ -147,6 +147,8 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## TODO#
 **immediate:**
+- [ ] seed from config, not global var
+	- [ ] convert all torchvision to albuminations + seeding
 - [x] vqa
 - [ ] wasserstein
 - [x] optuna- remove pruning, not necessary
@@ -470,6 +472,9 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 ## Results
+
+## 24.09
+hm hyperparam optim on lr and fusion strat in `res/experiments/multi_task_optim_20250922-205905.db`.
 
 ## 22.09
 finished run for hyperparam optim for hm and mm-imdb in `res/experiments/multi_task_optim_20250918-134352.db`.
