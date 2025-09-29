@@ -162,6 +162,8 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] mixed saving of intermediates: sometimes cls, sometimes full_seq
 
 - [ ] double and triple check if new architecture-fix is correct
+- [ ] seed from config, not global var
+	- [ ] convert all torchvision to albuminations + seeding
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 - [ ] fix coattentions not really saved in intermediate_representations
 - [ ] compare ap contrastive with the contrastive in downstream
@@ -384,6 +386,8 @@ finetuned vs untrained: <br>
 
 </figure>
 
+## 24.09
+hm hyperparam optim on lr and fusion strat in `res/experiments/multi_task_optim_20250922-205905.db`.
 
 ## 22.09
 finished run for hyperparam optim for hm and mm-imdb in `res/experiments/multi_task_optim_20250918-134352.db`.

@@ -37,12 +37,14 @@ def get_alignment_dataloaders(
     num_workers: int,
     pin_memory: bool,
     prefetch_factor: int,
-    num_samples:int = 1000
+    num_samples:int = 1000,
+    seed: int = SEED,
     )-> typing.Tuple[DataLoader, DataLoader, DataLoader]:
     """
     returns tuple of dataloader in the following order:
     dataloader-hateful-memes, dataloader-conceputal-captions, dataloader-mmimdb
     """
+    utils.set_seeds(seed)
 
     path_cc       = "res/data/conceptual-captions/validation.csv"
     path_hm       = "res/data/hateful_memes_data/train.jsonl"
@@ -279,7 +281,8 @@ def get_mmimdb_datasets(
     pin_memory: bool = False,
     prefetch_factor: int = None,
     persistent_workers: bool = False,
-    use_train_augmentation:bool=True
+    use_train_augmentation:bool=True,
+    seed: int = SEED,
 ) -> typing.Tuple[DataLoader, DataLoader]:
     """
     get the mmimdb dataset. per default enables data augmentation on testset
@@ -297,7 +300,7 @@ def get_mmimdb_datasets(
     assert 0< train_test_ratio <1
 
     if use_train_augmentation:
-        transform = augments_transforms.get_mm_imdb_train_augmentation()
+        transform = augments_transforms.get_mm_imdb_train_augmentation(seed=seed)
     else: transform = None
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
@@ -355,6 +358,7 @@ def get_hateful_memes_datasets(
     train_test_ratio: float,
     batch_size: int,
     num_workers: int,
+    seed:int,
     pin_memory: bool = False,
     prefetch_factor: int = 4,
     persistent_workers: bool = True,
@@ -376,7 +380,7 @@ def get_hateful_memes_datasets(
 
     if use_train_augmentation:
         # transform = augments_transforms.get_hateful_memes_train_augmentation()
-        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=False)
+        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(seed=seed,get_advanced=False)
     else:
         transform = None
 
