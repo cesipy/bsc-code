@@ -88,62 +88,97 @@ class ExperimentTracker:
         os.makedirs(self.visualization_dir, exist_ok=True)
 
 
-    def get_coattn_configs(self,trial: optuna.Trial, max_layers: int = 12, min_len=2) -> Tuple[list, list]:
+    # def get_coattn_configs(self,trial: optuna.Trial, max_layers: int = 12, min_len=2) -> Tuple[list, list]:
+    #     """ more sophisticated approach for parametrized coattention construction.
+    #     uses continuous distrubutions to generate discrete points.
+
+    #     first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
+    #     round/clip to the indices.
+    #     """
+    #     num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 8)
+
+    #     # working with distributions
+    #     t_center = trial.suggest_float("t_center", 5.0, max_layers - 1)
+    #     t_spread = trial.suggest_float("t_spread", 0.5, max_layers / 3)
+
+    #     v_center_shift = trial.suggest_float("v_center_shift", -3.0, 3.0)
+    #     v_spread_ratio = trial.suggest_float("v_spread_ratio", 0.75, 1.5)
+
+    #     v_center = t_center + v_center_shift
+    #     v_spread = t_spread * v_spread_ratio
+
+
+    #     t_biattention_ids = []
+    #     v_biattention_ids = []
+
+    #     for i in range(num_coattn_layers):
+    #         # Map to quantiles: 0.1, 0.3, 0.5, 0.7, 0.9 for num=5
+    #         quantile = (i + 1) / (num_coattn_layers + 1)
+    #         print(f"quantile: {quantile}, num_coattn_layers: {num_coattn_layers}")
+
+    #         from scipy.stats import norm
+    #         t_layer = t_center + t_spread * norm.ppf(quantile)
+    #         v_layer = v_center + v_spread * norm.ppf(quantile)
+    #         print(f"t_layer: {t_layer}, v_layer: {v_layer}")
+
+    #         # to get discrecte val
+    #         t_layer = int(np.clip(round(t_layer), 0, max_layers - 1))
+    #         v_layer = int(np.clip(round(v_layer), 0, max_layers - 1))
+    #         t_biattention_ids.append(t_layer)
+    #         v_biattention_ids.append(v_layer)
+
+
+    #     t_biattention_ids = sorted(set(t_biattention_ids))
+    #     v_biattention_ids = sorted(set(v_biattention_ids))
+
+    #     # any probs
+    #     min_len_ = min(len(t_biattention_ids), len(v_biattention_ids))
+    #     if min_len_ < min_len:
+    #         raise optuna.TrialPruned()
+
+
+
+    #     return t_biattention_ids[:min_len_], v_biattention_ids[:min_len_]
+
+    def get_coattn_configs(self, trial: optuna.Trial, max_layers: int = 12
+                           ) -> Tuple[list, list]:
         """ more sophisticated approach for parametrized coattention construction.
         uses continuous distrubutions to generate discrete points.
 
         first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
         round/clip to the indices.
         """
-        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 8)
+        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 6)
 
-        # working with distributions
-        t_center = trial.suggest_float("t_center", 5.0, max_layers - 1)
-        t_spread = trial.suggest_float("t_spread", 0.5, max_layers / 3)
+        t_center = trial.suggest_float("t_center", 5.0, 10.0)
+        t_spread = trial.suggest_float("t_spread", 1.0, 4.0)
 
-        v_center_shift = trial.suggest_float("v_center_shift", -3.0, 3.0)
-        v_spread_ratio = trial.suggest_float("v_spread_ratio", 0.75, 1.5)
+        v_center = trial.suggest_float("v_center", 2.0, 10.0)
+        v_spread = trial.suggest_float("v_spread", 1.0, 4.0)
 
-        v_center = t_center + v_center_shift
-        v_spread = t_spread * v_spread_ratio
+        from scipy.stats import norm
 
+        t_biattention_ids = set()
+        v_biattention_ids = set()
 
-        t_biattention_ids = []
-        v_biattention_ids = []
+        for i in range(num_coattn_layers):  # if its not working, do mutliple attempts
+            quantile = (i+ 1) / (num_coattn_layers + 1)
 
-        for i in range(num_coattn_layers):
-            # Map to quantiles: 0.1, 0.3, 0.5, 0.7, 0.9 for num=5
-            quantile = (i + 1) / (num_coattn_layers + 1)
-            print(f"quantile: {quantile}, num_coattn_layers: {num_coattn_layers}")
+            if len(t_biattention_ids) < num_coattn_layers:
+                t_layer = int(np.clip(round(t_center + t_spread * norm.ppf(quantile)), 0, 11))
+                t_biattention_ids.add(t_layer)
 
-            from scipy.stats import norm
-            t_layer = t_center + t_spread * norm.ppf(quantile)
-            v_layer = v_center + v_spread * norm.ppf(quantile)
-            print(f"t_layer: {t_layer}, v_layer: {v_layer}")
+            if len(v_biattention_ids) < num_coattn_layers:
+                v_layer = int(np.clip(round(v_center + v_spread * norm.ppf(quantile)), 0, 11))
+                v_biattention_ids.add(v_layer)
 
-            # to get discrecte val
-            t_layer = int(np.clip(round(t_layer), 0, max_layers - 1))
-            v_layer = int(np.clip(round(v_layer), 0, max_layers - 1))
-            t_biattention_ids.append(t_layer)
-            v_biattention_ids.append(v_layer)
+        t_biattention_ids = sorted(list(t_biattention_ids))
+        v_biattention_ids = sorted(list(v_biattention_ids))
 
-
-        t_biattention_ids = sorted(set(t_biattention_ids))
-        v_biattention_ids = sorted(set(v_biattention_ids))
-
-        # any probs
-        min_len_ = min(len(t_biattention_ids), len(v_biattention_ids))
-        if min_len_ < min_len:
+        min_len = min(len(t_biattention_ids), len(v_biattention_ids))
+        if min_len < 2:     # TODO: make configurable
             raise optuna.TrialPruned()
-
-
-
-        return t_biattention_ids[:min_len_], v_biattention_ids[:min_len_]
-
-
-
-
-
+        return t_biattention_ids[:min_len], v_biattention_ids[:min_len]
 
 
     def construct_coattn_configs(self, strat:str) -> Tuple[list, list]:
