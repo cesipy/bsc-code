@@ -278,6 +278,11 @@ class HatefulMemesTrainer(BaseTrainer):
             print(info_str)
             self.logger.info(info_str)
 
+            #TODO: only temp!
+            checkpoints_path = "res/checkpoints"
+            self.model.save_model(save_path=checkpoints_path + f"/hm_finetuned_e{epoch}.pt")
+
+
             if analyze_alignment and (dataloader is not None and cc_dataloader is not None):
                 info_str = "alignment for hateful memes:"
                 print(info_str)
@@ -380,7 +385,7 @@ class PretrainingTrainer:
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=config.learning_rate,
-            weight_decay=0.01
+            weight_decay=0.01,
         )
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = model.to(self.device)
@@ -402,6 +407,11 @@ class PretrainingTrainer:
 
         self.gradient_accumulation = gradient_accumulation
 
+        self.total_losses = []
+        self.info_losses = []
+        self.normal_losses = []
+
+
 
     def evaluate_mlm(self, dataloader: DataLoader):
         self.model.eval()
@@ -418,7 +428,7 @@ class PretrainingTrainer:
                 image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
                 label = batch["label"].to(self.device)
 
-                mlm_logits = self.model.forward_pretrain(
+                text_seqs, img_seqs = self.model.forward_pretrain(
                     text_input_ids=text["input_ids"],
                     text_attention_mask=text["attention_mask"],
                     text_token_type_ids=text.get("token_type_ids", None),
@@ -426,6 +436,7 @@ class PretrainingTrainer:
                     image_attention_mask=image.get("attention_mask", None),
                     tasks=["mlm"]
                 )
+                mlm_logits = self.model.mlm(text_seqs)
                 preds = mlm_logits.view(-1, mlm_logits.size(-1))
                 label_flat = label.view(-1)
                 loss = self.loss_fn_mlm(preds, label_flat)
@@ -481,8 +492,8 @@ class PretrainingTrainer:
                     total_preds += len(similarities)
                     total_loss += loss.item()
                 else:
-                    shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-                    prediction_logits = self.model.alignment_fc(shared_embedding)
+                    # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+                    prediction_logits = self.model.alignment_fc(text_embedding)
                     loss = self.loss_fn_alignment(prediction_logits, label)
 
                     preds = torch.sigmoid(prediction_logits)
@@ -612,8 +623,9 @@ class PretrainingTrainer:
 
             else:
                 # both embeddings are only cls, so shape is [bs, dim]
-                shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-                prediction_logits = self.model.alignment_fc(shared_embedding)
+                # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+                # only on text representation
+                prediction_logits = self.model.alignment_fc(text_embedding)
                 loss = self.loss_fn_alignment(prediction_logits, label)
 
             loss /= self.gradient_accumulation
@@ -643,7 +655,7 @@ class PretrainingTrainer:
         label = label      # [bs,  TOKENIZER_MAX_LEN]
 
         with torch.amp.autocast(device_type=self.device):
-            mlm_logits = self.model.forward_pretrain(
+            text_seqs, vision_seqs = self.model.forward_pretrain(
                 text_input_ids=text["input_ids"],
                 text_attention_mask=text["attention_mask"],
                 text_token_type_ids=text.get("token_type_ids", None),
@@ -651,6 +663,9 @@ class PretrainingTrainer:
                 image_attention_mask=image.get("attention_mask", None),
                 tasks=task
             )
+
+            # in vilbert they only use text_seqs alone
+            mlm_logits = self.model.mlm(text_seqs)
 
             preds = mlm_logits                      # [bs, seq_len, vocab_size]
             preds = preds.view(-1, preds.size(-1))  # [bs*seq_len, vocab_size]
@@ -669,7 +684,6 @@ class PretrainingTrainer:
         return loss.item() * self.gradient_accumulation
 
     def train_mim_batch(self, batch, flag_optimizer:bool=True):
-
 
         task = ["mim"]
 
@@ -753,6 +767,10 @@ class PretrainingTrainer:
         info_str = f"simulated batchsize: {dataloader_ap.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader_ap.batch_size}"
         print(info_str)
         self.logger.info(info_str)
+        buffer_total_loss  = []
+        buffer_normal_loss = []
+        buffer_contrastive_loss = []
+
 
 
         for batch_indx, (batch_ap, batch_mlm, batch_mim) in enumerate(
@@ -781,13 +799,24 @@ class PretrainingTrainer:
             if Task.MASKED_IM in tasks:
                 loss_mim = self.train_mim_batch(batch_mim, flag_optimizer=flag_optimizer)
 
+            buffer_total_loss.append(loss_ap + loss_mlm + loss_mim)
+            #TODO: contrastive loss, currently same as total_loss
+            buffer_contrastive_loss.append(loss_ap + loss_mlm + loss_mim)
+
+            if (batch_indx % 10 == 0):
+                avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
+                self.total_losses.append(avg_total_loss)
+                buffer_total_loss = []
+
+                self.info_losses = self.total_losses[:]
+                self.normal_losses = self.total_losses[:]
+
 
             if (batch_indx+1) % self.gradient_accumulation == 0 or (batch_indx + 1) == total_batches:
                 lr = self.scheduler.get_lr()
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = lr
 
-                print(f"current learning rate: {lr}")
 
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
@@ -801,6 +830,12 @@ class PretrainingTrainer:
         avg_loss_ap = total_loss_ap / num_batches
         avg_loss_mlm = total_loss_mlm / num_batches
         avg_loss_mim = total_loss_mim / num_batches
+
+        utils.visualize_loss(
+            total_losses=self.total_losses,
+            normal_losses=self.normal_losses,
+            info_losses=self.info_losses
+        )
         return avg_loss_ap, avg_loss_mlm, avg_loss_mim
 
 
@@ -927,20 +962,7 @@ class PretrainingTrainer:
         else:
             model_state_dict = self.model.state_dict()
 
-        config_dict = self.config.to_dict()
-
-        checkpoint = {
-            "epoch": epoch,
-            "model_state_dict": model_state_dict,
-            "optimizer_state_dict": self.optimizer.state_dict(),
-            "scaler_state_dict": self.scaler.state_dict(),
-            "train_loss_ap": train_loss_ap,
-            "train_loss_mlm": train_loss_mlm,
-            "config": config_dict
-        }
-        torch.save(checkpoint, filepath)
-        print(f"Checkpoint saved to {filepath}")
-        self.logger.info(f"Checkpoint saved to {filepath}")
+        self.model.save_model(save_path=filepath)
 
 
 

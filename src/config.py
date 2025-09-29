@@ -41,7 +41,7 @@ else:
     BATCH_SIZE_PRETRAIN = 8
     GRADIENT_ACCUMULATION = 64    # simulated batches of 128
 
-USE_CONTRASTIVE_LOSS=True
+USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
 # --------------------------------------------------
 # data specific
@@ -57,8 +57,8 @@ PERSISTENT_WORKERS = False
 PIN_MEMORY = False
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
-DOWNSTREAM_EPOCHS = 15
-DOWNSTREAM_LR     = 3e-5
+DOWNSTREAM_EPOCHS = 7
+DOWNSTREAM_LR     = 2.4e-5
 
 if machine == "remote":
     BATCH_SIZE_DOWNSTREAM = 24

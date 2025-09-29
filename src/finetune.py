@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import BertTokenizerFast, ViTImageProcessor
 import argparse
+from typing import Optional
 import argcomplete
 
 import utils
@@ -20,13 +21,24 @@ def finetune_down_stream_task(
     task_name:str,
     use_contrastive_loss:bool,
     analyze_alignment:bool,
+    pretrained_path:Optional[str]=None
     ):
     assert task_name in ["hateful_memes", "mm_imdb", "easy_vqa"]
     utils.set_seeds(SEED)
 
-    config = ViLBERTConfig()
-    model = ViLBERT(config=config)
-    # model = Baseline(config=config)
+    if pretrained_path==None or not os.path.exists(pretrained_path):
+
+
+        config = ViLBERTConfig()
+        model = ViLBERT(config=config)
+        # model = Baseline(config=config)
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = ViLBERT.load_model(pretrained_path, device=device)
+        info_str = f"Loaded model from {pretrained_path}"
+        print(info_str)
+        logger.info(info_str)
+        config = model.config
 
     dataloader_hm, dataloader_cc, dataloader_imdb = None, None, None
 
@@ -108,20 +120,24 @@ def finetune_down_stream_task(
         cc_dataloader=dataloader_cc,
     )
 
+    checkpoints_path = "res/checkpoints"
+    trainer.model.save_model(save_path=checkpoints_path + f"/{task_name}_finetuned.pt")
+
     # TODO: fix alignment dataset, add easy vqa
 
 
 if __name__ == "__main__":
-    task_name = "mm_imdb"#"hateful_memes"
+    task_name = "mm_imdb"    #"hateful_memes"
     use_contrastive = True
 
     p = argparse.ArgumentParser("train on different downstream tasks")
     p.add_argument("--use_contrastive", action="store_true",)
     p.add_argument("--task", type=str, default="mm_imdb",
-                   choices=["hateful_memes", "mm_imdb", "easy_vqa"],  # Add choices for better completion
+                   choices=["hateful_memes", "mm_imdb", "easy_vqa"],
                    help="which downstream task to finetune on; hateful_memes, mm_imdb, easy_vqa")
     p.add_argument("--analyze", action="store_true",
                    help="run alignment analysis")
+    p.add_argument("--path", type=str, default=None)
 
     argcomplete.autocomplete(p)
     args = p.parse_args()
@@ -130,6 +146,7 @@ if __name__ == "__main__":
     finetune_down_stream_task(
         task_name=args.task,
         use_contrastive_loss=args.use_contrastive,
-        analyze_alignment=args.analyze
+        analyze_alignment=args.analyze,
+        pretrained_path=args.path
         )
 

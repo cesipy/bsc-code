@@ -503,6 +503,7 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
                 image_attention_mask=image.get("attention_mask", None),
                 save_intermediate_representations=True
             )
+            # print(f"intermed_reps shape: {intermediate_representations[0]}")
 
             for repr_dict in intermediate_representations:
                 layer = repr_dict["layer"]
@@ -522,7 +523,11 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     rank_values = {}
     procrustes_values = {}
 
+
+
     for i in range(model.depth):
+        # print(f"curr i: {i}\n")
+        # print(f"shape of collected embeddings for layer {i}: text {layers[i]['text_embeddings'][0].shape}, vision {layers[i]['vision_embeddings'][0].shape}")
         layers[i]["text_embeddings"] = torch.cat(layers[i]["text_embeddings"], dim=0)
         layers[i]["vision_embeddings"] = torch.cat(layers[i]["vision_embeddings"], dim=0)
         current_text = layers[i]["text_embeddings"]

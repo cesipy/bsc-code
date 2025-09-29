@@ -1,5 +1,5 @@
 import sys, os; sys.path.append('src')
-
+import time
 import os
 # problem when running training on loaded models after pretraining.
 # occurs because of parallelism in data loaders
@@ -36,21 +36,21 @@ machine = os.getenv("MACHINE_TYPE", default="home")     # remote or home
 
 
 @utils.memory_cleanup
-def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]):
+def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]):
 
     utils.set_seeds(SEED)
     path = "res/data/conceptual-captions/train.csv"
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:1_000]
+    data_list = data_list[:80_000]
     # validation_list = validation_list[:1000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
     # train_data = data_list[:train_idx]
     # val_data   = data_list[train_idx:]
     train_data = data_list
-    val_data   = validation_list
+    val_data   = validation_list[:]
 
     print(len(train_data), len(val_data))
 
@@ -111,6 +111,18 @@ def pretrain_(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, T
         cc_dataloader=cc_dataloader
     )
 
+    task_string = ""
+    tasks_vals = [task.value for task in tasks]
+    tasks_vals.sort()
+    for val in tasks_vals:
+        task_string += f"{val}"
+    tmsp = time.strftime("%Y%m%d-%H%M%S")
+    filename = f"res/checkpoints/pretrained_{task_string}_{tmsp}.pt"
+    trainer.model.save_model(save_path=filename)
+
+    del model
+
+    model = ViLBERT.load_model("test.pt")
     logger.info("finished training. \n\n " + 20*"-")
 
 def parse_args():
@@ -146,7 +158,7 @@ if __name__ == "__main__":
         # pretain()
 
         tasks = parse_args()
-        pretrain_(tasks=tasks)
+        pretrain(tasks=tasks)
 
         # train_and_eval_on_downstream_task(pretrained_model_path=None)
         # train_and_eval_on_downstream_task(pretrained_model_path="res/checkpoints/pretrained_4.pt")

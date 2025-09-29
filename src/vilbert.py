@@ -195,7 +195,8 @@ class ViLBERT(nn.Module):
         # for freezing, TODO
         self.fixed_t_layer = 3
         self.fixed_v_layer = 3
-        self.depth = config.depth
+        self.depth = config.depth       # TODO: problem here
+        self.depth = 12
         # there are the original 12 layers per encoder
         # self.depth = config.depth + len(self.v_biattention_ids)
 
@@ -209,7 +210,7 @@ class ViLBERT(nn.Module):
             ))
 
         # pretrain heads
-        self.alignment_fc = nn.Linear(2*self.config.embedding_dim , 1)
+        self.alignment_fc = nn.Linear(self.config.embedding_dim , 1)
         self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
 
         # for hateful memes
@@ -245,12 +246,6 @@ class ViLBERT(nn.Module):
 
 
 
-
-
-
-
-
-
     def get_extended_attention_mask(self, attention_mask: torch.Tensor, dtype=None):
         if attention_mask is not None:
             attention_mask = attention_mask.float()
@@ -260,9 +255,8 @@ class ViLBERT(nn.Module):
             extended_attention_mask = None
         return extended_attention_mask
 
-
-
-    def forward(self,
+    def forward_coattention(
+        self,
         text_input_ids,
         text_attention_mask=None,
         text_token_type_ids=None,
@@ -270,11 +264,14 @@ class ViLBERT(nn.Module):
         image_attention_mask=None,
         output_attentions=False,
         output_hidden_states=False,
-        save_intermediate_representations=False,
+        extract_cls=True ,          # used for pretraining. should the cls token be extracted?
+                                    # not extracted for pretraining, extracted for downstream tasks
+        save_intermediate_representations=False
     ):
-        #TODO: debugging
-        # save_intermediate_representations= True
 
+        # TODO: rethink
+        # if not extract_cls:
+        #     assert save_intermediate_representations == False, "not working"
         extended_attention_mask = self.get_extended_attention_mask(
             text_attention_mask,
             dtype=next(self.bert.parameters()).dtype
@@ -288,7 +285,6 @@ class ViLBERT(nn.Module):
             image_pixel_values,
         )
         vision_embeddings = self.vision_embeddings(vit_outputs)
-
 
 
         v_start = 0
@@ -390,8 +386,10 @@ class ViLBERT(nn.Module):
                 }
                 tmp_v.append(dict_entry)
 
-        text_cls = text_embedding[:, 0, :]      # [batch_size, hidden_dim]
-        vision_cls = vision_embeddings[:, 0, :]  # [batch_size, hidden_dim]
+
+        if extract_cls:
+            text_embedding = text_embedding[:, 0, :]      # [batch_size, hidden_dim]
+            vision_embeddings = vision_embeddings[:, 0, :]  # [batch_size, hidden_dim]
 
         # print(len(tmp_t), len(tmp_v))
         # currently only the 12 layers in analysis
@@ -405,8 +403,145 @@ class ViLBERT(nn.Module):
                     "is_cross_attention": i in self.v_biattention_ids or i in self.t_biattention_ids
                 }
                 intermediate_representations.append(dict_entry)
-            return text_cls, vision_cls, intermediate_representations
-        return text_cls, vision_cls
+            return text_embedding, vision_embeddings, intermediate_representations
+        return text_embedding, vision_embeddings
+
+
+
+
+
+    def forward(self,
+        text_input_ids,
+        text_attention_mask=None,
+        text_token_type_ids=None,
+        image_pixel_values=None,
+        image_attention_mask=None,
+        output_attentions=False,
+        output_hidden_states=False,
+        save_intermediate_representations=False,
+    ):
+        #TODO: debugging
+        # save_intermediate_representations= True
+
+        if save_intermediate_representations:
+            text_embedding, image_embedding, save_intermediate_representations = self.forward_coattention(
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                extract_cls=True,       #?
+                save_intermediate_representations=True
+            )
+            return text_embedding, image_embedding, save_intermediate_representations
+
+        text_embedding, image_embedding = self.forward_coattention(
+            text_input_ids=text_input_ids,
+            text_attention_mask=text_attention_mask,
+            text_token_type_ids=text_token_type_ids,
+            image_pixel_values=image_pixel_values,
+            image_attention_mask=image_attention_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            extract_cls=True,
+            save_intermediate_representations=False
+        )
+
+        return text_embedding, image_embedding
+
+
+
+
+
+
+
+
+    def forward_pretrain(
+        self,
+        text_input_ids,
+        text_attention_mask=None,
+        text_token_type_ids=None,
+        image_pixel_values=None,
+        image_attention_mask=None,
+        output_attentions=False,
+        output_hidden_states=False,
+        tasks:list[str]= None,      #TODO: make tasks an enunm
+    ):
+
+        assert len(tasks) == 1, "only one task at a time"
+
+        if "mlm" in tasks:
+            text_full_seqs, img_full_seqs = self.forward_coattention(
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                extract_cls=False,
+                save_intermediate_representations=False
+            )
+
+            return text_full_seqs, img_full_seqs
+
+        if "mim" in tasks:
+            text_seqs, vision_seqs = self.forward_coattention(
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                extract_cls=False
+            )
+
+            return text_seqs, vision_seqs
+
+        if "alignment_prediction":
+            text_embedding, image_embedding = self.forward_coattention(
+                text_input_ids=text_input_ids,
+                text_attention_mask=text_attention_mask,
+                text_token_type_ids=text_token_type_ids,
+                image_pixel_values=image_pixel_values,
+                image_attention_mask=image_attention_mask,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                extract_cls=True, # only cls needed. nothing else
+            )
+            return text_embedding, image_embedding
+
+    def save_model(self, save_path):
+        """Save model state dict and config"""
+        if hasattr(self, "_orig_mod"):
+            # even if model is compiled, the orig_mod is also updated when training
+            # compiled model cannot be loaded.
+            model_state_dict = self._orig_mod.state_dict()
+        else:
+            model_state_dict = self.state_dict()
+
+        checkpoint = {
+            "model_state_dict": model_state_dict,
+            "config": self.config.__dict__,
+        }
+        torch.save(checkpoint, save_path)
+        print(f"model saved to {save_path}")
+
+    @classmethod
+    def load_model(cls, load_path, device='cpu'):
+        """Load model from saved checkpoint"""
+        checkpoint = torch.load(load_path, map_location=device, weights_only=False)
+        config = ViLBERTConfig()
+        config.__dict__.update(checkpoint['config'])
+        model = cls(config)
+        model.load_state_dict(checkpoint['model_state_dict'])
+
+        print(f"model loaded from {load_path}")
+        return model
+
 
 
 

@@ -28,6 +28,7 @@ from .dataset_mm_imdb import *
 from .dataset_vqa import *
 from .dataset_upmc import *
 
+
 from .dataset_utils import generate_data_list, generate_data_list_pretrain
 
 
@@ -37,10 +38,10 @@ def get_alignment_dataloaders(
     pin_memory: bool,
     prefetch_factor: int,
     num_samples:int = 1000
-    )-> typing.Tuple[DataLoader, DataLoader]:
+    )-> typing.Tuple[DataLoader, DataLoader, DataLoader]:
     """
     returns tuple of dataloader in the following order:
-    dataloader-hateful-memes, dataloader-conceputal-captions
+    dataloader-hateful-memes, dataloader-conceputal-captions, dataloader-mmimdb
     """
 
     path_cc       = "res/data/conceptual-captions/validation.csv"
@@ -80,11 +81,8 @@ def get_alignment_dataloaders(
         image_processor=image_processor,
     )
 
-    dataset_cc = PretrainDatasetAP(
-        data=data_list_cc,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        preprocessing_prediction_alignment=False
+    dataset_cc = ConceptualCaptionsDataset(
+        data=data_list_cc, tokenizer=tokenizer, image_processor=image_processor,
     )
 
     dataloader_hm = DataLoader(
