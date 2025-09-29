@@ -3,6 +3,7 @@ import os
 from typing import Tuple, Optional
 import dataclasses
 import json
+import numpy as np
 
 
 import optuna; from optuna import pruners
@@ -18,7 +19,7 @@ from logger import Logger
 import analysis
 
 logger = Logger()
-EPOCHS_ = 1
+EPOCHS_ = 10
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = True
 
@@ -85,6 +86,62 @@ class ExperimentTracker:
         self.visualization_dir = "res/experiments/visualizations/"
         os.makedirs(self.save_dir, exist_ok=True)
         os.makedirs(self.visualization_dir, exist_ok=True)
+
+
+    def get_coattn_configs(self,trial: optuna.Trial, max_layers: int = 12, min_len=2) -> Tuple[list, list]:
+        """ more sophisticated approach for parametrized coattention construction.
+        uses continuous distrubutions to generate discrete points.
+
+        first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
+        round/clip to the indices.
+        """
+        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 8)
+
+        # working with distributions
+        t_center = trial.suggest_float("t_center", 5.0, max_layers - 1)
+        t_spread = trial.suggest_float("t_spread", 0.5, max_layers / 3)
+
+        v_center_shift = trial.suggest_float("v_center_shift", -3.0, 3.0)
+        v_spread_ratio = trial.suggest_float("v_spread_ratio", 0.75, 1.5)
+
+        v_center = t_center + v_center_shift
+        v_spread = t_spread * v_spread_ratio
+
+
+        t_biattention_ids = []
+        v_biattention_ids = []
+
+        for i in range(num_coattn_layers):
+            # Map to quantiles: 0.1, 0.3, 0.5, 0.7, 0.9 for num=5
+            quantile = (i + 1) / (num_coattn_layers + 1)
+            print(f"quantile: {quantile}, num_coattn_layers: {num_coattn_layers}")
+
+            from scipy.stats import norm
+            t_layer = t_center + t_spread * norm.ppf(quantile)
+            v_layer = v_center + v_spread * norm.ppf(quantile)
+            print(f"t_layer: {t_layer}, v_layer: {v_layer}")
+
+            # to get discrecte val
+            t_layer = int(np.clip(round(t_layer), 0, max_layers - 1))
+            v_layer = int(np.clip(round(v_layer), 0, max_layers - 1))
+            t_biattention_ids.append(t_layer)
+            v_biattention_ids.append(v_layer)
+
+
+        t_biattention_ids = sorted(set(t_biattention_ids))
+        v_biattention_ids = sorted(set(v_biattention_ids))
+
+        # any probs
+        min_len_ = min(len(t_biattention_ids), len(v_biattention_ids))
+        if min_len_ < min_len:
+            raise optuna.TrialPruned()
+
+
+
+        return t_biattention_ids[:min_len_], v_biattention_ids[:min_len_]
+
+
+
 
 
 
@@ -215,25 +272,30 @@ class ExperimentTracker:
             epochs = EPOCHS_
             # depth = trial.suggest_int("depth", 4, 8)
 
-            use_contrastive = trial.suggest_categorical("use_contrastive",
-                [True, False])
+            # use_contrastive = trial.suggest_categorical("use_contrastive",
+            #     [True, False])
 
 
-            fusion_strat:str = trial.suggest_categorical("fusion_strat",
-                ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
+            # fusion_strat:str = trial.suggest_categorical("fusion_strat",
+            #     ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
 
-            t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
+            # t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
+            t_biattention_ids, v_biattention_ids = self.get_coattn_configs(trial)
 
-
+            print("t_biattention_ids:", t_biattention_ids)
+            print("v_biattention_ids:", v_biattention_ids)
             config = ExperimentConfig(
                 t_biattention_ids=t_biattention_ids,
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
-                use_contrastive_loss=use_contrastive,
+                use_contrastive_loss=False,
                 seed=seed,
                 # train_test_ratio=0.1
             )
+
+            # debugging
+            # return np.random.random()
 
             training_results = self.run_single_experiment(
                 config,
