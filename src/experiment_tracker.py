@@ -18,7 +18,7 @@ from logger import Logger
 import analysis
 
 logger = Logger()
-EPOCHS_ = 8
+EPOCHS_ = 1
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = True
 
@@ -86,114 +86,7 @@ class ExperimentTracker:
         os.makedirs(self.visualization_dir, exist_ok=True)
 
 
-    # def _run_trial(self, config: ExperimentConfig, trial):
-    #     vilbert_config = self.create_config(config)
-    #     utils.set_seeds(config.seed)
-    #     # TODO: maybe include, but this makes it a lot slower for alignment
-    #     training_results = self._initialize_results_dict(epochs=config.epochs)
 
-    #     best_hm_acc = 0.0
-    #     best_imdb_acc = 0.0
-
-    #     #---------------------------------------------
-    #     # hm training (with pruning)
-
-    #     train_loader, val_loader = datasets.get_hateful_memes_datasets(
-    #         train_test_ratio=TRAIN_TEST_RATIO,
-    #         # train_test_ratio=0.1,
-    #         batch_size=BATCH_SIZE_DOWNSTREAM,
-    #         num_workers=NUM_WORKERS,
-    #         pin_memory=PIN_MEMORY,
-    #         prefetch_factor=PREFETCH,
-    #         persistent_workers=PERSISTENT_WORKERS,
-    #         use_train_augmentation=True,
-    #     )
-    #     # TODO: maybe include afterwards
-    #     # hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
-    #     #     batch_size=BATCH_SIZE_ANALYSIS,
-    #     #     num_workers=NUM_WORKERS,
-    #     #     pin_memory=PIN_MEMORY,
-    #     #     prefetch_factor=PREFETCH,
-    #     #     num_samples=ALIGNMENT_ANALYSIS_SIZE
-    #     # )
-
-    #     model = self.create_model(vilbert_config)
-    #     trainer = HatefulMemesTrainer(
-    #         model=model,
-    #         config=vilbert_config,
-    #         gradient_accumulation=GRADIENT_ACCUMULATION
-    #     )
-    #     trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
-    #                             lr=vilbert_config.learning_rate)
-
-    #     for i in range(config.epochs):
-    #         train_loss = self.train_model_step(
-    #             trainer=trainer,
-    #             train_dataloader=train_loader,
-    #         )
-    #         test_loss, acc = self.evaluate_model(
-    #             trainer=trainer,
-    #             dataloader=val_loader,
-    #         )
-    #         info_str = (
-    #             f"HM Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
-    #             f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
-    #         )
-    #         # print(info_str)
-    #         # logger.info(info_str)
-
-    #         intermediate_value = acc
-    #         trial.report(intermediate_value, step=i)
-    #         if trial.should_prune():
-    #             raise optuna.TrialPruned()
-    #         best_hm_acc = max(best_hm_acc, acc)
-
-    #     del model, trainer, train_loader, val_loader
-
-    #     #---------------------------------------------
-    #     # imdb training (with pruning)
-    #     model = self.create_model(vilbert_config)
-    #     trainer = MM_IMDB_Trainer(
-    #         model=model,
-    #         config=vilbert_config,
-    #         gradient_accumulation=GRADIENT_ACCUMULATION,
-    #     )
-
-    #     train_loader, val_loader = datasets.get_mmimdb_datasets(
-    #         train_test_ratio=TRAIN_TEST_RATIO,
-    #         # train_test_ratio=0.1,
-    #         batch_size=BATCH_SIZE_DOWNSTREAM,
-    #         num_workers=NUM_WORKERS,
-    #         pin_memory=PIN_MEMORY,
-    #         prefetch_factor=PREFETCH,
-    #         persistent_workers=PERSISTENT_WORKERS,
-    #         use_train_augmentation=True,
-    #     )
-    #     trainer.setup_scheduler(epochs=config.epochs, train_dataloader=train_loader,
-    #                             lr=vilbert_config.learning_rate)
-
-    #     for i in range(config.epochs):
-    #         train_loss = self.train_model_step(
-    #             trainer=trainer,
-    #             train_dataloader=train_loader,
-    #         )
-    #         test_loss, acc = self.evaluate_model(
-    #             trainer=trainer,
-    #             dataloader=val_loader,
-    #         )
-    #         info_str = (
-    #             f"IMDB Epoch {i+1}/{config.epochs}, Train Loss: {train_loss:.4f}"
-    #             f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
-    #         )
-
-    #         # use different step numbers to avoid overwriting hm steps
-    #         intermediate_value = (best_hm_acc + acc) / 2  # average both tasks for pruning
-    #         trial.report(intermediate_value, step=config.epochs + i)
-    #         if trial.should_prune():
-    #             raise optuna.TrialPruned()
-    #         best_imdb_acc = max(best_imdb_acc, acc)
-
-    #     return best_hm_acc, best_imdb_acc
 
     def construct_coattn_configs(self, strat:str) -> Tuple[list, list]:
         if strat == "early":
@@ -273,7 +166,8 @@ class ExperimentTracker:
             return result
 
         tmsp = time.strftime("%Y%m%d-%H%M%S")
-        storage_path = f"sqlite:///{self.save_dir}multi_task_optim_{tmsp}.db"
+        # storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
+        storage_path = f"sqlite:///{self.save_dir}res/experiments/multi_task_optim.db"
         study_name = f"multi_task_study_{tmsp}"
 
 
@@ -304,13 +198,14 @@ class ExperimentTracker:
         import optuna
 
         def objective(trial):
-            lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
+            # lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
+            lr = 3.2e-5
             # analysis with optuna resulted in dropout of about 0.08.
             # this is roughly the same as in vilbert implementation of 0.1
             # therefore, no further tuning on it
             # dropout = trial.suggest_float("dropout", 0.0, 0.4)
             # epochs = trial.suggest_int("epochs", 2, 9)
-
+            seed = SEED + int(time.time())
             # also epoch 7 is really good, like 7 - 10 based on optuna
             epochs = EPOCHS_
             # depth = trial.suggest_int("depth", 4, 8)
@@ -327,6 +222,7 @@ class ExperimentTracker:
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
+                seed=seed
                 # train_test_ratio=0.1
             )
 
@@ -357,8 +253,8 @@ class ExperimentTracker:
             return result
 
         tmsp = time.strftime("%Y%m%d-%H%M%S")
-        storage_path = f"sqlite:///{self.save_dir}multi_task_optim_{tmsp}.db"
-        study_name = f"multi_task_study_{tmsp}"
+        storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
+        study_name = f"single_task_study_{task}_{tmsp}"
 
 
         study = optuna.create_study(
@@ -476,13 +372,15 @@ class ExperimentTracker:
             prefetch_factor=PREFETCH,
             persistent_workers=PERSISTENT_WORKERS,
             use_train_augmentation=True,
+            seed=config.seed
         )
         hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=0,
             pin_memory=False,
             prefetch_factor=None,
-            num_samples=ALIGNMENT_ANALYSIS_SIZE
+            num_samples=ALIGNMENT_ANALYSIS_SIZE,
+            seed=config.seed,
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
@@ -540,6 +438,7 @@ class ExperimentTracker:
             prefetch_factor=PREFETCH,
             persistent_workers=PERSISTENT_WORKERS,
             use_train_augmentation=True,
+            seed=config.seed,
         )
         #TODO: get alignment data loader for mmimdb
         hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
@@ -547,7 +446,8 @@ class ExperimentTracker:
             num_workers=0,
             pin_memory=False,
             prefetch_factor=None,
-            num_samples=ALIGNMENT_ANALYSIS_SIZE
+            num_samples=ALIGNMENT_ANALYSIS_SIZE,
+            seed=config.seed,
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
@@ -620,6 +520,7 @@ class ExperimentTracker:
 
         # TODO: also include use_contrastive as param to optimize
         config = self.create_config(experiment_config)
+        print(f"seed = {experiment_config.seed}")
         utils.set_seeds(experiment_config.seed)
 
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
@@ -792,7 +693,9 @@ def main():
     logger.info("test!!!!")
     tracker = ExperimentTracker()
     # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
-    tracker.optimize_parameters_single(n_trials=80, optimization_objective="loss", task="hateful_memes")
+    tracker.optimize_parameters_single(n_trials=80, optimization_objective="loss",
+                                       #task="mm_imdb")
+                                       task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
     # exps = get_experiments()

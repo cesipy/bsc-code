@@ -54,7 +54,7 @@ def get_minimal_vit_transform():
     return vit_transform
 
 
-def get_mm_imdb_train_augmentation():
+def get_mm_imdb_train_augmentation(seed:int):
     """ data augmentation for MM-IMDB dataset training"""
 
     transform_augmentation = transforms.Compose([
@@ -78,7 +78,7 @@ def get_mm_imdb_train_augmentation():
         # transforms.RandomHorizontalFlip(p=0.2),
         # transforms.RandomErasing(),
 
-    ])
+    ],)
     return transform_augmentation
 
 def get_hateful_memes_train_augmentation():
@@ -88,7 +88,7 @@ def get_hateful_memes_train_augmentation():
 
 
 
-def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
+def get_hateful_memes_train_augmentation_albumation(seed:int,get_advanced=False, ):
 
     hm_transforms = A.Compose([
         A.ColorJitter(
@@ -135,7 +135,7 @@ def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
             border_mode=cv2.BORDER_REPLICATE,
             p=0.5,
         ),
-    ], seed=SEED)
+    ], seed=seed)
 
     hm_transforms_improved = A.Compose([
         # Your existing transforms (keep these)
@@ -162,7 +162,7 @@ def get_hateful_memes_train_augmentation_albumation(get_advanced=False):
         ], p=0.25),
 
         A.Perspective(scale=(0.05, 0.08), p=0.25),
-    ], seed=SEED)
+    ], seed=seed)
 
     if get_advanced:
         return hm_transforms_improved
