@@ -327,6 +327,25 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## Results
 
+## 29.09
+comparison with pretrained model. first attn plots on pretrained+fnetuned model:
+for the image
+with text "restaurants and coffee shops at the seafront of town"
+<figure>
+input image: <br>
+<img src="res/markdown_res/grad_cam_attention_finetuned_b4_og.jpg"><br><br>
+</figure>
+
+**avg over all layers:**
+<figure>
+finetuned vs untrained: <br>
+<img src="res/markdown_res/grad_cam_attention_finetuned_b4.jpg">
+<img src="res/markdown_res/grad_cam_attention_untrained_b4.jpg">
+</figure>
+
+
+
+
 
 
 ## 23.09

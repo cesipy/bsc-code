@@ -81,12 +81,6 @@ def get_alignment_dataloaders(
         image_processor=image_processor,
     )
 
-    dataset_cc = PretrainDatasetAP(
-        data=data_list_cc,
-        tokenizer=tokenizer,
-        image_processor=image_processor,
-        preprocessing_prediction_alignment=False
-    )
     dataset_cc = ConceptualCaptionsDataset(
         data=data_list_cc, tokenizer=tokenizer, image_processor=image_processor,
     )

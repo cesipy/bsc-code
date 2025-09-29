@@ -242,33 +242,6 @@ class ViLBERT(nn.Module):
             nn.Linear(FC_HIDDEN_DIM, UPMC_NUM_CLASSES),
         )
 
-    def save_model(self, save_path):
-        """Save model state dict and config"""
-        if hasattr(self, "_orig_mod"):
-            # even if model is compiled, the orig_mod is also updated when training
-            # compiled model cannot be loaded.
-            model_state_dict = self._orig_mod.state_dict()
-        else:
-            model_state_dict = self.state_dict()
-
-        checkpoint = {
-            "model_state_dict": model_state_dict,
-            "config": self.config.__dict__,
-        }
-        torch.save(checkpoint, save_path)
-        print(f"model saved to {save_path}")
-
-    @classmethod
-    def load_model(cls, load_path, device='cpu'):
-        """Load model from saved checkpoint"""
-        checkpoint = torch.load(load_path, map_location=device, weights_only=False)
-        config = ViLBERTConfig()
-        config.__dict__.update(checkpoint['config'])
-        model = cls(config)
-        model.load_state_dict(checkpoint['model_state_dict'])
-
-        print(f"model loaded from {load_path}")
-        return model
 
 
 
@@ -541,6 +514,33 @@ class ViLBERT(nn.Module):
             )
             return text_embedding, image_embedding
 
+    def save_model(self, save_path):
+        """Save model state dict and config"""
+        if hasattr(self, "_orig_mod"):
+            # even if model is compiled, the orig_mod is also updated when training
+            # compiled model cannot be loaded.
+            model_state_dict = self._orig_mod.state_dict()
+        else:
+            model_state_dict = self.state_dict()
+
+        checkpoint = {
+            "model_state_dict": model_state_dict,
+            "config": self.config.__dict__,
+        }
+        torch.save(checkpoint, save_path)
+        print(f"model saved to {save_path}")
+
+    @classmethod
+    def load_model(cls, load_path, device='cpu'):
+        """Load model from saved checkpoint"""
+        checkpoint = torch.load(load_path, map_location=device, weights_only=False)
+        config = ViLBERTConfig()
+        config.__dict__.update(checkpoint['config'])
+        model = cls(config)
+        model.load_state_dict(checkpoint['model_state_dict'])
+
+        print(f"model loaded from {load_path}")
+        return model
 
 
 

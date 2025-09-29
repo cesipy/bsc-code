@@ -33,7 +33,7 @@ VISION_ATTENTION_DROPOUT = 0.1
 # --------------------------------------------------
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4
-PRETRAIN_EPOCHS = 1 # TODO
+PRETRAIN_EPOCHS = 5 # TODO
 if machine == "remote":
     BATCH_SIZE_PRETRAIN = 20
     GRADIENT_ACCUMULATION = 26  # simulated batches of 512, similar to the og vilbert paper
