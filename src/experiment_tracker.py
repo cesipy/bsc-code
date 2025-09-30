@@ -22,7 +22,7 @@ import task as tasklib
 logger = Logger()
 EPOCHS_ = 10
 ALIGNMENT_ANALYSIS_SIZE = 4000
-SKIP_ALIGNMENT = True
+SKIP_ALIGNMENT = False
 
 
 @dataclasses.dataclass
@@ -199,8 +199,8 @@ class ExperimentTracker:
             )
 
             training_results = self.run_fintune(
-                config,
-                run_visualization=False  # is too compute intensive, not wanted here
+                experiment_config=config,
+                run_visualizations=False  # is too compute intensive, not wanted here
             )
 
             if optimization_objective == "acc":
@@ -298,8 +298,8 @@ class ExperimentTracker:
 
             training_results = self.run_fintune(
                 config,
-                run_visualization=False,  # is too compute intensive, not wanted here,
-                single_task=[task]
+                run_visualizations=False,  # is too compute intensive, not wanted here,
+                tasks=[task]
             )
 
             if optimization_objective == "acc":
@@ -368,7 +368,7 @@ class ExperimentTracker:
 
             training_results = self.run_fintune(
                 config,
-                run_visualization=False                 # is too compute intensive, not wanted here
+                run_visualizations=False                 # is too compute intensive, not wanted here
             )
             if optimization_objective == "acc":
                 val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
@@ -435,8 +435,8 @@ class ExperimentTracker:
         )
 
         train_loader, val_loader = datasets.get_hateful_memes_datasets(
-            train_test_ratio=TRAIN_TEST_RATIO,
-            # train_test_ratio=0.1,
+            # train_test_ratio=TRAIN_TEST_RATIO,
+            train_test_ratio=0.1,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -456,6 +456,9 @@ class ExperimentTracker:
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
 
+        if not skip_alignment_analysis:
+            alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
+            training_results["hateful_memes"]["alignment"][0] = alignment_metrics
 
         for i in range(epochs):
             train_loss = self.train_model_step(
@@ -524,6 +527,10 @@ class ExperimentTracker:
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
 
+        if not skip_alignment_analysis:
+            alignment_metrics = self.analyse_alignment(model=model, dataloader=imdb_dataloader)
+            training_results["mm_imdb"]["alignment"][0] = alignment_metrics
+
 
         for i in range(epochs):
             train_loss = self.train_model_step(
@@ -578,7 +585,9 @@ class ExperimentTracker:
 
     def _run_task(self, training_results: dict,
         task_name: str, experiment_config:ExperimentConfig,
-        filename: str, run_visualization:bool):
+        filename: str, run_visualizations:bool,
+        run_alignment_analysis:bool
+        ):
         assert task_name in tasklib.all_task_list
 
         config = self.create_config(experiment_config)
@@ -595,8 +604,8 @@ class ExperimentTracker:
                 training_results=training_results,
                 epochs=experiment_config.epochs,
                 dir_name=exp_dir_name_hm,
-                run_visualization=run_visualization,
-                skip_alignment_analysis=SKIP_ALIGNMENT,
+                run_visualization=run_visualizations,
+                skip_alignment_analysis=not run_alignment_analysis
             )
 
         elif task_name == "mm_imdb":
@@ -607,9 +616,10 @@ class ExperimentTracker:
                 training_results=training_results,
                 epochs=experiment_config.epochs,
                 dir_name=exp_dir_name_imdb,
-                run_visualization=run_visualization,
-                skip_alignment_analysis=SKIP_ALIGNMENT,
+                run_visualization=run_visualizations,
+                skip_alignment_analysis=not run_alignment_analysis,
             )
+        #TODO: other tasks
 
         else:
             raise ValueError(f"unknown single_task: {task_name}")
@@ -619,7 +629,11 @@ class ExperimentTracker:
 
 
 
-    def run_fintune(self, experiment_config: ExperimentConfig, run_visualization:bool=True,
+    def run_fintune(
+        self,
+        experiment_config: ExperimentConfig,
+        run_visualizations:bool=False,
+        run_alignment_analysis:bool=False,
         tasks:list[str]=["hateful_memes", "mm_imdb"]
     ):
         assert tasks != None
@@ -641,8 +655,9 @@ class ExperimentTracker:
         for task in tasks:
             training_results = self._run_task(
                 task_name=task, experiment_config=experiment_config,
-                filename=filename, run_visualization=run_visualization,
-                training_results=training_results
+                filename=filename, run_visualizations=run_visualizations,
+                training_results=training_results,
+                run_alignment_analysis=run_alignment_analysis
             )
 
         self.save_results(
@@ -752,8 +767,8 @@ class ExperimentTracker:
         config: ViLBERTConfig = self.create_config(exp_config)
         training_results = self.run_fintune(
             experiment_config=exp_config,
-            run_visualization=True,
-            single_task=[task]
+            run_visualizations=True,
+            tasks=[task]
         )
 
         info_str = f"Finished training from config: {config_pth}"

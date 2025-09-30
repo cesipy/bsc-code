@@ -186,6 +186,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 	- [ ] save everything that is necessary, is vi_biattention_ids, currently correct?
 	- [ ] adapt finetune module to use experiment tracker.
 	- [ ] implement other tasks in run experiment
+	- [ ] proper naming for visualization of repr analyse
 
 
 - [x] pretrainAP is wrong for my alignment analysis. half of the time it switches (like in the pretrain task). create separate class for analysis on conceptual captions.
@@ -435,23 +436,20 @@ input image: <br>
 **layer4**:
 <figure>
 finetuned vs untrained: <br>
-<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_4.jpg">
-<img src="./res/markdown_res/grad_cam_attention_untrained_b6_4.jpg">
+<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_4.jpg" width=200><img src="./res/markdown_res/grad_cam_attention_untrained_b6_4.jpg" width=200>
 
 </figure>
 
 **layer11:**
 <figure>
 finetuned vs untrained: <br>
-<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_11.jpg">
-<img src="./res/markdown_res/grad_cam_attention_untrained_b6_11.jpg">
+<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_11.jpg" width=200><img src="./res/markdown_res/grad_cam_attention_untrained_b6_11.jpg" width=200>
 </figure>
 
 **avg over all layers:**
 <figure>
 finetuned vs untrained: <br>
-<img src="./res/markdown_res/grad_cam_attention_finetuned_b6.jpg">
-<img src="./res/markdown_res/grad_cam_attention_untrained_b6.jpg">
+<img src="./res/markdown_res/grad_cam_attention_finetuned_b6.jpg" width=200><img src="./res/markdown_res/grad_cam_attention_untrained_b6.jpg" width=200>
 </figure>
 
 
