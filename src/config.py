@@ -25,8 +25,8 @@ VIT_MODEL_NAME = "vit_base_patch16_224"
 DEPTH = 12          # how many co-attn layers in transformer
 # CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
 CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
-VISION_CROSS_ATTENTION_LAYERS = [4,8]
-TEXT_CROSS_ATTENTION_LAYERS   = [10,11]
+V_BIATTENTION_IDS = [0,1,2,3,4,5]
+T_BIATTENTION_IDS   = [6,7,8,9, 10,11]
 
 TEXT_ATTENTION_DROPOUT = 0.1
 VISION_ATTENTION_DROPOUT = 0.1
@@ -57,8 +57,8 @@ PERSISTENT_WORKERS = False
 PIN_MEMORY = False
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
-DOWNSTREAM_EPOCHS = 7
-DOWNSTREAM_LR     = 2.4e-5
+DOWNSTREAM_EPOCHS = 9
+DOWNSTREAM_LR     = 3.4e-5
 
 if machine == "remote":
     BATCH_SIZE_DOWNSTREAM = 24
@@ -107,8 +107,8 @@ class ViLBERTConfig:
         gradient_accumulation=GRADIENT_ACCUMULATION,
         pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
         cross_attention_layers: list[int]= CROSS_ATTENTION_LAYERS,
-        text_cross_attention_layers: list[int] = TEXT_CROSS_ATTENTION_LAYERS,
-        vision_cross_attention_layers: list[int] = VISION_CROSS_ATTENTION_LAYERS,
+        text_cross_attention_layers: list[int] = T_BIATTENTION_IDS,
+        vision_cross_attention_layers: list[int] = V_BIATTENTION_IDS,
         seed:int = SEED,
         use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS,
     ):

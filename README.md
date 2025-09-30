@@ -402,6 +402,7 @@ initialized vs trained<br>
 
 
 ---
+
 comparison with pretrained model. first attn plots on pretrained+fnetuned model:
 for the image
 with text "restaurants and coffee shops at the seafront of town"
@@ -413,8 +414,7 @@ input image: <br>
 **avg over all layers:**
 <figure>
 finetuned vs untrained: <br>
-<img src="res/markdown_res/grad_cam_attention_finetuned_b4.jpg">
-<img src="res/markdown_res/grad_cam_attention_untrained_b4.jpg">
+<img src="res/markdown_res/grad_cam_attention_finetuned_b4.jpg"><img src="res/markdown_res/grad_cam_attention_untrained_b4.jpg">
 </figure>
 
 
@@ -436,7 +436,6 @@ input image: <br>
 <figure>
 finetuned vs untrained: <br>
 <img src="./res/markdown_res/grad_cam_attention_finetuned_b6_4.jpg">
-
 <img src="./res/markdown_res/grad_cam_attention_untrained_b6_4.jpg">
 
 </figure>
@@ -445,7 +444,6 @@ finetuned vs untrained: <br>
 <figure>
 finetuned vs untrained: <br>
 <img src="./res/markdown_res/grad_cam_attention_finetuned_b6_11.jpg">
-
 <img src="./res/markdown_res/grad_cam_attention_untrained_b6_11.jpg">
 </figure>
 
@@ -453,10 +451,9 @@ finetuned vs untrained: <br>
 <figure>
 finetuned vs untrained: <br>
 <img src="./res/markdown_res/grad_cam_attention_finetuned_b6.jpg">
-
 <img src="./res/markdown_res/grad_cam_attention_untrained_b6.jpg">
-
 </figure>
+
 
 ## 24.09
 hm hyperparam optim on lr and fusion strat in `res/experiments/multi_task_optim_20250922-205905.db`.

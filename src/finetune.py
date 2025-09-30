@@ -110,7 +110,7 @@ def finetune_down_stream_task(
             use_contrastive_loss=use_contrastive_loss,
         )
 
-    # TOD: implement alignment analysis on easyvqa
+    # TODO: implement alignment analysis on easyvqa
     trainer.train(
         train_dataloader=train_loader,
         test_dataloader=val_loader,
