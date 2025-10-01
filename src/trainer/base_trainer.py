@@ -1,5 +1,15 @@
 from abc import ABC, abstractmethod
 import typing
+import torch
+from logger import Logger
+from vilbert import ViLBERT, ViLBERTConfig
+from info_nce import InfoNCE, info_nce
+import utils
+from config import *
+import analysis
+from datasets import *
+import tqdm
+
 
 from torch.utils.data import DataLoader, Dataset
 
@@ -36,3 +46,11 @@ class BaseTrainer(ABC):
     @abstractmethod
     def evaluate(self, dataloader: DataLoader):
         pass
+
+    def get_final_representation(self, text_embedding: torch.tensor, image_embedding: torch.tensor,
+        fusion_method=CLS_FUSION_METHOD):
+        assert fusion_method in FUSION_METHODS
+        if fusion_method == "sum":
+            ...
+        # TODO: problem with implementing this as the fc in the vilbert relies on the input size
+

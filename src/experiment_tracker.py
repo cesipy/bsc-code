@@ -271,14 +271,6 @@ class ExperimentTracker:
             epochs = EPOCHS_
             # depth = trial.suggest_int("depth", 4, 8)
 
-            # use_contrastive = trial.suggest_categorical("use_contrastive",
-            #     [True, False])
-
-
-            # fusion_strat:str = trial.suggest_categorical("fusion_strat",
-            #     ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
-            # t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
-
             t_biattention_ids, v_biattention_ids = self.get_coattn_configs(trial)
 
             print("t_biattention_ids:", t_biattention_ids)
@@ -290,12 +282,7 @@ class ExperimentTracker:
                 learning_rate=lr,
                 use_contrastive_loss=False,
                 seed=seed,
-                # train_test_ratio=0.1
             )
-
-            # debugging
-            # return np.random.random()
-
             training_results = self.run_fintune(
                 config,
                 run_visualizations=False,  # is too compute intensive, not wanted here,
@@ -312,8 +299,6 @@ class ExperimentTracker:
                 # return val_accs_hm[-1], val_accs_imdb[-1]
             else:
                 val_losses = [training_results[task]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
-
-
 
                 for epoch, loss in enumerate(val_losses):
                     trial.report(-loss, epoch)

@@ -23,13 +23,15 @@ DROPOUT_PROB        = 0.08
 VIT_MODEL_NAME = "vit_base_patch16_224"
 #default vals for them
 DEPTH = 12          # how many co-attn layers in transformer
-# CROSS_ATTENTION_LAYERS = [1,3,6]      # first and 3rd layer are coattn
-CROSS_ATTENTION_LAYERS = [2,4,6,7]      # first and 3rd layer are coattn
+
 V_BIATTENTION_IDS = [0,1,2,3,4,5]
 T_BIATTENTION_IDS   = [6,7,8,9, 10,11]
 
 TEXT_ATTENTION_DROPOUT = 0.1
 VISION_ATTENTION_DROPOUT = 0.1
+
+CLS_FUSION_METHOD = "sum"  # available ["sum", "hardamard", "concat" ]
+FUSION_METHODS = ["sum", "hardamard", "concat"]
 # --------------------------------------------------
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4
@@ -106,7 +108,6 @@ class ViLBERTConfig:
         batch_size=BATCH_SIZE_PRETRAIN,
         gradient_accumulation=GRADIENT_ACCUMULATION,
         pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
-        cross_attention_layers: list[int]= CROSS_ATTENTION_LAYERS,
         text_cross_attention_layers: list[int] = T_BIATTENTION_IDS,
         vision_cross_attention_layers: list[int] = V_BIATTENTION_IDS,
         seed:int = SEED,
@@ -169,6 +170,6 @@ class ViLBERTConfig:
             batch_size=config_dict.get("batch_size", BATCH_SIZE_PRETRAIN),
             depth=config_dict.get("depth", DEPTH),
             pretraining_tasks=pretraining_tasks,
-            cross_attention_layers=config_dict.get("cross_attention_layers", CROSS_ATTENTION_LAYERS)
+
         )
         return config
