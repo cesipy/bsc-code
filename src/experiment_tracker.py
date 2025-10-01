@@ -19,7 +19,7 @@ from logger import Logger
 import analysis
 
 logger = Logger()
-EPOCHS_ = 10
+EPOCHS_ = 9
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = True
 
@@ -148,7 +148,7 @@ class ExperimentTracker:
         first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
         round/clip to the indices.
         """
-        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 6)
+        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 8)
 
         t_center = trial.suggest_float("t_center", 5.0, 10.0)
         t_spread = trial.suggest_float("t_spread", 1.0, 4.0)
@@ -802,7 +802,7 @@ def main():
     logger.info("test!!!!")
     tracker = ExperimentTracker()
     # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
-    tracker.optimize_parameters_single(n_trials=80, optimization_objective="loss",
+    tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
                                        #task="mm_imdb")
                                        task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
