@@ -135,7 +135,8 @@ class HatefulMemesTrainer(BaseTrainer):
                 )
 
 
-                preds = self.model.fc(text_embedding * vision_embedding)
+                fused_representation = self.get_final_representation(text_embedding, vision_embedding)
+                preds = self.model.fc(fused_representation)
                 preds = preds.squeeze()     #[bs]
                 label = label.float()       #[bs]
 
@@ -185,7 +186,8 @@ class HatefulMemesTrainer(BaseTrainer):
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
                 )
-                preds = self.model.fc(text_embedding * image_embedding)
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                preds = self.model.fc(fused_representation)
 
                 preds = preds.squeeze()
                 label = label.float()
@@ -209,7 +211,8 @@ class HatefulMemesTrainer(BaseTrainer):
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
                 )
-                preds = self.model.fc(text_embedding * image_embedding)
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                preds = self.model.fc(fused_representation)
 
 
                 preds = preds.squeeze()
@@ -361,7 +364,8 @@ class HatefulMemesTrainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                     save_intermediate_representations=False
                 )
-                preds = self.model.fc(text_embedding * image_embedding)
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                preds = self.model.fc(fused_representation)
 
                 preds = preds.squeeze()
                 label = label.float()

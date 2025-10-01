@@ -153,7 +153,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## TODO
 **immediate:**
-
+- [ ] self.query1 = nn.Linear(in_features=dim, out_features=dim) - moredimensions here
 - [ ] fix pretraining, several things are wrong
 	- [ ] compare ap contrastive with the contrastive in downstream
 	- [ ] pretraining problem with contrastive learning
@@ -357,6 +357,61 @@ How to define baseline for my experiments?
 
 
 - Compare Haramard vs simply summing vs concat
+
+
+### Comparison: Haramard vs simply summing vs concat
+Comparison of hadamard vs concat on hm, with parameteres:
+```python
+econf = experiment_tracker.ExperimentConfig(
+	t_biattention_ids=[6,7,8,9, 10,11],
+	v_biattention_ids=[6,7,8,9, 10,11],
+	use_contrastive_loss=False,
+	epochs=8,
+	learning_rate=3.4e-5,
+)
+```
+<figure>
+
+**hadamard**
+```
+Epoch 1/8, Train Loss: 0.6469, Val Loss: 0.6277, Val Acc: 0.6606
+Epoch 2/8, Train Loss: 0.6134, Val Loss: 0.6162, Val Acc: 0.6794
+Epoch 3/8, Train Loss: 0.5521, Val Loss: 0.5670, Val Acc: 0.7259
+Epoch 4/8, Train Loss: 0.4950, Val Loss: 0.5631, Val Acc: 0.7153
+Epoch 5/8, Train Loss: 0.4573, Val Loss: 0.5593, Val Acc: 0.7312
+Epoch 6/8, Train Loss: 0.4147, Val Loss: 0.5724, Val Acc: 0.7176
+Epoch 7/8, Train Loss: 0.3918, Val Loss: 0.5972, Val Acc: 0.7271
+```
+
+**concat**:
+```
+Epoch 1/8, Train Loss: 0.6566, Val Loss: 0.6598, Val Acc: 0.6312
+Epoch 2/8, Train Loss: 0.6410, Val Loss: 0.6552, Val Acc: 0.6300
+Epoch 3/8, Train Loss: 0.5994, Val Loss: 0.6308, Val Acc: 0.6335
+Epoch 4/8, Train Loss: 0.5519, Val Loss: 0.6108, Val Acc: 0.6594
+Epoch 5/8, Train Loss: 0.5057, Val Loss: 0.5978, Val Acc: 0.6894
+Epoch 6/8, Train Loss: 0.4746, Val Loss: 0.5914, Val Acc: 0.6988
+Epoch 7/8, Train Loss: 0.4516, Val Loss: 0.5883, Val Acc: 0.6982
+Epoch 8/8, Train Loss: 0.4358, Val Loss: 0.5822, Val Acc: 0.7141
+```
+
+**sum**:
+```
+Epoch 1/8, Train Loss: 0.6432, Val Loss: 0.6351, Val Acc: 0.6424
+Epoch 2/8, Train Loss: 0.5896, Val Loss: 0.6453, Val Acc: 0.6212
+Epoch 3/8, Train Loss: 0.5463, Val Loss: 0.5627, Val Acc: 0.7335
+Epoch 4/8, Train Loss: 0.4717, Val Loss: 0.5546, Val Acc: 0.7253
+Epoch 5/8, Train Loss: 0.4185, Val Loss: 0.5717, Val Acc: 0.7282
+Epoch 6/8, Train Loss: 0.3822, Val Loss: 0.5889, Val Acc: 0.7371
+Epoch 7/8, Train Loss: 0.3508, Val Loss: 0.6030, Val Acc: 0.7306
+Epoch 8/8, Train Loss: 0.3394, Val Loss: 0.6086, Val Acc: 0.7229
+```
+
+$\Rightarrow:$ concat converges more slowly
+
+all of those experiments where conducted with cosine lr scheduler with warmup with final lr of `0.1*initial_learning_rate`. Decided to increase the fraction to `0.5`, what lead to better results for hadamard, sum and concat.
+
+
 
 ## 30.09
 apparently my archicture redesign had a critical bug: the vision transformer was passed two times! In the forward pass, I thought I extracted the vision embeddings using `self.vit.forward_features(image_pixel_values)`. But this was wrong according to the [documentation](https://huggingface.co/docs/timm/en/feature_extraction#forwardfeatures)

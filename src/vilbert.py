@@ -215,35 +215,37 @@ class ViLBERT(nn.Module):
         self.alignment_fc = nn.Linear(self.config.embedding_dim , 1)
         self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
 
+        if CLS_FUSION_METHOD == "concat":
+            input_dim = self.config.embedding_dim * 2
+        else:
+            input_dim = self.config.embedding_dim
         # for hateful memes
         self.fc = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.Linear(input_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, 1),
         )
-
         # TODO: unify, here i do multiplication in the other not
         # for mmimdb
         self.fc_imdb = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.Linear(input_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, MM_IMDB_NUM_GENRES),
         )
         self.fc_vqa = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.Linear(input_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),
         )
         self.fc_upmc = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
+            nn.Linear(input_dim, FC_HIDDEN_DIM),
             nn.ReLU(inplace=True),
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, UPMC_NUM_CLASSES),
         )
-
 
 
 

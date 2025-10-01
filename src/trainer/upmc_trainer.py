@@ -165,9 +165,9 @@ class UPMCTrainer(BaseTrainer):
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
                 )
-                combined = text_embedding*image_embedding
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
                 # assert combined.shape == (dataloader.batch_size, self.config.embedding_dim)
-                preds = self.model.fc_upmc(combined)
+                preds = self.model.fc_upmc(fused_representation)
 
                 # print(f"preds: {preds.shape}, label: {label.shape}")
                 loss_normal = self.loss_fn(preds, label)
@@ -202,9 +202,9 @@ class UPMCTrainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                 )
 
-                combined = text_embedding*image_embedding
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
                 # assert combined.shape == (dataloader.batch_size, self.config.embedding_dim)
-                preds = self.model.fc_upmc(combined)
+                preds = self.model.fc_upmc(fused_representation)
                 # print(f"preds: {preds.shape}, label: {label.shape}")
 
 
@@ -253,9 +253,9 @@ class UPMCTrainer(BaseTrainer):
                     image_attention_mask=image.get("attention_mask", None),
                 )
 
-                combined = text_embedding * image_embedding
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
 
-                pred = self.model.fc_upmc(combined)
+                pred = self.model.fc_upmc(fused_representation)
 
                 loss = self.loss_fn(pred, label)
                 total_loss += loss.item()

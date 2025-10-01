@@ -30,7 +30,7 @@ T_BIATTENTION_IDS   = [6,7,8,9, 10,11]
 TEXT_ATTENTION_DROPOUT = 0.1
 VISION_ATTENTION_DROPOUT = 0.1
 
-CLS_FUSION_METHOD = "sum"  # available ["sum", "hardamard", "concat" ]
+CLS_FUSION_METHOD = "concat"  # available ["sum", "hardamard", "concat" ]
 FUSION_METHODS = ["sum", "hardamard", "concat"]
 # --------------------------------------------------
 # pretraining
@@ -86,7 +86,7 @@ FC_HIDDEN_DIM = 512       # what hidden size in fc head
 # LR SCHEDULER
 WARMUP_ITERATIONS = 0.1     #what fraction of total training steps is in warmup?
 DECAY_ITERATIONS  = 0.9     #what fraction of total training steps is in decay?
-MIN_LR_FRACTION   = 0.1    #fraction of original lr => min_lr
+MIN_LR_FRACTION   = 0.3    #fraction of original lr => min_lr
 
 # --------------------------------------------------
 

@@ -48,9 +48,17 @@ class BaseTrainer(ABC):
         pass
 
     def get_final_representation(self, text_embedding: torch.tensor, image_embedding: torch.tensor,
-        fusion_method=CLS_FUSION_METHOD):
+        fusion_method=CLS_FUSION_METHOD) -> torch.tensor:
         assert fusion_method in FUSION_METHODS
         if fusion_method == "sum":
-            ...
+            return text_embedding + image_embedding
+
+        elif fusion_method == "hadamard":
+            return text_embedding * image_embedding
+
+        elif fusion_method == "concat":
+            combined = torch.concat((text_embedding, image_embedding),1)
+            return combined
+
         # TODO: problem with implementing this as the fc in the vilbert relies on the input size
 

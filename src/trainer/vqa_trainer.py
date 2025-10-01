@@ -106,8 +106,8 @@ class VQATrainer(BaseTrainer):
             )
 
             # same approach as in vilbert paper. instead of concat, do hadamard
-            combined = text_embedding * image_embedding
-            pred = self.model.fc_vqa(combined)  # [bs, 13]
+            fused_representation = self.get_final_representation(text_embedding, image_embedding)
+            pred = self.model.fc_vqa(fused_representation)  # [bs, 13]
 
             loss = self.loss_fn(pred, label)  # pred: logits, label-class indices
 
@@ -151,8 +151,8 @@ class VQATrainer(BaseTrainer):
 
                 )
 
-                combined = text_embedding * image_embedding
-                pred = self.model.fc_vqa(combined)
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                pred = self.model.fc_vqa(fused_representation)  
 
                 loss = self.loss_fn(pred, label)
                 total_loss += loss.item()

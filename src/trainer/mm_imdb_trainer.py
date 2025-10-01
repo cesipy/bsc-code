@@ -170,8 +170,8 @@ class MM_IMDB_Trainer(BaseTrainer):
                     image_pixel_values= image["pixel_values"],
                     image_attention_mask= image.get("attention_mask", None),
                 )
-                combined = text_embedding * image_embedding
-                pred = self.model.fc_imdb(combined)
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                pred = self.model.fc_imdb(fused_representation)
                 pred = pred.squeeze()
                 label = label.float()
 
@@ -214,9 +214,9 @@ class MM_IMDB_Trainer(BaseTrainer):
                     image_attention_mask= image.get("attention_mask", None),
                 )
 
-                combined = text_embedding * image_embedding
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
 
-                pred = self.model.fc_imdb(combined)
+                pred = self.model.fc_imdb(fused_representation)
                 # print(f"pred shape: {pred.shape}")
 
                 # print(pred)
@@ -271,8 +271,8 @@ class MM_IMDB_Trainer(BaseTrainer):
                     image_attention_mask=image.get("attention_mask", None),
                 )
 
-                combined = text_embedding * image_embedding
-                pred = self.model.fc_imdb(combined)
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                pred = self.model.fc_imdb(fused_representation)
 
                 loss = loss_fn(pred, label)
                 total_loss += loss.item()
