@@ -161,6 +161,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 - [ ] double and triple check if new architecture-fix is correct, because alignment visualizations look off
+	- [ ] problem with double forward pass for vit
 
 - [ ] seed from config, not global var
 	- [ ] convert all torchvision to albuminations + seeding
@@ -344,6 +345,38 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 ## Results
+
+## 30.09
+apparently my archicture redesign had a critical bug: the vision transformer was passed two times! In the forward pass, I thought I extracted the vision embeddings using `self.vit.forward_features(image_pixel_values)`. But this was wrong according to the [documentation](https://huggingface.co/docs/timm/en/feature_extraction#forwardfeatures)
+Fixed it with:
+```python
+
+def forward(self, *args, **kwargs):
+
+	extended_attention_mask = self.get_extended_attention_mask(
+		text_attention_mask,
+		dtype=next(self.bert.parameters()).dtype)
+	text_embedding = self.bert_embeddings(input_ids=text_input_ids,token_type_ids=text_token_type_ids,)
+
+	# #this is wrong, according to the sourcecode, this simply skips the head
+	# and skips the pooling stage in the transformer:
+	# https://github.com/huggingface/pytorch-image-models/blob/0645384b3a68d0ddf4657400125bb2c68c42bc60/timm/models/vision_transformer.py#L935
+	# vit_outputs = self.vit.forward_features(
+	#     image_pixel_values,
+	# )
+
+
+	#applies conv2d to image with kernel_sz=16 and stride = 16
+	#=> 14x14 patches = 196
+	x = self.vit.patch_embed(image_pixel_values)
+	cls = self.vit.cls_token.expand(x.shape[0], -1, -1)
+	x = torch.cat((cls, x), dim=1)
+	x = self.vit.pos_drop(x + self.vit.pos_embed)
+	vision_embeddings = self.vision_embeddings(x)
+```
+
+Here the correct method to get embedded patches is to use `self.vit.patch_embed` and add the cls token and positional embeddings manually.
+Basically [`vit.patch_embed`](https://huggingface.co/spaces/Roll20/pet_score/blame/main/lib/timm/models/layers/patch_embed.py) applies conv2d to the image and creates 14x14 patches.
 
 
 ## 29.09

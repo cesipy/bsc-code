@@ -435,8 +435,8 @@ class ExperimentTracker:
         )
 
         train_loader, val_loader = datasets.get_hateful_memes_datasets(
-            # train_test_ratio=TRAIN_TEST_RATIO,
-            train_test_ratio=0.1,
+            train_test_ratio=TRAIN_TEST_RATIO,
+            # train_test_ratio=0.1,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,

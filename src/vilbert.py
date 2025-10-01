@@ -159,7 +159,9 @@ class VisionEmbeddings(nn.Module):
     def forward(self, vit_features):
         # vit_features: [batch, 197, 768] from ViT
         # same as in vilbert
-        embeddings = self.LayerNorm(vit_features)
+        # layernorm might break pretrained weights
+        embeddings = vit_features
+        # embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
         return embeddings
 
@@ -250,7 +252,8 @@ class ViLBERT(nn.Module):
         if attention_mask is not None:
             attention_mask = attention_mask.float()
             extended_attention_mask = attention_mask[:, None, None, :]
-            extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(dtype).min
+            #extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(dtype).min
+            extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
         else:
             extended_attention_mask = None
         return extended_attention_mask
@@ -282,21 +285,33 @@ class ViLBERT(nn.Module):
             token_type_ids=text_token_type_ids,
         )
 
-        #this is wrong!! #TODO
-        vit_outputs = self.vit.forward_features(
-            image_pixel_values,
-        )
-        vision_embeddings = self.vision_embeddings(vit_outputs)
+        # #this is wrong, according to the sourcecode, this simply skips the head
+        # and skips the pooling stage in the transformer:
+        # https://github.com/huggingface/pytorch-image-models/blob/0645384b3a68d0ddf4657400125bb2c68c42bc60/timm/models/vision_transformer.py#L935
+        # vit_outputs = self.vit.forward_features(
+        #     image_pixel_values,
+        # )
+
+        #applies conv2d to image with kernel_sz=16 and stride = 16
+        #=> 14x14 patches = 196
+        #https://huggingface.co/spaces/Roll20/pet_score/blame/main/lib/timm/models/layers/patch_embed.py
+        x = self.vit.patch_embed(image_pixel_values)    #[bs, 196, dim]
+        cls = self.vit.cls_token.expand(x.shape[0], -1, -1)  # [bs, 1, dim] stole cls token impl from timm
+        x = torch.cat((cls, x), dim=1)  # [bs, 197, dim]
+
+        # apply positional dropout + positional embedding
+        x = self.vit.pos_drop(x + self.vit.pos_embed)
+
+        # no need to droput anymore
+        #vision_embeddings = self.vision_embeddings(x)
+        vision_embeddings = x
 
 
         v_start = 0
         t_start = 0
         count   = 0
 
-        blocks = self.vit.blocks
-
         intermediate_representations = [] if save_intermediate_representations else None
-        # print(f"Number of vit blocks: {len(blocks)}")
         tmp_t = []
         tmp_v = []
         for v_layer_id, t_layer_id in zip(self.v_biattention_ids, self.t_biattention_ids):
@@ -409,9 +424,6 @@ class ViLBERT(nn.Module):
         return text_embedding, vision_embeddings
 
 
-
-
-
     def forward(self,
         text_input_ids,
         text_attention_mask=None,
@@ -452,12 +464,6 @@ class ViLBERT(nn.Module):
         )
 
         return text_embedding, image_embedding
-
-
-
-
-
-
 
 
     def forward_pretrain(
@@ -503,7 +509,7 @@ class ViLBERT(nn.Module):
 
             return text_seqs, vision_seqs
 
-        if "alignment_prediction":
+        if "alignment_prediction" in tasks:
             text_embedding, image_embedding = self.forward_coattention(
                 text_input_ids=text_input_ids,
                 text_attention_mask=text_attention_mask,

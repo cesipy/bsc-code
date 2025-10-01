@@ -15,15 +15,15 @@ def main():
         t_biattention_ids=T_BIATTENTION_IDS,
         v_biattention_ids=V_BIATTENTION_IDS,
         use_contrastive_loss=False,
-        epochs=2,
+        epochs=5,
+        learning_rate=3.4e-5,
     )
 
     training_results = t.run_fintune(
         experiment_config=econf,
         run_visualizations=False,
         tasks=["hateful_memes"],
-        run_alignment_analysis=True
-
+        run_alignment_analysis=False,
     )
 
     etu.print_summary(training_results=training_results)
