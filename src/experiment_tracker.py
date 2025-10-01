@@ -20,7 +20,7 @@ import analysis
 import task as tasklib
 
 logger = Logger()
-EPOCHS_ = 10
+EPOCHS_ = 9
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = False
 
@@ -804,7 +804,7 @@ def main():
 
     tracker = ExperimentTracker()
     # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
-    tracker.optimize_parameters_single(n_trials=80, optimization_objective="loss",
+    tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
                                        #task="mm_imdb")
                                        task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
