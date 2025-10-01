@@ -281,6 +281,8 @@ class ViLBERT(nn.Module):
             input_ids=text_input_ids,
             token_type_ids=text_token_type_ids,
         )
+
+        #this is wrong!! #TODO
         vit_outputs = self.vit.forward_features(
             image_pixel_values,
         )

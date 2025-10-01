@@ -17,11 +17,12 @@ import utils
 import datasets
 from logger import Logger
 import analysis
+import task as tasklib
 
 logger = Logger()
 EPOCHS_ = 9
 ALIGNMENT_ANALYSIS_SIZE = 4000
-SKIP_ALIGNMENT = True
+SKIP_ALIGNMENT = False
 
 
 @dataclasses.dataclass
@@ -88,74 +89,16 @@ class ExperimentTracker:
         os.makedirs(self.visualization_dir, exist_ok=True)
 
 
-    # def get_coattn_configs(self,trial: optuna.Trial, max_layers: int = 12, min_len=2) -> Tuple[list, list]:
-    #     """ more sophisticated approach for parametrized coattention construction.
-    #     uses continuous distrubutions to generate discrete points.
-
-    #     first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
-    #     round/clip to the indices.
-    #     """
-    #     num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 8)
-
-    #     # working with distributions
-    #     t_center = trial.suggest_float("t_center", 5.0, max_layers - 1)
-    #     t_spread = trial.suggest_float("t_spread", 0.5, max_layers / 3)
-
-    #     v_center_shift = trial.suggest_float("v_center_shift", -3.0, 3.0)
-    #     v_spread_ratio = trial.suggest_float("v_spread_ratio", 0.75, 1.5)
-
-    #     v_center = t_center + v_center_shift
-    #     v_spread = t_spread * v_spread_ratio
-
-
-    #     t_biattention_ids = []
-    #     v_biattention_ids = []
-
-    #     for i in range(num_coattn_layers):
-    #         # Map to quantiles: 0.1, 0.3, 0.5, 0.7, 0.9 for num=5
-    #         quantile = (i + 1) / (num_coattn_layers + 1)
-    #         print(f"quantile: {quantile}, num_coattn_layers: {num_coattn_layers}")
-
-    #         from scipy.stats import norm
-    #         t_layer = t_center + t_spread * norm.ppf(quantile)
-    #         v_layer = v_center + v_spread * norm.ppf(quantile)
-    #         print(f"t_layer: {t_layer}, v_layer: {v_layer}")
-
-    #         # to get discrecte val
-    #         t_layer = int(np.clip(round(t_layer), 0, max_layers - 1))
-    #         v_layer = int(np.clip(round(v_layer), 0, max_layers - 1))
-    #         t_biattention_ids.append(t_layer)
-    #         v_biattention_ids.append(v_layer)
-
-
-    #     t_biattention_ids = sorted(set(t_biattention_ids))
-    #     v_biattention_ids = sorted(set(v_biattention_ids))
-
-    #     # any probs
-    #     min_len_ = min(len(t_biattention_ids), len(v_biattention_ids))
-    #     if min_len_ < min_len:
-    #         raise optuna.TrialPruned()
-
-
-
-    #     return t_biattention_ids[:min_len_], v_biattention_ids[:min_len_]
-
-    def get_coattn_configs(self, trial: optuna.Trial, max_layers: int = 12
-                           ) -> Tuple[list, list]:
+    def get_biattentions(self, num_coattn_layers:int, t_center:float,t_spread:float,v_center:float,v_spread:float):
         """ more sophisticated approach for parametrized coattention construction.
-        uses continuous distrubutions to generate discrete points.
 
-        first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
-        round/clip to the indices.
+        Args:
+            num_coattn_layers: int, number of coattention layers to use
+            t_center: float, center of text coattention layers
+            t_spread: float, spread of text coattention layers
+            v_center: float, center of vision coattention layers
+            v_spread: float, spread of vision coattention layers
         """
-        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 8)
-
-        t_center = trial.suggest_float("t_center", 5.0, 10.0)
-        t_spread = trial.suggest_float("t_spread", 1.0, 4.0)
-
-        v_center = trial.suggest_float("v_center", 2.0, 10.0)
-        v_spread = trial.suggest_float("v_spread", 1.0, 4.0)
-
         from scipy.stats import norm
 
         t_biattention_ids = set()
@@ -179,6 +122,27 @@ class ExperimentTracker:
         if min_len < 2:     # TODO: make configurable
             raise optuna.TrialPruned()
         return t_biattention_ids[:min_len], v_biattention_ids[:min_len]
+
+
+    def get_coattn_configs(self, trial: optuna.Trial, max_layers: int = 12
+                           ) -> Tuple[list, list]:
+        """ more sophisticated approach for parametrized coattention construction.
+        uses continuous distrubutions to generate discrete points.
+
+        first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
+        round/clip to the indices.
+        """
+        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 6)
+
+        t_center = trial.suggest_float("t_center", 5.0, 10.0)
+        t_spread = trial.suggest_float("t_spread", 1.0, 4.0)
+
+        v_center = trial.suggest_float("v_center", 2.0, 10.0)
+        v_spread = trial.suggest_float("v_spread", 1.0, 4.0)
+
+        return self.get_biattentions(num_coattn_layers, t_center, t_spread, v_center, v_spread)
+
+
 
 
     def construct_coattn_configs(self, strat:str) -> Tuple[list, list]:
@@ -234,9 +198,9 @@ class ExperimentTracker:
                 # train_test_ratio=0.1
             )
 
-            training_results = self.run_single_experiment(
-                config,
-                run_visualization=False  # is too compute intensive, not wanted here
+            training_results = self.run_fintune(
+                experiment_config=config,
+                run_visualizations=False  # is too compute intensive, not wanted here
             )
 
             if optimization_objective == "acc":
@@ -313,8 +277,8 @@ class ExperimentTracker:
 
             # fusion_strat:str = trial.suggest_categorical("fusion_strat",
             #     ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
-
             # t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
+
             t_biattention_ids, v_biattention_ids = self.get_coattn_configs(trial)
 
             print("t_biattention_ids:", t_biattention_ids)
@@ -332,10 +296,10 @@ class ExperimentTracker:
             # debugging
             # return np.random.random()
 
-            training_results = self.run_single_experiment(
+            training_results = self.run_fintune(
                 config,
-                run_visualization=False,  # is too compute intensive, not wanted here,
-                single_task=[task]
+                run_visualizations=False,  # is too compute intensive, not wanted here,
+                tasks=[task]
             )
 
             if optimization_objective == "acc":
@@ -402,9 +366,9 @@ class ExperimentTracker:
             # return self._run_trial(config, trial)
 
 
-            training_results = self.run_single_experiment(
+            training_results = self.run_fintune(
                 config,
-                run_visualization=False                 # is too compute intensive, not wanted here
+                run_visualizations=False                 # is too compute intensive, not wanted here
             )
             if optimization_objective == "acc":
                 val_accs_hm = [training_results["hateful_memes"]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
@@ -471,8 +435,8 @@ class ExperimentTracker:
         )
 
         train_loader, val_loader = datasets.get_hateful_memes_datasets(
-            train_test_ratio=TRAIN_TEST_RATIO,
-            # train_test_ratio=0.1,
+            # train_test_ratio=TRAIN_TEST_RATIO,
+            train_test_ratio=0.1,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -492,6 +456,9 @@ class ExperimentTracker:
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
 
+        if not skip_alignment_analysis:
+            alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
+            training_results["hateful_memes"]["alignment"][0] = alignment_metrics
 
         for i in range(epochs):
             train_loss = self.train_model_step(
@@ -560,6 +527,10 @@ class ExperimentTracker:
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
 
+        if not skip_alignment_analysis:
+            alignment_metrics = self.analyse_alignment(model=model, dataloader=imdb_dataloader)
+            training_results["mm_imdb"]["alignment"][0] = alignment_metrics
+
 
         for i in range(epochs):
             train_loss = self.train_model_step(
@@ -612,64 +583,83 @@ class ExperimentTracker:
         return filename
 
 
+    def _run_task(self, training_results: dict,
+        task_name: str, experiment_config:ExperimentConfig,
+        filename: str, run_visualizations:bool,
+        run_alignment_analysis:bool
+        ):
+        assert task_name in tasklib.all_task_list
 
-
-    def run_single_experiment(self, experiment_config: ExperimentConfig, run_visualization:bool=True,
-        single_task:Optional[list[str]]=None):
-        filename = self._get_filename(config=experiment_config)
+        config = self.create_config(experiment_config)
 
         print(f"Saving results to {filename}")
         exp_dir_name = os.path.join(self.visualization_dir, filename)
         os.makedirs(exp_dir_name, exist_ok=True)
-        exp_dir_name_hm = os.path.join(exp_dir_name, "hateful_memes")
-        exp_dir_name_imdb = os.path.join(exp_dir_name, "mm_imdb")
-        os.makedirs(exp_dir_name_hm, exist_ok=True)
-        os.makedirs(exp_dir_name_imdb, exist_ok=True)
+
+        if task_name == "hateful_memes":
+            exp_dir_name_hm = os.path.join(exp_dir_name, "hateful_memes")
+            os.makedirs(exp_dir_name_hm, exist_ok=True)
+            n_training_results = self.run_single_experiment_hateful_memes(
+                config=config,
+                training_results=training_results,
+                epochs=experiment_config.epochs,
+                dir_name=exp_dir_name_hm,
+                run_visualization=run_visualizations,
+                skip_alignment_analysis=not run_alignment_analysis
+            )
+
+        elif task_name == "mm_imdb":
+            exp_dir_name_imdb = os.path.join(exp_dir_name, "mm_imdb")
+            os.makedirs(exp_dir_name_imdb, exist_ok=True)
+            n_training_results = self.run_single_experiment_mm_imdb(
+                config=config,
+                training_results=training_results,
+                epochs=experiment_config.epochs,
+                dir_name=exp_dir_name_imdb,
+                run_visualization=run_visualizations,
+                skip_alignment_analysis=not run_alignment_analysis,
+            )
+        #TODO: other tasks
+
+        else:
+            raise ValueError(f"unknown single_task: {task_name}")
+
+        return n_training_results
+
+
+
+
+    def run_fintune(
+        self,
+        experiment_config: ExperimentConfig,
+        run_visualizations:bool=False,
+        run_alignment_analysis:bool=False,
+        tasks:list[str]=["hateful_memes", "mm_imdb"]
+    ):
+        assert tasks != None
+        for task in tasks:
+            assert task in tasklib.all_task_list
+
+
+        filename = self._get_filename(config=experiment_config)
+
+        print(f"Saving results to {filename}")
 
         # TODO: also include use_contrastive as param to optimize
-        config = self.create_config(experiment_config)
+
         print(f"seed = {experiment_config.seed}")
         utils.set_seeds(experiment_config.seed)
 
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
 
-        if single_task == None:     #run both
-            training_results = self.run_single_experiment_mm_imdb(
-                config=config,
+        for task in tasks:
+            training_results = self._run_task(
+                task_name=task, experiment_config=experiment_config,
+                filename=filename, run_visualizations=run_visualizations,
                 training_results=training_results,
-                epochs=experiment_config.epochs,
-                dir_name=exp_dir_name_imdb,
-                run_visualization=run_visualization,
-                skip_alignment_analysis=SKIP_ALIGNMENT,
+                run_alignment_analysis=run_alignment_analysis
             )
-            training_results = self.run_single_experiment_hateful_memes(
-                config=config,
-                training_results=training_results,
-                epochs=experiment_config.epochs,
-                dir_name=exp_dir_name_hm,
-                run_visualization=run_visualization,
-                skip_alignment_analysis=SKIP_ALIGNMENT,
-            )
-        elif "mm_imdb" in single_task:
-            training_results = self.run_single_experiment_mm_imdb(
-                config=config,
-                training_results=training_results,
-                epochs=experiment_config.epochs,
-                dir_name=exp_dir_name_imdb,
-                run_visualization=run_visualization,
-                skip_alignment_analysis=SKIP_ALIGNMENT,
-            )
-        elif "hateful_memes" in single_task:
-            training_results = self.run_single_experiment_hateful_memes(
-                config=config,
-                training_results=training_results,
-                epochs=experiment_config.epochs,
-                dir_name=exp_dir_name_hm,
-                run_visualization=run_visualization,
-                skip_alignment_analysis=SKIP_ALIGNMENT,
-            )
-        else:
-            raise ValueError(f"unknown single_task: {single_task}")
+
         self.save_results(
             training_results=training_results,
             config=experiment_config,
@@ -742,9 +732,53 @@ class ExperimentTracker:
         config.use_contrastive_loss = experiment_config.use_contrastive_loss
         return config
 
+    def train_from_config(self, config_pth:str, task:str):
+        assert os.path.exists(config_pth)
+        assert task in ["hateful_memes", "mm_imdb"]
+
+        with open(config_pth, "r") as f:
+            content = json.load(f)
+
+        t_biattention_ids = content["t_biattention_ids"]
+        v_biattention_ids = content["v_biattention_ids"]
+
+        epochs = content["epochs"]
+        batch_size = content["batch_size"]
+        gradient_accumulation = content["gradient_accumulation"]
+        learning_rate = content["learning_rate"]
+        seed = content["seed"]
+        train_test_ratio = content["train_test_ratio"]
+        use_contrastive_loss = content.get("use_contrastive_loss", False)
+        dropout = content.get("dropout", 0.1)
+
+        exp_config = ExperimentConfig(
+            t_biattention_ids=t_biattention_ids,
+            v_biattention_ids=v_biattention_ids,
+            epochs=epochs,
+            batch_size=batch_size,
+            gradient_accumulation=gradient_accumulation,
+            learning_rate=learning_rate,
+            seed=seed,
+            train_test_ratio=train_test_ratio,
+            use_contrastive_loss=use_contrastive_loss,
+            dropout=dropout
+        )
+
+        config: ViLBERTConfig = self.create_config(exp_config)
+        training_results = self.run_fintune(
+            experiment_config=exp_config,
+            run_visualizations=True,
+            tasks=[task]
+        )
+
+        info_str = f"Finished training from config: {config_pth}"
+        logger.info(info_str)
+        print(info_str)
+
+
+
 
     def save_results(self, training_results: dict, config: ExperimentConfig, filename:str):
-
 
         training_results["config"] = {
             "t_biattention_ids": config.t_biattention_ids,
@@ -755,6 +789,8 @@ class ExperimentTracker:
             "learning_rate": config.learning_rate,
             "seed": config.seed,
             "train_test_ratio": config.train_test_ratio,
+            "use_contrastive_loss": config.use_contrastive_loss,
+            "dropout": config.dropout,
         }
         filename += ".json"
         filename = os.path.join(self.save_dir, filename)
@@ -763,43 +799,9 @@ class ExperimentTracker:
             json.dump(training_results, f, indent=4)
 
 
-def get_experiments():
-    from itertools import chain, combinations
-
-    depth = 4
-    arr = [i for i in range(depth)]
-    all = []
-
-    powerset = list(chain.from_iterable(combinations(arr, r) for r in range(len(arr)+1)))
-    for s in powerset:
-        all.append(list(s))
-
-    print(f"total experiments: {len(all)}")
-    print(all)
-
-    exps = []
-
-    for i in all:
-        exp = ExperimentConfig(
-            cross_attention_layers=i,
-            depth=depth,
-            epochs=EPOCHS_,
-            batch_size=BATCH_SIZE_DOWNSTREAM,
-            gradient_accumulation=GRADIENT_ACCUMULATION_DOWNSTREAM,
-            learning_rate=DOWNSTREAM_LR,
-            seed=SEED,
-            train_test_ratio=TRAIN_TEST_RATIO,
-        )
-        exps.append(exp)
-
-    return exps
-
-
-
-
 
 def main():
-    logger.info("test!!!!")
+
     tracker = ExperimentTracker()
     # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
     tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
@@ -807,17 +809,6 @@ def main():
                                        task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
-    # exps = get_experiments()
-    # tracker = ExperimentTracker()
-
-    # for config in exps:
-    #     print(f"Running experiment with config: {config}")
-    #     logger.info(f"Running experiment with config: {config}")
-    #     tracker.run_single_experiment(config)
-
-    #     info_str = "-"*25
-    #     print(info_str+"\n")
-    #     logger.info(info_str)
 
 
 if __name__ == "__main__":

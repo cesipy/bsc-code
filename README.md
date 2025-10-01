@@ -151,22 +151,23 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 
-## TODO#
+## TODO
 **immediate:**
-- [ ] pretrainAP is wrong for my alignment analysis. half of the time it switches (like in the pretrain task). create separate class for analysis on conceptual captions.
-	- [ ] current workaround: probab in get_items is at 0
-	-             if random.random() < 0.0:       # TODO: remove
 
 - [ ] fix pretraining, several things are wrong
+	- [ ] compare ap contrastive with the contrastive in downstream
+	- [ ] pretraining problem with contrastive learning
 
-- [ ] mixed saving of intermediates: sometimes cls, sometimes full_seq
 
-- [ ] double and triple check if new architecture-fix is correct
+
+- [ ] double and triple check if new architecture-fix is correct, because alignment visualizations look off
+
 - [ ] seed from config, not global var
 	- [ ] convert all torchvision to albuminations + seeding
+
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
-- [ ] fix coattentions not really saved in intermediate_representations
-- [ ] compare ap contrastive with the contrastive in downstream
+- [ ] fix coattentions not really saved in intermediate_representations,
+	- [ ] better logic for that
 - [ ] fix vilbert architecture
 - [ ] upmc datatset
 - [x] vqa
@@ -177,10 +178,21 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 - [ ] analysis of pretrained models: discrepancies in end representation of streams
 
-- [x] variable cka in analysis.
-- [ ] fix the alignment string to have same lenght
-- [ ] `src/evaluate.py` more flexible
-	- [ ] contrastive loss for other datasets; include in trainer
+- [ ] experiment_tracker:
+	- [ ] run different configs, predetermined, so i can run several finetunes.
+	- [ ] run from json files
+		- [ ] implement run from config
+		- [ ] test if impl is correct.
+	- [ ] save everything that is necessary, is vi_biattention_ids, currently correct?
+	- [ ] adapt finetune module to use experiment tracker.
+	- [ ] implement other tasks in run experiment
+	- [ ] proper naming for visualization of repr analyse
+
+
+- [x] pretrainAP is wrong for my alignment analysis. half of the time it switches (like in the pretrain task). create separate class for analysis on conceptual captions.
+	- [x] current workaround: probab in get_items is at 0
+	-             if random.random() < 0.0:       # TODO: remove
+- [x] mixed saving of intermediates: sometimes cls, sometimes full_seq
 
 
 **other**
@@ -228,10 +240,10 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 
-- [ ] self.fc outside of forward - refactor
 
 - [ ] check if cka is right..
 	- [ ] try with bigger bs for the data collection
+- [x] self.fc outside of forward - refactor
 - [x] add parameter how many samples to collect for visualization
 	- [ ] more runs and avg out
 - [ ] comparison of full-seq to cls.
@@ -241,11 +253,8 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] problem with contrastive term in pretraining: combined approach!
 
 
-- [ ] implement further datasets for alignment evaluation
-	- [ ] vqa
-	- [x] mm-imbd
 
-- [ ] add dropout in attention
+- [x] add dropout in attention
 - [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
 
 - [ ] is residual handling in crossattention correct?
@@ -273,6 +282,13 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 ### past TODOs
+- [x] variable cka in analysis.
+- [x] fix the alignment string to have same lenght
+- [x] `src/evaluate.py` more flexible
+	- [x] contrastive loss for other datasets; include in trainer
+- [x] implement further datasets for alignment evaluation
+	- [x] vqa
+	- [x] mm-imbd
 - [x] finetune bert and vit alone, without additional layers of vilbert
 	- [x] abstr class for model, include all the heads.
 
@@ -329,7 +345,65 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## Results
 
+
 ## 29.09
+
+### current progress and plan
+two main experiments for my thesis:
+1) use optuna to optimize for alignment or loss. Run only on one task, like 300 configs runnable, should take only a few days
+
+2) use best configurations and do pretrain + finetune on all tasks
+	- 5 pretrains;
+	- compute full alignment metrics
+	- correlation between evaluation metrics (acc) and alignment (pearson matrix for each task)
+	- grad-cam investigation of data
+		- alignment for each image + text in layer, maybe also a plot for both
+		- alignment vs performance
+
+
+3) (maybe alternative to point 1) compare performance vs representational alignment. Find best configuration of layers to get highest ( or lowest ) metric (loss or acc)
+	- compare good performing representational alignment with bad performing, also baseline
+	- what are the correlations? maybe with matrix (pearson correlation m.)
+
+
+4) are representational alignment measures directly after coattention always higher/better in terms of alignment
+
+
+
+
+---
+
+**comparision representational measures**
+
+comparison of representational measures for different tasks.
+configuration: `VISION_CROSS_ATTENTION_LAYERS = [0,1,2,3,4,5]`
+`TEXT_CROSS_ATTENTION_LAYERS   = [6,7,8,9, 10,11]`
+
+<figure>
+
+**jaccard-matrix**:
+initialized vs trained<br>
+<img src="res/markdown_res/jaccard_matrices_1759161542.png">
+<br>
+<img src="res/markdown_res/jaccard_matrices_1759169878.png">
+
+**mutual knn**:
+initialized vs trained<br>
+<img src="res/markdown_res/mutual_knn_matrices_1759161724.png">
+<br>
+<img src="res/markdown_res/mutual_knn_matrices_1759170055.png">
+</figure>
+
+**rank similarity&procrustes**:
+initialized vs trained<br>
+<img src="res/markdown_res/new_measures_matrices_1759161528.png">
+<br>
+<img src="res/markdown_res/new_measures_matrices_1759169865.png">
+
+
+
+---
+
 comparison with pretrained model. first attn plots on pretrained+fnetuned model:
 for the image
 with text "restaurants and coffee shops at the seafront of town"
@@ -341,8 +415,7 @@ input image: <br>
 **avg over all layers:**
 <figure>
 finetuned vs untrained: <br>
-<img src="res/markdown_res/grad_cam_attention_finetuned_b4.jpg">
-<img src="res/markdown_res/grad_cam_attention_untrained_b4.jpg">
+<img src="res/markdown_res/grad_cam_attention_finetuned_b4.jpg"><img src="res/markdown_res/grad_cam_attention_untrained_b4.jpg">
 </figure>
 
 
@@ -350,7 +423,7 @@ finetuned vs untrained: <br>
 
 
 
-## 23.09
+<!-- ## 23.09 -->
 today I implemented grad-cam to follow gradients of activations on multimidal input. Here I compared the attention maps of a finetuned model vs. an untrained model.
 
 results are pretty good for some inputs, for other not so. Note that coattention-config is `vi_biattention_ids = [4,8]`, `t_biattention_ids = [10,11]`.
@@ -363,28 +436,22 @@ input image: <br>
 **layer4**:
 <figure>
 finetuned vs untrained: <br>
-<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_4.jpg">
-
-<img src="./res/markdown_res/grad_cam_attention_untrained_b6_4.jpg">
+<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_4.jpg" width=200><img src="./res/markdown_res/grad_cam_attention_untrained_b6_4.jpg" width=200>
 
 </figure>
 
 **layer11:**
 <figure>
 finetuned vs untrained: <br>
-<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_11.jpg">
-
-<img src="./res/markdown_res/grad_cam_attention_untrained_b6_11.jpg">
+<img src="./res/markdown_res/grad_cam_attention_finetuned_b6_11.jpg" width=200><img src="./res/markdown_res/grad_cam_attention_untrained_b6_11.jpg" width=200>
 </figure>
 
 **avg over all layers:**
 <figure>
 finetuned vs untrained: <br>
-<img src="./res/markdown_res/grad_cam_attention_finetuned_b6.jpg">
-
-<img src="./res/markdown_res/grad_cam_attention_untrained_b6.jpg">
-
+<img src="./res/markdown_res/grad_cam_attention_finetuned_b6.jpg" width=200><img src="./res/markdown_res/grad_cam_attention_untrained_b6.jpg" width=200>
 </figure>
+
 
 ## 24.09
 hm hyperparam optim on lr and fusion strat in `res/experiments/multi_task_optim_20250922-205905.db`.
