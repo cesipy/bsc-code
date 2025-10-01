@@ -197,6 +197,9 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 **other**
+- [ ] what are my baselines: VILT vs uninitialized bert
+	- [ ] how to use baseline that is not using fusion?
+		- eg: fusion from hadamard product at the end... so only no coatts has still fusion. way to finetune without having to use the final concat/fusion
 - [ ] adamw adjusted to the typical vilbert params: https://github.com/facebookresearch/vilbert-multi-task/blob/f22b84a9918a9aea2106e14ac1f6b32ad71492e3/train_concap.py#L465
 
 - [ ] Statistical test: do cross-attention layers have significantly lower entropy (more focused)?
@@ -345,6 +348,15 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 ## Results
+
+## 01.10
+How to define baseline for my experiments?
+- VILT: embedding fusion at the strat
+- ViLBERT without coattention layers; but still has fusion at the top! Late fusion when performing finetuning on downstream task.
+	- could argue, that even though there is fusion, the comparision is strict between no coattention and coattention.
+
+
+- Compare Haramard vs simply summing vs concat
 
 ## 30.09
 apparently my archicture redesign had a critical bug: the vision transformer was passed two times! In the forward pass, I thought I extracted the vision embeddings using `self.vit.forward_features(image_pixel_values)`. But this was wrong according to the [documentation](https://huggingface.co/docs/timm/en/feature_extraction#forwardfeatures)
