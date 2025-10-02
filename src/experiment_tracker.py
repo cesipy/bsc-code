@@ -5,6 +5,8 @@ import dataclasses
 import json
 import numpy as np
 
+import torch
+
 
 import optuna; from optuna import pruners
 
@@ -410,8 +412,13 @@ class ExperimentTracker:
         run_visualization: bool,
         dir_name: Optional[str] = None,
         skip_alignment_analysis: bool = False,
+        tmsp: Optional[str] = None,
+        pretrained_model=None
     ):
-        model = self.create_model(config)
+        if pretrained_model:
+            model = pretrained_model
+        else:
+            model = self.create_model(config)
         trainer = HatefulMemesTrainer(
             model=model,
             config=config,
@@ -445,6 +452,11 @@ class ExperimentTracker:
             alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][0] = alignment_metrics
 
+        if run_visualization:
+            filename_extension = f"{tmsp}_e0"
+            analysis.run_alignment_visualization(dataloader=hm_dataloader, model=model,
+                                                 dir_name=dir_name, filename_extension=filename_extension)
+
         for i in range(epochs):
             train_loss = self.train_model_step(
                 trainer=trainer,
@@ -469,7 +481,9 @@ class ExperimentTracker:
                 alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
             if run_visualization:
-                analysis.visualize_cka(dataloader=hm_dataloader, model=model, dir_name=dir_name)
+                filename_extension = f"{tmsp}_e{i+1}"
+                analysis.run_alignment_visualization(dataloader=hm_dataloader, model=model,
+                    dir_name=dir_name, filename_extension=filename_extension)
         return training_results
 
     def run_single_experiment_mm_imdb(
@@ -480,8 +494,14 @@ class ExperimentTracker:
         run_visualization: bool,
         dir_name: Optional[str] = None,
         skip_alignment_analysis: bool = False,
+        tmsp: Optional[str] = None,
+        pretrained_model=None
     ):
-        model = self.create_model(config)
+
+        if pretrained_model:
+            model = pretrained_model
+        else:
+            model = self.create_model(config)
         trainer = MM_IMDB_Trainer(
             model=model,
             config=config,
@@ -516,6 +536,10 @@ class ExperimentTracker:
             alignment_metrics = self.analyse_alignment(model=model, dataloader=imdb_dataloader)
             training_results["mm_imdb"]["alignment"][0] = alignment_metrics
 
+        if run_visualization:
+            filename_extension = f"{tmsp}_e0"
+            analysis.run_alignment_visualization(dataloader=imdb_dataloader, model=model,
+                                                 dir_name=dir_name, filename_extension=filename_extension)
 
         for i in range(epochs):
             train_loss = self.train_model_step(
@@ -546,7 +570,9 @@ class ExperimentTracker:
             training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
 
             if run_visualization:
-                analysis.visualize_cka(dataloader=imdb_dataloader, model=model, dir_name=dir_name)
+                filename_extension = f"{tmsp}_e{i+1}"
+                analysis.run_alignment_visualization(dataloader=imdb_dataloader, model=model,
+                                                     dir_name=dir_name, filename_extension=filename_extension)
 
         return training_results
 
@@ -563,21 +589,24 @@ class ExperimentTracker:
                 coattn_fix += "-"
             coattn_fix = coattn_fix[:-1]
 
-        filename = f"experiment_{coattn_fix}_{timestamp}"
+        filename = f"{timestamp}_experiment_{coattn_fix}"
 
-        return filename
+        return filename, timestamp
 
 
     def _run_task(self, training_results: dict,
         task_name: str, experiment_config:ExperimentConfig,
         filename: str, run_visualizations:bool,
-        run_alignment_analysis:bool
+        run_alignment_analysis:bool,
+        tmsp: Optional[str] = None,
+        pretrained_model=None
         ):
         assert task_name in tasklib.all_task_list
 
         config = self.create_config(experiment_config)
 
         print(f"Saving results to {filename}")
+        logger.info(f"saving results to {filename}")
         exp_dir_name = os.path.join(self.visualization_dir, filename)
         os.makedirs(exp_dir_name, exist_ok=True)
 
@@ -590,9 +619,9 @@ class ExperimentTracker:
                 epochs=experiment_config.epochs,
                 dir_name=exp_dir_name_hm,
                 run_visualization=run_visualizations,
-                skip_alignment_analysis=not run_alignment_analysis
+                skip_alignment_analysis=not run_alignment_analysis,
+                tmsp=tmsp, pretrained_model=pretrained_model
             )
-
         elif task_name == "mm_imdb":
             exp_dir_name_imdb = os.path.join(exp_dir_name, "mm_imdb")
             os.makedirs(exp_dir_name_imdb, exist_ok=True)
@@ -603,6 +632,8 @@ class ExperimentTracker:
                 dir_name=exp_dir_name_imdb,
                 run_visualization=run_visualizations,
                 skip_alignment_analysis=not run_alignment_analysis,
+                tmsp=tmsp,
+                pretrained_model=pretrained_model
             )
         #TODO: other tasks
 
@@ -619,30 +650,37 @@ class ExperimentTracker:
         experiment_config: ExperimentConfig,
         run_visualizations:bool=False,
         run_alignment_analysis:bool=False,
-        tasks:list[str]=["hateful_memes", "mm_imdb"]
+        tasks:list[str]=["hateful_memes", "mm_imdb"],
+        pretrained_model_path: Optional[str] = None,
     ) -> dict:
         assert tasks != None
         for task in tasks:
             assert task in tasklib.all_task_list
 
-
-        filename = self._get_filename(config=experiment_config)
-
-        print(f"Saving results to {filename}")
+        filename, tmsp = self._get_filename(config=experiment_config)
 
         # TODO: also include use_contrastive as param to optimize
 
         print(f"seed = {experiment_config.seed}")
         utils.set_seeds(experiment_config.seed)
-
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
 
         for task in tasks:
+            pretrained_model = None
+            if pretrained_model_path:
+                assert os.path.exists(pretrained_model_path)
+                print(f"loading pretrained model from {pretrained_model_path}")
+                pretrained_model = ViLBERT.load_model(pretrained_model_path, device= "cuda" if torch.cuda.is_available() else "cpu")
+                info_str = f"Loaded pretrained model from {pretrained_model_path} for task {task}"
+                print(info_str)
+                logger.info(info_str)
+
             training_results = self._run_task(
                 task_name=task, experiment_config=experiment_config,
                 filename=filename, run_visualizations=run_visualizations,
                 training_results=training_results,
-                run_alignment_analysis=run_alignment_analysis
+                run_alignment_analysis=run_alignment_analysis, tmsp=tmsp,
+                pretrained_model=pretrained_model
             )
 
         self.save_results(
@@ -799,6 +837,15 @@ class ExperimentTracker:
         run_visualizations:bool=False,
         run_alignment_analysis:bool=False,
     ) -> Tuple[dict, str, str]:
+
+        task_string = ""
+        tasks_vals = [task.value for task in config.pretraining_tasks]
+        tasks_vals.sort()
+        for val in tasks_vals:
+            task_string += f"{val}"
+        tmsp = time.strftime("%Y%m%d-%H%M%S")
+        filename = f"res/checkpoints/pretrained_{task_string}_{tmsp}.pt"
+
         training_results = self._initialize_results_dict(epochs=config.epochs)
         train_loader_ap, val_loader_ap, \
         train_loader_mlm, val_loader_mlm, \
@@ -845,9 +892,14 @@ class ExperimentTracker:
             alignment_metrics = self.analyse_alignment(model=model, dataloader=cc_dataloader)
             training_results["pretraining"]["alignment"][0] = alignment_metrics
         if run_visualizations:
-            exp_dir_name = os.path.join(self.visualization_dir, "pretraining")
+            filename_extention = f"{tmsp}_e0"
+            exp_dir_name = os.path.join(self.visualization_dir, f"{tmsp}_pretrained_{task_string}")
+            print(f"Saving visualizations to {exp_dir_name}")
             os.makedirs(exp_dir_name, exist_ok=True)
-            analysis.visualize_cka(dataloader=cc_dataloader, model=model, dir_name=exp_dir_name)
+            analysis.run_alignment_visualization(
+                dataloader=cc_dataloader, model=model,
+                dir_name=exp_dir_name, filename_extension=filename_extention
+            )
 
 
         for epoch in range(config.epochs):
@@ -888,16 +940,13 @@ class ExperimentTracker:
                 alignment_metrics = self.analyse_alignment(model=model, dataloader=cc_dataloader)
                 training_results["pretraining"]["alignment"][epoch+1] = alignment_metrics
             if run_visualizations:
-                analysis.visualize_cka(dataloader=cc_dataloader, model=model, dir_name=exp_dir_name)
+                filename_extention = f"{tmsp}_e{epoch+1}"
+                analysis.run_alignment_visualization(
+                    dataloader=cc_dataloader, model=model,
+                    dir_name=exp_dir_name, filename_extension=filename_extention
+                )
 
 
-        task_string = ""
-        tasks_vals = [task.value for task in config.pretraining_tasks]
-        tasks_vals.sort()
-        for val in tasks_vals:
-            task_string += f"{val}"
-        tmsp = time.strftime("%Y%m%d-%H%M%S")
-        filename = f"res/checkpoints/pretrained_{task_string}_{tmsp}.pt"
         trainer.model.save_model(save_path=filename)
 
         info_str = f"pretraining completed; model saved: {filename}"
@@ -906,7 +955,7 @@ class ExperimentTracker:
 
 
 
-        return training_results, task_string, tmsp
+        return training_results, task_string, tmsp, filename
 
 
     def run_pretrain(
@@ -971,7 +1020,7 @@ class ExperimentTracker:
         assert config.pretraining_tasks != None
         assert config.learning_rate == experiment_config.learning_rate
 
-        training_results, task_string, tmsp = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations)
+        training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations)
 
 
         self.save_results(
@@ -979,6 +1028,8 @@ class ExperimentTracker:
             config=experiment_config,
             filename=f"pretraining_{task_string}_{tmsp}"
             )
+
+        training_results["model_path"] = save_path
 
         return training_results
 

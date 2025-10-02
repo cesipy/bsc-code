@@ -93,7 +93,7 @@ class MM_IMDB_Trainer(BaseTrainer):
             print(info_str)
             self.logger.info(info_str)
             analysis.analyse_alignment(dataloader, self.model)
-            analysis.visualize_cka(dataloader=dataloader, model=self.model)
+            analysis.run_alignment_visualization(dataloader=dataloader, model=self.model)
 
             info_str = "\n----------\nalignment for conceptual captions:"
             print(info_str)
@@ -116,7 +116,7 @@ class MM_IMDB_Trainer(BaseTrainer):
                 print(info_str)
                 self.logger.info(info_str)
                 analysis.analyse_alignment(dataloader, self.model)
-                analysis.visualize_cka(dataloader=dataloader, model=self.model)
+                analysis.run_alignment_visualization(dataloader=dataloader, model=self.model)
 
                 info_str = "\n----------\nalignment for conceptual captions:"
                 print(info_str)

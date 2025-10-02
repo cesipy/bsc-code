@@ -574,7 +574,7 @@ class PretrainingTrainer:
                 self.logger.info(info_str)
                 analysis.analyse_alignment(hm_dataloader, self.model)
                 # TODO: rename to proper name
-                analysis.visualize_cka(dataloader=hm_dataloader, model=self.model)
+                analysis.run_alignment_visualization(dataloader=hm_dataloader, model=self.model)
 
                 info_str = "alignment for conceptual captions:"
                 print(info_str)
