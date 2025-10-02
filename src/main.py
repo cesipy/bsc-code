@@ -15,18 +15,18 @@ def main():
         t_biattention_ids=T_BIATTENTION_IDS,
         v_biattention_ids=[6,7,8,9, 10,11],
         use_contrastive_loss=False,
-        epochs=8,
+        epochs=2,
         learning_rate=3.2e-5,
     )
 
-    training_results = t.run_fintune(
-        experiment_config=econf,
-        run_visualizations=False,
-        tasks=["hateful_memes"],
-        run_alignment_analysis=False,
-    )
+    # training_results = t.run_finetune(
+    #     experiment_config=econf,
+    #     run_visualizations=False,
+    #     tasks=["hateful_memes"],
+    #     run_alignment_analysis=False,
+    # )
 
-    etu.print_summary(training_results=training_results)
+    # etu.print_summary(training_results=training_results)
 
     # training_results2 = t.run_fintune(
     #     experiment_config=econf,
@@ -36,6 +36,11 @@ def main():
     # )
     # etu.print_summary(training_results=training_results2)
 
+    training_results = t.run_pretrain(
+        experiment_config=econf,
+        tiny_fraction=True,
+        run_alignment_analysis=True,
+    )
 
 
 if __name__ == "__main__":

@@ -1,40 +1,4 @@
-# from .base_trainer import (
-#     torch, DataLoader,
-#     BaseTrainer, Logger, utils,config,
-#     ViLBERTConfig, ViLBERT,
-#     info_nce, InfoNCE,
-# )
-import torch
-from torch import nn
-from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
-
-from vilbert import ViLBERT
-from config import *
-import utils
-from task import Task
-from logger import Logger
-
-from transformers import (
-     # ViT stuff
-    BaseImageProcessor,
-    ViTImageProcessor,
-
-    # type hinting stuff
-    PreTrainedTokenizerFast,
-    BertTokenizerFast
-)
-from .base_trainer import BaseTrainer
-
-
-import analysis
-from datasets import HM_Dataset, PretrainDatasetAP, MM_IMDB_Dataset; import datasets
-
-import augments_transforms
-
-from info_nce import InfoNCE, info_nce
-
-
+from .base_trainer import *
 
 def alignment_loss_cosine(text_emb, vision_emb):
     cosine_sim = torch.nn.functional.cosine_similarity(
@@ -95,9 +59,6 @@ class HatefulMemesTrainer(BaseTrainer):
     def train_epoch(self, dataloader: DataLoader):
 
 
-        info_str = f"simulated batchsize: {dataloader.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader.batch_size}"
-        print(info_str)
-        self.logger.info(info_str)
 
         self.model.train()
         total_loss = 0

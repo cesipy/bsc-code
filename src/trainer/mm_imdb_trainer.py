@@ -139,11 +139,6 @@ class MM_IMDB_Trainer(BaseTrainer):
 
 
     def train_epoch(self, dataloader: DataLoader):
-
-        info_str = f"simulated batchsize: {dataloader.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader.batch_size}"
-        print(info_str)
-        self.logger.info(info_str)
-
         self.model.train()
         total_loss = 0
         num_batches = 0

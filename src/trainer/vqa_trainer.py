@@ -81,9 +81,6 @@ class VQATrainer(BaseTrainer):
             analysis.analyse_alignment(model=self.model, dataloader=test_dataloader)
 
     def train_epoch(self, dataloader: DataLoader):
-        info_str = f"simulated batchsize: {dataloader.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader.batch_size}"
-        print(info_str)
-        self.logger.info(info_str)
 
         self.model.train()
         total_loss = 0
@@ -152,7 +149,7 @@ class VQATrainer(BaseTrainer):
                 )
 
                 fused_representation = self.get_final_representation(text_embedding, image_embedding)
-                pred = self.model.fc_vqa(fused_representation)  
+                pred = self.model.fc_vqa(fused_representation)
 
                 loss = self.loss_fn(pred, label)
                 total_loss += loss.item()

@@ -379,6 +379,7 @@ def params_summary(model):
             trainable_params += p.numel()
 
     print(f"trainable params: {trainable_params}/{total_params}")
+    logger.info(f"trainable params: {trainable_params}/{total_params}")
 
 
 def force_memory_cleanup():
@@ -441,10 +442,3 @@ def plot_losses(
     info_str = f"saved plot to {filename}"
     print(info_str)
     logger.info(info_str)
-
-if __name__ == "__main__":
-    img_data: torch.Tensor =  get_image_embedding("res/test_img.jpg")
-    img_tensor = img_data["pixel_values"].squeeze(0)  # [3,224,224]
-    img_numpy = img_tensor_to_numpy(img_tensor)
-
-    masked_image, masked_patches_idxs = mask_image(img_numpy)

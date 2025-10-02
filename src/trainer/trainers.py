@@ -1,10 +1,6 @@
 from .base_trainer import *
 from torch import nn
 
-
-
-
-
 class PretrainingTrainer:
     def __init__(
         self,
@@ -18,6 +14,7 @@ class PretrainingTrainer:
         ],
         gradient_accumulation:int=1,
     ):
+        self.lr = config.learning_rate
         self.optimizer = torch.optim.AdamW(
             model.parameters(),
             lr=config.learning_rate,
@@ -45,6 +42,19 @@ class PretrainingTrainer:
         self.total_losses = []
         self.info_losses = []
         self.normal_losses = []
+
+    def setup_scheduler(self, epochs:int, total_training_steps: DataLoader, lr=None):
+        if lr is None:
+            lr = self.lr
+
+        total_training_steps = epochs * total_training_steps // self.gradient_accumulation
+        self.scheduler = utils.Scheduler(
+            warmup_iterations=int(WARMUP_ITERATIONS * float(total_training_steps)),
+            decay_iterations=int(DECAY_ITERATIONS * float(total_training_steps)),
+            learning_rate=lr,
+            min_lr_fraction=MIN_LR_FRACTION,
+        )
+
 
 
 
@@ -397,9 +407,6 @@ class PretrainingTrainer:
 
         total_batches = len(dataloader_ap)
 
-        info_str = f"simulated batchsize: {dataloader_ap.batch_size * self.gradient_accumulation}, actual batchsize: {dataloader_ap.batch_size}"
-        print(info_str)
-        self.logger.info(info_str)
         buffer_total_loss  = []
         buffer_normal_loss = []
         buffer_contrastive_loss = []

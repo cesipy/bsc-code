@@ -47,6 +47,7 @@ else:
 
 USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
+NUM_SAMPLES_CC = 500_000
 # --------------------------------------------------
 # data specific
 IMG_SIZE = (224, 224)
@@ -115,6 +116,7 @@ class ViLBERTConfig:
         seed:int = SEED,
         use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS,
         num_bi_attention_heads: int = NUM_BI_ATTENTION_HEADS,
+        epochs: int = PRETRAIN_EPOCHS,
     ):
         assert len(text_cross_attention_layers) == len(vision_cross_attention_layers)
         self.embedding_dim = embedding_dim
@@ -135,6 +137,7 @@ class ViLBERTConfig:
         self.vision_cross_attention_layers = vision_cross_attention_layers
         self.use_contrastive_loss = use_contrastive_loss
         self.num_bi_attention_heads = num_bi_attention_heads
+        self.epochs = epochs
         assert len(self.text_cross_attention_layers) <= DEPTH
 
 
