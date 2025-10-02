@@ -43,7 +43,7 @@ def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Ta
     val_path = "res/data/conceptual-captions/validation.csv"
     data_list = datasets.generate_data_list_pretrain(path=path, max_number=100_000)
     validation_list = datasets.generate_data_list_pretrain(path=val_path)
-    data_list = data_list[:80_000]
+    data_list = data_list[:800]
     # validation_list = validation_list[:1000]
 
     # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
@@ -69,7 +69,6 @@ def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Ta
     )
 
     print(f"Dataset len: \n\t train: {len(train_loader_ap.dataset)}\n\t val: {len(val_loader_ap.dataset)}")
-
     print(f"batchsize: {BATCH_SIZE_PRETRAIN}, bs-analysis: {BATCH_SIZE_ANALYSIS}")
 
     config = ViLBERTConfig(
@@ -89,8 +88,7 @@ def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Ta
         gradient_accumulation=GRADIENT_ACCUMULATION
 
     )
-
-
+    
     hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
         batch_size=BATCH_SIZE_ANALYSIS,
         num_workers=4,
@@ -98,7 +96,6 @@ def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Ta
         prefetch_factor=4,
         num_samples=1500
     )
-
     trainer.train(
         train_dataloaderAP=train_loader_ap,
         test_dataloaderAP=val_loader_ap,

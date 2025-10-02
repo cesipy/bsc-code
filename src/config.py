@@ -19,6 +19,8 @@ EMBEDDING_DIM = 768
 VOCAB_SIZE    = 30522
 NUM_HIDDEN_LAYERS = 12
 NUM_ATTENTION_HEADS = 12
+NUM_BI_ATTENTION_HEADS = 8
+COATTN_HIDDEN_SIZE = 1024
 DROPOUT_PROB        = 0.08
 VIT_MODEL_NAME = "vit_base_patch16_224"
 #default vals for them
@@ -45,6 +47,7 @@ else:
 
 USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
+NUM_SAMPLES_CC = 500_000
 # --------------------------------------------------
 # data specific
 IMG_SIZE = (224, 224)
@@ -86,7 +89,7 @@ FC_HIDDEN_DIM = 512       # what hidden size in fc head
 # LR SCHEDULER
 WARMUP_ITERATIONS = 0.1     #what fraction of total training steps is in warmup?
 DECAY_ITERATIONS  = 0.9     #what fraction of total training steps is in decay?
-MIN_LR_FRACTION   = 0.3    #fraction of original lr => min_lr
+MIN_LR_FRACTION   = 0.2    #fraction of original lr => min_lr
 
 # --------------------------------------------------
 
@@ -112,6 +115,8 @@ class ViLBERTConfig:
         vision_cross_attention_layers: list[int] = V_BIATTENTION_IDS,
         seed:int = SEED,
         use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS,
+        num_bi_attention_heads: int = NUM_BI_ATTENTION_HEADS,
+        epochs: int = PRETRAIN_EPOCHS,
     ):
         assert len(text_cross_attention_layers) == len(vision_cross_attention_layers)
         self.embedding_dim = embedding_dim
@@ -131,6 +136,8 @@ class ViLBERTConfig:
         self.text_cross_attention_layers = text_cross_attention_layers
         self.vision_cross_attention_layers = vision_cross_attention_layers
         self.use_contrastive_loss = use_contrastive_loss
+        self.num_bi_attention_heads = num_bi_attention_heads
+        self.epochs = epochs
         assert len(self.text_cross_attention_layers) <= DEPTH
 
 
@@ -170,6 +177,8 @@ class ViLBERTConfig:
             batch_size=config_dict.get("batch_size", BATCH_SIZE_PRETRAIN),
             depth=config_dict.get("depth", DEPTH),
             pretraining_tasks=pretraining_tasks,
-
+            text_cross_attention_layers=config_dict.get("text_cross_attention_layers", T_BIATTENTION_IDS),
+            vision_cross_attention_layers=config_dict.get("vision_cross_attention_layers", V_BIATTENTION_IDS),
+            seed=config_dict.get("seed", SEED),
         )
         return config

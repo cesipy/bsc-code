@@ -8,7 +8,7 @@ import utils
 from config import *
 import analysis
 from datasets import *
-import tqdm
+from tqdm import tqdm
 
 
 from torch.utils.data import DataLoader, Dataset

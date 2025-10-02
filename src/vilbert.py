@@ -207,7 +207,7 @@ class ViLBERT(nn.Module):
         for i in range(len(self.v_biattention_ids)):
             self.c_layers.append(CrossAttentionBlock(
                 dim=EMBEDDING_DIM,
-                heads=NUM_ATTENTION_HEADS,
+                heads=NUM_BI_ATTENTION_HEADS,
                 dropout=config.dropout_prob,
             ))
 

@@ -153,15 +153,17 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## TODO
 **immediate:**
-- [ ] self.query1 = nn.Linear(in_features=dim, out_features=dim) - moredimensions here
+- [ ] is finetuned good performance indicator for pretraining good performance?
+
+- [x] self.query1 = nn.Linear(in_features=dim, out_features=dim) - moredimensions here
 - [ ] fix pretraining, several things are wrong
 	- [ ] compare ap contrastive with the contrastive in downstream
 	- [ ] pretraining problem with contrastive learning
 
 
 
-- [ ] double and triple check if new architecture-fix is correct, because alignment visualizations look off
-	- [ ] problem with double forward pass for vit
+- [x] double and triple check if new architecture-fix is correct, because alignment visualizations look off
+	- [x] problem with double forward pass for vit
 
 - [ ] seed from config, not global var
 	- [ ] convert all torchvision to albuminations + seeding
@@ -169,7 +171,9 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 - [ ] fix coattentions not really saved in intermediate_representations,
 	- [ ] better logic for that
-- [ ] fix vilbert architecture
+
+
+- [x] fix vilbert architecture
 - [ ] upmc datatset
 - [x] vqa
 - [ ] wasserstein

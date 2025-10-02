@@ -5,12 +5,14 @@ import dataclasses
 import json
 import numpy as np
 
+import torch
+
 
 import optuna; from optuna import pruners
 
 
 from config import *
-from trainer import HatefulMemesTrainer
+from trainer import HatefulMemesTrainer, PretrainingTrainer
 from trainer import MM_IMDB_Trainer
 from vilbert import ViLBERT
 import utils
@@ -198,7 +200,7 @@ class ExperimentTracker:
                 # train_test_ratio=0.1
             )
 
-            training_results = self.run_fintune(
+            training_results = self.run_finetune(
                 experiment_config=config,
                 run_visualizations=False  # is too compute intensive, not wanted here
             )
@@ -283,7 +285,7 @@ class ExperimentTracker:
                 use_contrastive_loss=False,
                 seed=seed,
             )
-            training_results = self.run_fintune(
+            training_results = self.run_finetune(
                 config,
                 run_visualizations=False,  # is too compute intensive, not wanted here,
                 tasks=[task]
@@ -351,7 +353,7 @@ class ExperimentTracker:
             # return self._run_trial(config, trial)
 
 
-            training_results = self.run_fintune(
+            training_results = self.run_finetune(
                 config,
                 run_visualizations=False                 # is too compute intensive, not wanted here
             )
@@ -410,8 +412,13 @@ class ExperimentTracker:
         run_visualization: bool,
         dir_name: Optional[str] = None,
         skip_alignment_analysis: bool = False,
+        tmsp: Optional[str] = None,
+        pretrained_model=None
     ):
-        model = self.create_model(config)
+        if pretrained_model:
+            model = pretrained_model
+        else:
+            model = self.create_model(config)
         trainer = HatefulMemesTrainer(
             model=model,
             config=config,
@@ -445,6 +452,11 @@ class ExperimentTracker:
             alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][0] = alignment_metrics
 
+        if run_visualization:
+            filename_extension = f"{tmsp}_e0"
+            analysis.run_alignment_visualization(dataloader=hm_dataloader, model=model,
+                                                 dir_name=dir_name, filename_extension=filename_extension)
+
         for i in range(epochs):
             train_loss = self.train_model_step(
                 trainer=trainer,
@@ -469,7 +481,9 @@ class ExperimentTracker:
                 alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
             if run_visualization:
-                analysis.visualize_cka(dataloader=hm_dataloader, model=model, dir_name=dir_name)
+                filename_extension = f"{tmsp}_e{i+1}"
+                analysis.run_alignment_visualization(dataloader=hm_dataloader, model=model,
+                    dir_name=dir_name, filename_extension=filename_extension)
         return training_results
 
     def run_single_experiment_mm_imdb(
@@ -480,8 +494,14 @@ class ExperimentTracker:
         run_visualization: bool,
         dir_name: Optional[str] = None,
         skip_alignment_analysis: bool = False,
+        tmsp: Optional[str] = None,
+        pretrained_model=None
     ):
-        model = self.create_model(config)
+
+        if pretrained_model:
+            model = pretrained_model
+        else:
+            model = self.create_model(config)
         trainer = MM_IMDB_Trainer(
             model=model,
             config=config,
@@ -516,6 +536,10 @@ class ExperimentTracker:
             alignment_metrics = self.analyse_alignment(model=model, dataloader=imdb_dataloader)
             training_results["mm_imdb"]["alignment"][0] = alignment_metrics
 
+        if run_visualization:
+            filename_extension = f"{tmsp}_e0"
+            analysis.run_alignment_visualization(dataloader=imdb_dataloader, model=model,
+                                                 dir_name=dir_name, filename_extension=filename_extension)
 
         for i in range(epochs):
             train_loss = self.train_model_step(
@@ -546,7 +570,9 @@ class ExperimentTracker:
             training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
 
             if run_visualization:
-                analysis.visualize_cka(dataloader=imdb_dataloader, model=model, dir_name=dir_name)
+                filename_extension = f"{tmsp}_e{i+1}"
+                analysis.run_alignment_visualization(dataloader=imdb_dataloader, model=model,
+                                                     dir_name=dir_name, filename_extension=filename_extension)
 
         return training_results
 
@@ -563,21 +589,24 @@ class ExperimentTracker:
                 coattn_fix += "-"
             coattn_fix = coattn_fix[:-1]
 
-        filename = f"experiment_{coattn_fix}_{timestamp}"
+        filename = f"{timestamp}_experiment_{coattn_fix}"
 
-        return filename
+        return filename, timestamp
 
 
     def _run_task(self, training_results: dict,
         task_name: str, experiment_config:ExperimentConfig,
         filename: str, run_visualizations:bool,
-        run_alignment_analysis:bool
+        run_alignment_analysis:bool,
+        tmsp: Optional[str] = None,
+        pretrained_model=None
         ):
         assert task_name in tasklib.all_task_list
 
         config = self.create_config(experiment_config)
 
         print(f"Saving results to {filename}")
+        logger.info(f"saving results to {filename}")
         exp_dir_name = os.path.join(self.visualization_dir, filename)
         os.makedirs(exp_dir_name, exist_ok=True)
 
@@ -590,9 +619,9 @@ class ExperimentTracker:
                 epochs=experiment_config.epochs,
                 dir_name=exp_dir_name_hm,
                 run_visualization=run_visualizations,
-                skip_alignment_analysis=not run_alignment_analysis
+                skip_alignment_analysis=not run_alignment_analysis,
+                tmsp=tmsp, pretrained_model=pretrained_model
             )
-
         elif task_name == "mm_imdb":
             exp_dir_name_imdb = os.path.join(exp_dir_name, "mm_imdb")
             os.makedirs(exp_dir_name_imdb, exist_ok=True)
@@ -603,6 +632,8 @@ class ExperimentTracker:
                 dir_name=exp_dir_name_imdb,
                 run_visualization=run_visualizations,
                 skip_alignment_analysis=not run_alignment_analysis,
+                tmsp=tmsp,
+                pretrained_model=pretrained_model
             )
         #TODO: other tasks
 
@@ -614,35 +645,42 @@ class ExperimentTracker:
 
 
 
-    def run_fintune(
+    def run_finetune(
         self,
         experiment_config: ExperimentConfig,
         run_visualizations:bool=False,
         run_alignment_analysis:bool=False,
-        tasks:list[str]=["hateful_memes", "mm_imdb"]
-    ):
+        tasks:list[str]=["hateful_memes", "mm_imdb"],
+        pretrained_model_path: Optional[str] = None,
+    ) -> dict:
         assert tasks != None
         for task in tasks:
             assert task in tasklib.all_task_list
 
-
-        filename = self._get_filename(config=experiment_config)
-
-        print(f"Saving results to {filename}")
+        filename, tmsp = self._get_filename(config=experiment_config)
 
         # TODO: also include use_contrastive as param to optimize
 
         print(f"seed = {experiment_config.seed}")
         utils.set_seeds(experiment_config.seed)
-
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
 
         for task in tasks:
+            pretrained_model = None
+            if pretrained_model_path:
+                assert os.path.exists(pretrained_model_path)
+                print(f"loading pretrained model from {pretrained_model_path}")
+                pretrained_model = ViLBERT.load_model(pretrained_model_path, device= "cuda" if torch.cuda.is_available() else "cpu")
+                info_str = f"Loaded pretrained model from {pretrained_model_path} for task {task}"
+                print(info_str)
+                logger.info(info_str)
+
             training_results = self._run_task(
                 task_name=task, experiment_config=experiment_config,
                 filename=filename, run_visualizations=run_visualizations,
                 training_results=training_results,
-                run_alignment_analysis=run_alignment_analysis
+                run_alignment_analysis=run_alignment_analysis, tmsp=tmsp,
+                pretrained_model=pretrained_model
             )
 
         self.save_results(
@@ -655,16 +693,23 @@ class ExperimentTracker:
     def _initialize_results_dict(self, epochs ):
         training_results = {
             "hateful_memes": { "alignment": {}, "training": {} },
-            "mm_imdb": {  "alignment": {}, "training": {} }
+            "mm_imdb": {  "alignment": {}, "training": {} },
+            "pretraining": { "alignment": {}, "training": {} },
         }
+        # for initialized only, baseline comparision before training
         training_results["hateful_memes"]["alignment"][0] = {}
         training_results["mm_imdb"]["alignment"][0] = {}
+        training_results["pretraining"]["alignment"][0] = {}
+
+
         for i in range(epochs):
             curr_epoch = i+1    # 0 is uninitialized
             training_results["hateful_memes"]["alignment"][curr_epoch] = {}
             training_results["mm_imdb"]["alignment"][curr_epoch] = {}
             training_results["hateful_memes"]["training"][curr_epoch] = {}
             training_results["mm_imdb"]["training"][curr_epoch] = {}
+            training_results["pretraining"]["alignment"][curr_epoch] = {}
+            training_results["pretraining"]["training"][curr_epoch] = {}
         return  training_results
 
 
@@ -715,6 +760,8 @@ class ExperimentTracker:
         config.train_test_ratio = experiment_config.train_test_ratio
         config.dropout_prob = experiment_config.dropout
         config.use_contrastive_loss = experiment_config.use_contrastive_loss
+
+
         return config
 
     def train_from_config(self, config_pth:str, task:str):
@@ -750,7 +797,7 @@ class ExperimentTracker:
         )
 
         config: ViLBERTConfig = self.create_config(exp_config)
-        training_results = self.run_fintune(
+        training_results = self.run_finetune(
             experiment_config=exp_config,
             run_visualizations=True,
             tasks=[task]
@@ -782,6 +829,219 @@ class ExperimentTracker:
 
         with open(filename, "w") as f:
             json.dump(training_results, f, indent=4)
+
+    def _run_pretrain(
+        self,
+        config: ViLBERTConfig,
+        train_data, val_data,
+        run_visualizations:bool=False,
+        run_alignment_analysis:bool=False,
+    ) -> Tuple[dict, str, str]:
+
+        task_string = ""
+        tasks_vals = [task.value for task in config.pretraining_tasks]
+        tasks_vals.sort()
+        for val in tasks_vals:
+            task_string += f"{val}"
+        tmsp = time.strftime("%Y%m%d-%H%M%S")
+        filename = f"res/checkpoints/pretrained_{task_string}_{tmsp}.pt"
+
+        training_results = self._initialize_results_dict(epochs=config.epochs)
+        train_loader_ap, val_loader_ap, \
+        train_loader_mlm, val_loader_mlm, \
+        train_loader_mim, val_loader_mim \
+            =  datasets.get_dataloaders_pretrain(
+            train_data=train_data,
+            val_data=val_data,
+            num_workers=NUM_WORKERS,
+            prefetch=PREFETCH,
+            persistent_workers=PERSISTENT_WORKERS,
+            pin_memory=PIN_MEMORY,
+            use_contrastive_ap=config.use_contrastive_loss,
+            batch_size=BATCH_SIZE_PRETRAIN,
+        )
+
+        model = self.create_model(config=config)
+        if FREEZE_UNIMODAL_ENCODERS:
+            utils.freeze_all_layers(model.bert)
+            utils.freeze_all_layers(model.vit)
+        utils.params_summary(model=model)
+        trainer = PretrainingTrainer(
+            model=model,
+            config=config,
+            use_contrastive_ap=config.use_contrastive_loss,
+            tasks=config.pretraining_tasks,
+            gradient_accumulation=config.gradient_accumulation,
+        )
+        trainer.setup_scheduler(
+            epochs=config.epochs,
+            total_training_steps=( len(train_loader_ap) + len(train_loader_mlm) + len(train_loader_mim)),
+
+        )
+        hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
+            batch_size=BATCH_SIZE_ANALYSIS,
+            num_workers=4,
+            pin_memory=False,
+            prefetch_factor=4,
+            num_samples=ALIGNMENT_ANALYSIS_SIZE,
+        )
+
+
+        # on untrained model
+        if run_alignment_analysis:
+            alignment_metrics = self.analyse_alignment(model=model, dataloader=cc_dataloader)
+            training_results["pretraining"]["alignment"][0] = alignment_metrics
+        if run_visualizations:
+            filename_extention = f"{tmsp}_e0"
+            exp_dir_name = os.path.join(self.visualization_dir, f"{tmsp}_pretrained_{task_string}")
+            print(f"Saving visualizations to {exp_dir_name}")
+            os.makedirs(exp_dir_name, exist_ok=True)
+            analysis.run_alignment_visualization(
+                dataloader=cc_dataloader, model=model,
+                dir_name=exp_dir_name, filename_extension=filename_extention
+            )
+
+
+        for epoch in range(config.epochs):
+            t_loss_ap, t_loss_mlm, t_loss_mim = trainer.train_epoch(
+                dataloader_ap=train_loader_ap,
+                dataloader_mlm=train_loader_mlm,
+                dataloader_mim=train_loader_mim,
+                tasks=config.pretraining_tasks,
+            )
+
+            v_loss_ap, acc = trainer.evaluate_ap(val_loader_ap)
+            v_loss_mlm = trainer.evaluate_mlm(val_loader_mlm)
+            v_loss_mim = trainer.evaluate_mim(val_loader_mim)
+            info_str = (
+                f"Epoch {epoch+1}/{config.epochs}, "
+                f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "
+                f"\n\ttest loss MLM: {v_loss_mlm:.4f}, "
+                f"\n\ttrain loss AP: {t_loss_ap:.4f}, "
+                f"\n\ttest loss AP: {v_loss_ap:.4f}, "
+                f"\n\taccuracy AP: {acc:.4f}"
+                f"\n\ttrain loss MIM: {t_loss_mim:.4f}, "
+                f"\n\ttest loss MIM: {v_loss_mim:.4f}"
+            )
+            print(info_str)
+            logger.info(info_str)
+
+            training_results["pretraining"]["training"][epoch+1] = {
+                "train_loss_ap": t_loss_ap,
+                "train_loss_mlm": t_loss_mlm,
+                "train_loss_mim": t_loss_mim,
+                "val_loss_ap": v_loss_ap,
+                "val_acc_ap": acc,
+                "val_loss_mlm": v_loss_mlm,
+                "val_loss_mim": v_loss_mim,
+            }
+
+            if run_alignment_analysis:
+                alignment_metrics = self.analyse_alignment(model=model, dataloader=cc_dataloader)
+                training_results["pretraining"]["alignment"][epoch+1] = alignment_metrics
+            if run_visualizations:
+                filename_extention = f"{tmsp}_e{epoch+1}"
+                analysis.run_alignment_visualization(
+                    dataloader=cc_dataloader, model=model,
+                    dir_name=exp_dir_name, filename_extension=filename_extention
+                )
+
+
+        trainer.model.save_model(save_path=filename)
+
+        info_str = f"pretraining completed; model saved: {filename}"
+        logger.info(info_str)
+        print(info_str)
+
+
+
+        return training_results, task_string, tmsp, filename
+
+
+    def run_pretrain(
+        self,
+        experiment_config: ExperimentConfig,
+        tasks:Optional[list[Task]]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],
+        run_visualizations:bool=False,
+        run_alignment_analysis:bool=False,
+        tiny_fraction:bool=False,
+        num_samples:int=NUM_SAMPLES_CC,
+    ) -> dict:
+        """
+        run pretraining with a given config.
+
+
+        Args:
+            experiment_config: ExperimentConfig, configuration for the experiment
+            run_visualizations: bool, whether to run visualizations(CKA, mKNN, ... within model) after each epoch (+initialized only)
+            run_alignment_analysis: bool, whether to run alignment analysis after each epoch
+            tiny_fraction: bool, whether to use a tiny fraction of the data for quick testing/debugging. Only 800 samples
+        """
+        utils.set_seeds(experiment_config.seed)
+
+
+        path = "res/data/conceptual-captions/train.csv"
+        val_path = "res/data/conceptual-captions/validation.csv"
+
+        if tiny_fraction:
+            data_list = datasets.generate_data_list_pretrain(path=path, max_number=1_000)
+            validation_list = datasets.generate_data_list_pretrain(path=val_path)
+            data_list = data_list[:800]
+            validation_list = validation_list[:800]
+        else:
+            data_list = datasets.generate_data_list_pretrain(path=path, max_number=num_samples+2)
+            validation_list = datasets.generate_data_list_pretrain(path=val_path)
+            data_list = data_list[:num_samples]
+
+            assert len(data_list) > 1000
+
+
+        # train_idx = int(len(data_list) * TRAIN_TEST_RATIO)
+        # train_data = data_list[:train_idx]
+        # val_data   = data_list[train_idx:]
+        train_data = data_list
+        val_data   = validation_list[:]
+
+
+        info_str = (
+            f"loaded from {path} and {val_path}, \n"
+            f"training_data points: {len(train_data)}, val_data points: {len(val_data)}\n"
+            f"seed: {experiment_config.seed}, lr: {experiment_config.learning_rate}, \n"
+            f"batch_size: {BATCH_SIZE_PRETRAIN}, simulated batch_size: {BATCH_SIZE_PRETRAIN * GRADIENT_ACCUMULATION}, bs-analysis: {BATCH_SIZE_ANALYSIS}\n"
+        )
+        logger.info(info_str)
+        print(info_str)
+
+
+
+        config:ViLBERTConfig = self.create_config(experiment_config=experiment_config)
+        #manually add the pretraining specific configs
+        config.pretraining_tasks = tasks
+        assert config.pretraining_tasks != None
+        assert config.learning_rate == experiment_config.learning_rate
+
+        training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations)
+
+
+        self.save_results(
+            training_results=training_results,
+            config=experiment_config,
+            filename=f"pretraining_{task_string}_{tmsp}"
+            )
+
+        training_results["model_path"] = save_path
+
+        return training_results
+
+
+
+
+
+
+
+
+
+
 
 
 
