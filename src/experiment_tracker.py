@@ -20,7 +20,7 @@ import analysis
 import task as tasklib
 
 logger = Logger()
-EPOCHS_ = 9
+EPOCHS_ = 10
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = False
 
@@ -132,9 +132,9 @@ class ExperimentTracker:
         first we sample center and spread (like mean and var in gaussian), get the quantiles from distribution and
         round/clip to the indices.
         """
-        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 6)
+        num_coattn_layers = trial.suggest_int("num_coattn_layers", 2, 8)
 
-        t_center = trial.suggest_float("t_center", 5.0, 10.0)
+        t_center = trial.suggest_float("t_center", 2.0, 10.0)
         t_spread = trial.suggest_float("t_spread", 1.0, 4.0)
 
         v_center = trial.suggest_float("v_center", 2.0, 10.0)
