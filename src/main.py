@@ -16,7 +16,7 @@ def main():
         v_biattention_ids=[6,7,8,9, 10,11],
         use_contrastive_loss=False,
         epochs=8,
-        learning_rate=3.4e-5,
+        learning_rate=3.2e-5,
     )
 
     training_results = t.run_fintune(

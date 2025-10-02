@@ -219,7 +219,7 @@ class DualBiAttention(nn.Module):
 
 
 class CrossAttention(nn.Module):
-    def __init__(self, dim, heads=8, dropout=0.):
+    def __init__(self, dim, all_head_size:int, heads=8, dropout=0.,):
         super(CrossAttention, self).__init__()
 
         self.dk = dim // heads  # inner head dimension. Dim and number of heads must be multiple numbers between them
@@ -231,24 +231,24 @@ class CrossAttention(nn.Module):
         self.norm1 = nn.LayerNorm(dim)
         self.norm2 = nn.LayerNorm(dim)
 
-        self.query1 = nn.Linear(in_features=dim, out_features=dim)
-        self.key1   = nn.Linear(in_features=dim, out_features=dim)
-        self.value1 = nn.Linear(in_features=dim, out_features=dim)
+        self.query1 = nn.Linear(in_features=dim, out_features=all_head_size)
+        self.key1   = nn.Linear(in_features=dim, out_features=all_head_size)
+        self.value1 = nn.Linear(in_features=dim, out_features=all_head_size)
 
-        self.query2 = nn.Linear(in_features=dim, out_features=dim)
-        self.key2   = nn.Linear(in_features=dim, out_features=dim)
-        self.value2 = nn.Linear(in_features=dim, out_features=dim)
+        self.query2 = nn.Linear(in_features=dim, out_features=all_head_size)
+        self.key2   = nn.Linear(in_features=dim, out_features=all_head_size)
+        self.value2 = nn.Linear(in_features=dim, out_features=all_head_size)
 
         self.softmax = nn.Softmax(dim=-1)
         self.rearrange_qkv = Rearrange('b n (h d) -> b h n d', h=heads)
 
         self.to_out_proj1 = nn.Sequential(
-            nn.Linear(dim, dim),
+            nn.Linear(all_head_size, dim),
             nn.Dropout(dropout)
         )
 
         self.to_out_proj2 = nn.Sequential(
-            nn.Linear(dim, dim),
+            nn.Linear(all_head_size, dim),
             nn.Dropout(dropout)
         )
 
@@ -325,18 +325,20 @@ class CrossAttention(nn.Module):
 
 class CrossAttentionOutput(nn.Module):
     # here the residuals are handled
-    def __init__(self, dim):
+    def __init__(self, dim, all_head_size: int):
         super(CrossAttentionOutput, self).__init__()
+
+
         # TODO: add layernorma like in vilbert implementation
         # https://github.com/facebookresearch/vilbert-multi-task/blob/f22b84a9918a9aea2106e14ac1f6b32ad71492e3/vilbert/vilbert.py#L831
         self.dim = dim
         self.projection_text = nn.Sequential(
-            nn.Linear(dim, dim),
+            nn.Linear(all_head_size, dim),
             nn.Dropout(DROPOUT_PROB)
         )
 
         self.projection_vision = nn.Sequential(
-            nn.Linear(dim, dim),
+            nn.Linear(all_head_size, dim),
             nn.Dropout(DROPOUT_PROB)
         )
 
@@ -364,13 +366,17 @@ class CrossAttentionOutput(nn.Module):
         return current_text, current_vision
 
 class CrossAttentionBlock(nn.Module):
-    def __init__(self, dim, heads=8, dropout=0.):
+    def __init__(self, dim, heads=8, dropout=0., coattn_hidden_size=COATTN_HIDDEN_SIZE):
         super(CrossAttentionBlock, self).__init__()
         self.dim = dim
         self.heads = heads
+        assert coattn_hidden_size % heads == 0
 
-        self.cross_attention = CrossAttention(dim=dim, heads=heads, dropout=dropout)
-        self.output = CrossAttentionOutput(dim)
+        attention_head_size = int( coattn_hidden_size / heads)
+        all_head_size = heads * attention_head_size
+
+        self.cross_attention = CrossAttention(dim=dim, heads=heads, dropout=dropout, all_head_size=all_head_size)
+        self.output = CrossAttentionOutput(dim, all_head_size=all_head_size)
 
         self.ff_text = FeedForward_Block(dim=dim, mlp_factor=4, dropout=dropout)
         self.ff_vision = FeedForward_Block(dim=dim, mlp_factor=4, dropout=dropout)
