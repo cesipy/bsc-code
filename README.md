@@ -155,15 +155,20 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 **immediate:**
 - [ ] is finetuned good performance indicator for pretraining good performance?
 
-- [x] self.query1 = nn.Linear(in_features=dim, out_features=dim) - moredimensions here
 - [ ] fix pretraining, several things are wrong
 	- [ ] compare ap contrastive with the contrastive in downstream
 	- [ ] pretraining problem with contrastive learning
-
-
-
-- [x] double and triple check if new architecture-fix is correct, because alignment visualizations look off
-	- [x] problem with double forward pass for vit
+	- [ ] train loss is bigger then validation loss
+		```
+		2025-10-03 11:52:35 - INFO  - experiment_tracker.py:_run_pretrain:927 - Epoch 1/4,
+		train loss MLM: 6.6594,
+		test loss MLM: 4.7586,
+		train loss AP: 0.6794,
+		test loss AP: 0.6195,
+		accuracy AP: 0.6492
+		train loss MIM: 4.8037,
+		test loss MIM: 4.1261
+		```
 
 - [ ] seed from config, not global var
 	- [ ] convert all torchvision to albuminations + seeding
@@ -173,185 +178,200 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 	- [ ] better logic for that
 
 
-- [x] fix vilbert architecture
-- [ ] upmc datatset
-- [x] vqa
-- [ ] wasserstein
-- [x] optuna- remove pruning, not necessary
-	- [x] optuna rerun wit smaller lr range
-	- [ ] include easyvqa in optuna
 
 - [ ] analysis of pretrained models: discrepancies in end representation of streams
 
 - [ ] experiment_tracker:
-	- [ ] run different configs, predetermined, so i can run several finetunes.
-	- [ ] run from json files
-		- [ ] implement run from config
-		- [ ] test if impl is correct.
-	- [ ] save everything that is necessary, is vi_biattention_ids, currently correct?
-	- [ ] adapt finetune module to use experiment tracker.
 	- [ ] implement other tasks in run experiment
-	- [ ] proper naming for visualization of repr analyse
-
-
-- [x] pretrainAP is wrong for my alignment analysis. half of the time it switches (like in the pretrain task). create separate class for analysis on conceptual captions.
-	- [x] current workaround: probab in get_items is at 0
-	-             if random.random() < 0.0:       # TODO: remove
-- [x] mixed saving of intermediates: sometimes cls, sometimes full_seq
-
-
-**other**
-- [ ] what are my baselines: VILT vs uninitialized bert
-	- [ ] how to use baseline that is not using fusion?
-		- eg: fusion from hadamard product at the end... so only no coatts has still fusion. way to finetune without having to use the final concat/fusion
-- [ ] adamw adjusted to the typical vilbert params: https://github.com/facebookresearch/vilbert-multi-task/blob/f22b84a9918a9aea2106e14ac1f6b32ad71492e3/train_concap.py#L465
-
-- [ ] Statistical test: do cross-attention layers have significantly lower entropy (more focused)?
-- [ ] attn entropy:
-- Analyzing Multi-Head Self-Attention
-- What Does BERT Look At?
-- Is Attention Interpretable?
-- Probing Multimodal Embeddings for Linguistic Properties
-
-- [ ] gradient based attribution
-- Grad-CAM: Visual Explanations from Deep Networks
-- Generic Attention-model Explainability for Interpreting Bi-Modal Transformers
-- Transformer Interpretability Beyond Attention Visualization"
-
-- [ ] uinfy weighted loss for infonce in trainers
-- [ ] tools to look into:
-	- [ ] captum
-	- [ ] alibi
-	- [ ] bertviz
-		```python
-		from bertviz import head_view
-		head_view(model, tokenizer, text_inputs, layer=4)  # visualize cross-attention
-		```
-- [ ] captum?
-	- [ ] https://captum.ai/tutorials/Multimodal_VQA_Captum_Insights
-- [ ] optuna:
-	- [ ] run optuna for acc on both sets (mmimdb + hateful memes)
-	- [ ] pruning
-	- [ ] in ep_tracker: disable multiobjective or disable pruning
-
-	- [ ] is my current setup even the right one?
-		- [ ] optimize for alignment, not for loss
-
-
-- [ ] arparse for experimenttracker: whenever I want to test alignment
-
-
-
-- [x] implement experiment tracker
-	- [ ] use test sets for alignment; no training on it. - currently on mmimdb, not on hm, still TODO!
-	- [x] abstract class für trainer; hm, und mmimdb anpassen
-
-
-
-
-- [ ] check if cka is right..
-	- [ ] try with bigger bs for the data collection
-- [x] self.fc outside of forward - refactor
-- [x] add parameter how many samples to collect for visualization
-	- [ ] more runs and avg out
-- [ ] comparison of full-seq to cls.
-	- [ ] training seemed to be more centered towards cls token alignment
-
-
-- [ ] problem with contrastive term in pretraining: combined approach!
-
-
-
-- [x] add dropout in attention
-- [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
-
-- [ ] is residual handling in crossattention correct?
-- [ ] other datasets implement
-	- [ ] find alignment datasets in literature
-
-- [ ] data augmentation for AP pretraining
-- [ ] implement further alignment measures
-	- [x] cca
-	- [ ] wasserstein distance
-	- [x] svcca
-	- [ ] sae (maybe)
-
-
-
-
-### opts $\lor$ ideas
-- [ ] investigating platonic representation hypothesis:
-	- simply concat represetnations of bert + vit: use as baseline.
-- [ ] pytorch hooks for intermediate layers
-	- quite hard to implement, plus there is not much documentation on this topic.
-- [ ] different batchsizes for tasks
-	- maybe too difficult to implement!
-
-
-
-### past TODOs
-- [x] variable cka in analysis.
-- [x] fix the alignment string to have same lenght
-- [x] `src/evaluate.py` more flexible
-	- [x] contrastive loss for other datasets; include in trainer
-- [x] implement further datasets for alignment evaluation
-	- [x] vqa
-	- [x] mm-imbd
-- [x] finetune bert and vit alone, without additional layers of vilbert
-	- [x] abstr class for model, include all the heads.
-
-- [x] unify hyperparam_optimizer and experiment_tracker.
-- [x] is `num_samples=1000` still correct? should be controlled using GLOBAL VARS
-- [x] better seeding
-- [x] fix spelling issue in "costrative"
-- [x] visualization of all the other measueres
-	- [x] mknn
-	- [x] jaccard - add to analysis
-	- [x] rank - add to analysis
-- [x] visualization of pretraining tasks - like acc, loss, etc
-- [x] cosine scheduler
-- [x] implement gradient accum.
-- [x] use albuminations
-- [x] easier dataset handling
-- [x] add this to readme: `export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"`
-- [x] visualization of cka, mutual knns
-	- [x] implement a data collection pipeline
-		- [ ] improve memory with `del`- in original pipeline=> better CKA estimations
-- [x] mmimdb alignment vis
-- [x] fix problem with ap pretraining only - has really bad performance, slightly worse than guessing!
-	- 2025-08-23 22:35:30 - INFO  - trainer.py:train:691 - Epoch 4/4,
-	```
-	train loss MLM: 0.0000,
-	test loss MLM: 10.5104,
-	train loss AP: 0.6946,
-	test loss AP: 0.6946,
-	accuracy AP: 0.4986
-	train loss MIM: 0.0000,
-	test loss MIM: 8.8669
-	```
-- [x] Tokenizer for text dependency injected
-- [x] pretrain dataset fix: filter out images that are not working
-- [x] pretrain dataset mlm task
-- [x] apparently there is a problem with the `transformers` library, where ViT implementation causes 10x-40x? https://x.com/jbohnslav/status/1950550831381782798, => own implementation of ViT (maybe adapt from dl VU, assignment 03)
-- [x] fix problem with compile and saving
-
-- [x] log everything
-- [x] complete mim
-    - [x] data augmentation pipeline.
-    - [x] teacher, student ? this is to avoid moving target problem, but is it necessary? - not using this
-    - [x] gradient stopping - not used, would require teacher-student setup
-
-- [x] better config handling
-- [x] infonce review
-
-- [x] evaluate functino for measuring avg alignment measures.
-- [x] complete pipeline for running experiments
-- [x] hateful memes downsize to 224
-- [x] unify the alignment measurements
 
 
 
 ## Results
+
+## 03.10 - comparision: pretrain+finetune vs. finetune-only
+temp:
+- currently running on GPU10: pretrain & pretrain+finetune for 4 different configurations
+- currently running on gamingpc: finetune only for the same configs.
+will report here my findings
+
+<figure>
+
+**early fusion**:
+
+finetune only:
+
+```
+Epoch 1/9, Train Loss: 0.6614, Val Loss: 0.6427, Val Acc: 0.6318
+Epoch 2/9, Train Loss: 0.6114, Val Loss: 0.5991, Val Acc: 0.6859
+Epoch 3/9, Train Loss: 0.5621, Val Loss: 0.5745, Val Acc: 0.7112
+Epoch 4/9, Train Loss: 0.5244, Val Loss: 0.5609, Val Acc: 0.7318
+Epoch 5/9, Train Loss: 0.4817, Val Loss: 0.5553, Val Acc: 0.7359
+Epoch 6/9, Train Loss: 0.4717, Val Loss: 0.5617, Val Acc: 0.7135
+Epoch 7/9, Train Loss: 0.4531, Val Loss: 0.5607, Val Acc: 0.7306
+Epoch 8/9, Train Loss: 0.4216, Val Loss: 0.5618, Val Acc: 0.7347
+Epoch 9/9, Train Loss: 0.4030, Val Loss: 0.5745, Val Acc: 0.7324
+```
+
+<br>
+pretrain+finetune:
+
+```
+Epoch 1/9, Train Loss: 0.6387, Val Loss: 0.6144, Val Acc: 0.6647
+Epoch 2/9, Train Loss: 0.5947, Val Loss: 0.5833, Val Acc: 0.7018
+Epoch 3/9, Train Loss: 0.5440, Val Loss: 0.5458, Val Acc: 0.7318
+Epoch 4/9, Train Loss: 0.5056, Val Loss: 0.5456, Val Acc: 0.7441
+Epoch 5/9, Train Loss: 0.4614, Val Loss: 0.5546, Val Acc: 0.7265
+Epoch 6/9, Train Loss: 0.4292, Val Loss: 0.5636, Val Acc: 0.7235
+Epoch 7/9, Train Loss: 0.3917, Val Loss: 0.5910, Val Acc: 0.7235
+Epoch 8/9, Train Loss: 0.3775, Val Loss: 0.6165, Val Acc: 0.7071
+Epoch 9/9, Train Loss: 0.3581, Val Loss: 0.6256, Val Acc: 0.7065
+```
+</figure>
+
+
+<figure>
+
+**mid-fusion**:
+
+finetune only:
+```
+Epoch 1/9, Train Loss: 0.6654, Val Loss: 0.6309, Val Acc: 0.6465
+Epoch 2/9, Train Loss: 0.6023, Val Loss: 0.5760, Val Acc: 0.7165
+Epoch 3/9, Train Loss: 0.5367, Val Loss: 0.5566, Val Acc: 0.7312
+Epoch 4/9, Train Loss: 0.4844, Val Loss: 0.5562, Val Acc: 0.7253
+Epoch 5/9, Train Loss: 0.4399, Val Loss: 0.5627, Val Acc: 0.7324
+Epoch 6/9, Train Loss: 0.3993, Val Loss: 0.5765, Val Acc: 0.7106
+Epoch 7/9, Train Loss: 0.3716, Val Loss: 0.5760, Val Acc: 0.7212
+Epoch 8/9, Train Loss: 0.3407, Val Loss: 0.6163, Val Acc: 0.7188
+Epoch 9/9, Train Loss: 0.3179, Val Loss: 0.6525, Val Acc: 0.7224
+```
+<br>
+pretrain+finetune:
+
+```
+Epoch 1/9, Train Loss: 0.6381, Val Loss: 0.6272, Val Acc: 0.6559
+Epoch 2/9, Train Loss: 0.5806, Val Loss: 0.5645, Val Acc: 0.7159
+Epoch 3/9, Train Loss: 0.5195, Val Loss: 0.5283, Val Acc: 0.7447
+Epoch 4/9, Train Loss: 0.4702, Val Loss: 0.5368, Val Acc: 0.7435
+Epoch 5/9, Train Loss: 0.4224, Val Loss: 0.5454, Val Acc: 0.7388
+Epoch 6/9, Train Loss: 0.3892, Val Loss: 0.5509, Val Acc: 0.7347
+Epoch 7/9, Train Loss: 0.3490, Val Loss: 0.5728, Val Acc: 0.7435
+Epoch 8/9, Train Loss: 0.3255, Val Loss: 0.5849, Val Acc: 0.7324
+Epoch 9/9, Train Loss: 0.3080, Val Loss: 0.6075, Val Acc: 0.7347
+```
+
+</figure>
+
+
+<figure>
+
+**late fusion**:
+
+finetune only:
+
+```
+2025-10-03 11:19:00 - INFO  - experiment_tracker.py:_run_task:609 - saving results to 20251003-111900_experiment_coattn_9-10-11
+Epoch 1/9, Train Loss: 0.6492, Val Loss: 0.6186, Val Acc: 0.6647
+Epoch 2/9, Train Loss: 0.5813, Val Loss: 0.6058, Val Acc: 0.6665
+Epoch 3/9, Train Loss: 0.5195, Val Loss: 0.5627, Val Acc: 0.7106
+Epoch 4/9, Train Loss: 0.4436, Val Loss: 0.5760, Val Acc: 0.7094
+Epoch 5/9, Train Loss: 0.3860, Val Loss: 0.6176, Val Acc: 0.6906
+Epoch 6/9, Train Loss: 0.3439, Val Loss: 0.6235, Val Acc: 0.7118
+Epoch 7/9, Train Loss: 0.2888, Val Loss: 0.6880, Val Acc: 0.7165
+Epoch 8/9, Train Loss: 0.2510, Val Loss: 0.7209, Val Acc: 0.6971
+Epoch 9/9, Train Loss: 0.2274, Val Loss: 0.8106, Val Acc: 0.7171
+```
+
+<br>
+
+pretrain+finetune:
+
+```
+temp
+```
+
+</figure>
+
+<figure>
+
+**asymmetric_fusion**:
+
+finetune only:
+
+```
+Epoch 1/9, Train Loss: 0.6534, Val Loss: 0.6224, Val Acc: 0.6565
+Epoch 2/9, Train Loss: 0.5891, Val Loss: 0.5786, Val Acc: 0.7059
+Epoch 3/9, Train Loss: 0.5282, Val Loss: 0.5505, Val Acc: 0.7276
+Epoch 4/9, Train Loss: 0.4707, Val Loss: 0.6187, Val Acc: 0.6806
+Epoch 5/9, Train Loss: 0.4409, Val Loss: 0.5517, Val Acc: 0.7235
+Epoch 6/9, Train Loss: 0.3793, Val Loss: 0.5924, Val Acc: 0.7000
+Epoch 7/9, Train Loss: 0.3554, Val Loss: 0.6132, Val Acc: 0.7165
+Epoch 8/9, Train Loss: 0.3166, Val Loss: 0.6373, Val Acc: 0.7141
+Epoch 9/9, Train Loss: 0.2876, Val Loss: 0.6868, Val Acc: 0.7165
+```
+<br>
+
+pretrain+finetune:
+
+```
+temp
+```
+
+</figure>
+
+
+
+
+## 02.10
+new optuna run on hateful memes to discover good configurations. new method on the distributional approach, with concat-fusion stored in `res/experiments/multi_task_optim.db` in the study `single_task_study_hateful_memes_20251001-212440`
+
+<figure>
+	<img src="./res/markdown_res/021025_optuna_result1.png" width=700>
+</figure>
+
+Apparently for hateful memes configs with only 2 or 3 coattention placements work best. In the following week I will conduct further experiments with both (or even all) tasks (hateful_memes, mm_imdb, (upmcfood))
+
+Even though the optimization was focused on validation loss, the accuracy varied widely.
+
+<figure>
+
+
+```
+Epoch 1/10, Train Loss: 0.6559, Val Loss: 0.6582, Val Acc: 0.6312
+Epoch 2/10, Train Loss: 0.6220, Val Loss: 0.6131, Val Acc: 0.6724
+Epoch 3/10, Train Loss: 0.5767, Val Loss: 0.5939, Val Acc: 0.7041
+Epoch 4/10, Train Loss: 0.5420, Val Loss: 0.5925, Val Acc: 0.6824
+Epoch 5/10, Train Loss: 0.5091, Val Loss: 0.5782, Val Acc: 0.6971
+Epoch 6/10, Train Loss: 0.4689, Val Loss: 0.5709, Val Acc: 0.7135
+Epoch 7/10, Train Loss: 0.4407, Val Loss: 0.5616, Val Acc: 0.7218
+Epoch 8/10, Train Loss: 0.3988, Val Loss: 0.5770, Val Acc: 0.7235
+Epoch 9/10, Train Loss: 0.3670, Val Loss: 0.5925, Val Acc: 0.7165
+Epoch 10/10, Train Loss: 0.3389, Val Loss: 0.6151, Val Acc: 0.7088
+trial 19: params={'num_coattn_layers': 6, 't_center': 2.0449647792314796, 't_spread': 2.4642271321601306, 'v_center': 7.976648823538334, 'v_spread': 2.254911831081765}, result=-0.5616
+```
+
+*vs.*
+
+```
+Epoch 1/10, Train Loss: 0.6482, Val Loss: 0.6408, Val Acc: 0.6312
+Epoch 2/10, Train Loss: 0.5885, Val Loss: 0.5578, Val Acc: 0.7353
+Epoch 3/10, Train Loss: 0.5190, Val Loss: 0.5323, Val Acc: 0.7459
+Epoch 4/10, Train Loss: 0.4674, Val Loss: 0.5332, Val Acc: 0.7518
+Epoch 5/10, Train Loss: 0.4089, Val Loss: 0.5422, Val Acc: 0.7406
+Epoch 6/10, Train Loss: 0.3511, Val Loss: 0.5889, Val Acc: 0.7294
+Epoch 7/10, Train Loss: 0.3004, Val Loss: 0.6102, Val Acc: 0.7241
+Epoch 8/10, Train Loss: 0.2568, Val Loss: 0.6704, Val Acc: 0.7135
+Epoch 9/10, Train Loss: 0.2285, Val Loss: 0.7105, Val Acc: 0.7182
+Epoch 10/10, Train Loss: 0.1857, Val Loss: 0.7572, Val Acc: 0.7088
+2025-10-02 15:01:39 - INFO  - experiment_tracker.py:objective:307 - trial 43: params={'num_coattn_layers': 2, 't_center': 2.9097000545536047, 't_spread': 3.1395032914365864, 'v_center': 8.1633063105181, 'v_spread': 1.2579536681542476}, result=-0.5323
+```
+
+
+</figure>
+
+
+
+
 
 ## 01.10
 How to define baseline for my experiments?
@@ -377,6 +397,7 @@ econf = experiment_tracker.ExperimentConfig(
 <figure>
 
 **hadamard**
+
 ```
 Epoch 1/8, Train Loss: 0.6469, Val Loss: 0.6277, Val Acc: 0.6606
 Epoch 2/8, Train Loss: 0.6134, Val Loss: 0.6162, Val Acc: 0.6794
@@ -388,6 +409,7 @@ Epoch 7/8, Train Loss: 0.3918, Val Loss: 0.5972, Val Acc: 0.7271
 ```
 
 **concat**:
+
 ```
 Epoch 1/8, Train Loss: 0.6566, Val Loss: 0.6598, Val Acc: 0.6312
 Epoch 2/8, Train Loss: 0.6410, Val Loss: 0.6552, Val Acc: 0.6300
@@ -400,6 +422,7 @@ Epoch 8/8, Train Loss: 0.4358, Val Loss: 0.5822, Val Acc: 0.7141
 ```
 
 **sum**:
+
 ```
 Epoch 1/8, Train Loss: 0.6432, Val Loss: 0.6351, Val Acc: 0.6424
 Epoch 2/8, Train Loss: 0.5896, Val Loss: 0.6453, Val Acc: 0.6212

@@ -22,7 +22,12 @@ import analysis
 import task as tasklib
 
 logger = Logger()
+#specific to that file
 EPOCHS_ = 9
+LR_ = 3.2e-5
+USE_CONTRASTIVE_LOSS_ = False
+
+
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = False
 
@@ -170,34 +175,20 @@ class ExperimentTracker:
         import optuna
 
         def objective(trial):
-            lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
-            # analysis with optuna resulted in dropout of about 0.08.
-            # this is roughly the same as in vilbert implementation of 0.1
-            # therefore, no further tuning on it
-            # dropout = trial.suggest_float("dropout", 0.0, 0.4)
-            # epochs = trial.suggest_int("epochs", 2, 9)
-
-            # also epoch 7 is really good, like 7 - 10 based on optuna
+            lr = LR_
             epochs = EPOCHS_
-            # depth = trial.suggest_int("depth", 4, 8)
+            seed = SEED + int(time.time())
 
-            use_contrastive = trial.suggest_categorical("use_contrastive",
-                [True, False])
-
-
-            fusion_strat:str = trial.suggest_categorical("fusion_strat",
-                ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
-
-            t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
-
-
+            t_biattention_ids, v_biattention_ids = self.get_coattn_configs(trial)
+            print("t_biattention_ids:", t_biattention_ids)
+            print("v_biattention_ids:", v_biattention_ids)
             config = ExperimentConfig(
                 t_biattention_ids=t_biattention_ids,
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
-                use_contrastive_loss=use_contrastive
-                # train_test_ratio=0.1
+                use_contrastive_loss=USE_CONTRASTIVE_LOSS_,
+                seed=seed,
             )
 
             training_results = self.run_finetune(
@@ -262,7 +253,7 @@ class ExperimentTracker:
 
         def objective(trial):
             # lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
-            lr = 3.2e-5
+            lr = LR_
             # analysis with optuna resulted in dropout of about 0.08.
             # this is roughly the same as in vilbert implementation of 0.1
             # therefore, no further tuning on it
@@ -282,7 +273,7 @@ class ExperimentTracker:
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
-                use_contrastive_loss=False,
+                use_contrastive_loss=USE_CONTRASTIVE_LOSS_,
                 seed=seed,
             )
             training_results = self.run_finetune(
@@ -674,6 +665,8 @@ class ExperimentTracker:
                 info_str = f"Loaded pretrained model from {pretrained_model_path} for task {task}"
                 print(info_str)
                 logger.info(info_str)
+                assert pretrained_model.config.text_cross_attention_layers == experiment_config.t_biattention_ids
+                assert pretrained_model.config.vision_cross_attention_layers == experiment_config.v_biattention_ids
 
             training_results = self._run_task(
                 task_name=task, experiment_config=experiment_config,
