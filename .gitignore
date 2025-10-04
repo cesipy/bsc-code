@@ -19,3 +19,4 @@ res/experiments/*.json
 res/experiments/visualizations/*
 res/hyperparameter_optimization/*.json
 res/attn-plots
+res/experiments/old_experiment_jsons
