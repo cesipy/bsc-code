@@ -6,7 +6,7 @@ class PretrainingTrainer:
         self,
         model: ViLBERT,
         config: ViLBERTConfig,
-        use_contrastive_ap:bool,
+        use_contrastive_loss:bool,
         tasks: list[Task] = [
             Task.ALIGNMENT_PREDICTION,
             Task.MASKED_LM,
@@ -25,7 +25,7 @@ class PretrainingTrainer:
         self.tasks = tasks
 
         # self.model = torch.compile(self.model)
-        self.use_contrastive_ap = use_contrastive_ap
+        self.use_contrastive_loss = use_contrastive_loss
 
         self.loss_fn_alignment = nn.BCEWithLogitsLoss()
         self.loss_fn_mlm = nn.CrossEntropyLoss()
@@ -118,7 +118,7 @@ class PretrainingTrainer:
                     tasks=["alignment_prediction"]
                 )
                 label = label.float().unsqueeze(1)
-                if self.use_contrastive_ap:
+                if self.use_contrastive_loss:
 
                     loss = self.loss_info_nce(text_embedding, image_embedding)
 
@@ -210,12 +210,16 @@ class PretrainingTrainer:
     def train_epoch_prediction(self, dataloader: DataLoader):
         self.model.train()
         total_loss = 0
+        total_loss_contrastive = 0
         num_batches = 0
 
         for batch in dataloader:
             num_batches += 1
-
-            loss = self.train_alignment_prediction_batch(batch)
+            if self.use_contrastive_loss:
+                loss, loss_contrastive = self.train_alignment_prediction_batch(batch)
+                total_loss_contrastive += loss_contrastive
+            else:
+                loss = self.train_alignment_prediction_batch(batch)
             total_loss += loss
 
         return total_loss / num_batches
@@ -259,17 +263,28 @@ class PretrainingTrainer:
                 tasks=tasks
             )
 
-            # print(prediciton_logits.shape, label.shape)
-            # both have shape [batch_size, 1]
-            if self.use_contrastive_ap:
-                loss = self.loss_info_nce(text_embedding, image_embedding)
+            # both embeddings are only cls, so shape is [bs, dim]
+            # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
+            # only on text representation
+            prediction_logits = self.model.alignment_fc(text_embedding)
+            label = label.squeeze(1)
+            prediction_logits = prediction_logits.squeeze(1) # [bs]
+            # probs = torch.sigmoid(prediction_logits)
+            # print(f"shape: {prediction_logits.shape}")
+            # print(f"label: {label}")
+            # print(f"probs: {probs}")
+            loss = self.loss_fn_alignment(prediction_logits, label)
 
-            else:
-                # both embeddings are only cls, so shape is [bs, dim]
-                # shared_embedding = torch.cat([text_embedding, image_embedding], dim=1)
-                # only on text representation
-                prediction_logits = self.model.alignment_fc(text_embedding)
-                loss = self.loss_fn_alignment(prediction_logits, label)
+            if self.use_contrastive_loss:
+                # where label is 0, also textembedding to 0
+                zero_idxs = (label == 0)
+                text_embedding_temp = text_embedding.clone()
+                text_embedding_temp[zero_idxs] = 0
+                image_embedding_temp = image_embedding.clone()
+                image_embedding_temp[zero_idxs] = 0
+                loss_contrastive = self.loss_info_nce(text_embedding_temp, image_embedding_temp)
+                # print(f"contrastive loss: {loss_contrastive}")
+                loss = loss + 0.3* loss_contrastive
 
             loss /= self.gradient_accumulation
 
@@ -282,6 +297,8 @@ class PretrainingTrainer:
             self.scaler.step(self.optimizer)
             self.scaler.update()
             self.optimizer.zero_grad()
+        if self.use_contrastive_loss:
+            return loss.item() * self.gradient_accumulation, loss_contrastive.item() * self.gradient_accumulation
 
         return loss.item() * self.gradient_accumulation
 
@@ -403,6 +420,7 @@ class PretrainingTrainer:
         total_loss_ap  = 0
         total_loss_mlm = 0
         total_loss_mim = 0
+        total_loss_contrastive = 0
         num_batches = 0
 
         total_batches = len(dataloader_ap)
@@ -428,9 +446,14 @@ class PretrainingTrainer:
             loss_ap = 0
             loss_mlm = 0
             loss_mim = 0
+            loss_contrastive = 0
             if Task.ALIGNMENT_PREDICTION in tasks:
                 # alignment prediction
-                loss_ap = self.train_alignment_prediction_batch(batch_ap, flag_optimizer=flag_optimizer)
+                if self.use_contrastive_loss:
+                    loss_ap, curr_loss_contrastive = self.train_alignment_prediction_batch(batch_ap, flag_optimizer=flag_optimizer)
+                    loss_contrastive = curr_loss_contrastive
+                else:
+                    loss_ap = self.train_alignment_prediction_batch(batch_ap, flag_optimizer=flag_optimizer)
 
             if Task.MASKED_LM in tasks:
                 # masked language modeling
@@ -441,7 +464,7 @@ class PretrainingTrainer:
 
             buffer_total_loss.append(loss_ap + loss_mlm + loss_mim)
             #TODO: contrastive loss, currently same as total_loss
-            buffer_contrastive_loss.append(loss_ap + loss_mlm + loss_mim)
+            buffer_contrastive_loss.append(loss_contrastive)
 
             if (batch_indx % 10 == 0):
                 avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
@@ -465,17 +488,20 @@ class PretrainingTrainer:
             total_loss_ap += loss_ap
             total_loss_mlm += loss_mlm
             total_loss_mim += loss_mim
+            total_loss_contrastive += loss_contrastive
             num_batches += 1
 
         avg_loss_ap = total_loss_ap / num_batches
         avg_loss_mlm = total_loss_mlm / num_batches
         avg_loss_mim = total_loss_mim / num_batches
+        avg_loss_contrastive = total_loss_contrastive / num_batches
 
         utils.visualize_loss(
             total_losses=self.total_losses,
             normal_losses=self.normal_losses,
             info_losses=self.info_losses
         )
+        print(f"contrastive loss: {avg_loss_contrastive}")
         return avg_loss_ap, avg_loss_mlm, avg_loss_mim
 
 

@@ -133,7 +133,6 @@ def get_dataloaders_pretrain(
     prefetch,
     persistent_workers,
     pin_memory=True,
-    use_contrastive_ap: bool=False
     ):
     """
     Returns: (
@@ -169,8 +168,7 @@ def get_dataloaders_pretrain(
         data=train_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
-        preprocessing_prediction_alignment=False,
-        use_contrastive_ap_loss=use_contrastive_ap
+        is_train=True
     )
 
 
@@ -178,7 +176,6 @@ def get_dataloaders_pretrain(
         data=val_data,
         tokenizer=tokenizer,
         image_processor=image_processor,
-        preprocessing_prediction_alignment=False,
     )
 
     train_dataset_mlm = PretrainDatasetMLM(

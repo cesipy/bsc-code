@@ -22,7 +22,12 @@ import analysis
 import task as tasklib
 
 logger = Logger()
-EPOCHS_ = 10
+#specific to that file
+EPOCHS_ = 9
+LR_ = 3.2e-5
+USE_CONTRASTIVE_LOSS_ = False
+
+
 ALIGNMENT_ANALYSIS_SIZE = 4000
 SKIP_ALIGNMENT = False
 
@@ -170,34 +175,20 @@ class ExperimentTracker:
         import optuna
 
         def objective(trial):
-            lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
-            # analysis with optuna resulted in dropout of about 0.08.
-            # this is roughly the same as in vilbert implementation of 0.1
-            # therefore, no further tuning on it
-            # dropout = trial.suggest_float("dropout", 0.0, 0.4)
-            # epochs = trial.suggest_int("epochs", 2, 9)
-
-            # also epoch 7 is really good, like 7 - 10 based on optuna
+            lr = LR_
             epochs = EPOCHS_
-            # depth = trial.suggest_int("depth", 4, 8)
+            seed = SEED + int(time.time())
 
-            use_contrastive = trial.suggest_categorical("use_contrastive",
-                [True, False])
-
-
-            fusion_strat:str = trial.suggest_categorical("fusion_strat",
-                ["early", "mid", "late", "early-mid", "early-late", "mid-late", "mixed"])
-
-            t_biattention_ids, v_biattention_ids = self.construct_coattn_configs(fusion_strat)
-
-
+            t_biattention_ids, v_biattention_ids = self.get_coattn_configs(trial)
+            print("t_biattention_ids:", t_biattention_ids)
+            print("v_biattention_ids:", v_biattention_ids)
             config = ExperimentConfig(
                 t_biattention_ids=t_biattention_ids,
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
-                use_contrastive_loss=use_contrastive
-                # train_test_ratio=0.1
+                use_contrastive_loss=USE_CONTRASTIVE_LOSS_,
+                seed=seed,
             )
 
             training_results = self.run_finetune(
@@ -230,7 +221,7 @@ class ExperimentTracker:
 
         tmsp = time.strftime("%Y%m%d-%H%M%S")
         # storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
-        storage_path = f"sqlite:///{self.save_dir}res/experiments/multi_task_optim.db"
+        storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
         study_name = f"multi_task_study_{tmsp}"
 
 
@@ -262,7 +253,7 @@ class ExperimentTracker:
 
         def objective(trial):
             # lr = trial.suggest_float("learning_rate", 1.5e-5, 3.2e-5, log=True)
-            lr = 3.2e-5
+            lr = LR_
             # analysis with optuna resulted in dropout of about 0.08.
             # this is roughly the same as in vilbert implementation of 0.1
             # therefore, no further tuning on it
@@ -282,7 +273,7 @@ class ExperimentTracker:
                 v_biattention_ids=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
-                use_contrastive_loss=False,
+                use_contrastive_loss=USE_CONTRASTIVE_LOSS_,
                 seed=seed,
             )
             training_results = self.run_finetune(
@@ -674,6 +665,8 @@ class ExperimentTracker:
                 info_str = f"Loaded pretrained model from {pretrained_model_path} for task {task}"
                 print(info_str)
                 logger.info(info_str)
+                assert pretrained_model.config.text_cross_attention_layers == experiment_config.t_biattention_ids
+                assert pretrained_model.config.vision_cross_attention_layers == experiment_config.v_biattention_ids
 
             training_results = self._run_task(
                 task_name=task, experiment_config=experiment_config,
@@ -844,7 +837,7 @@ class ExperimentTracker:
         for val in tasks_vals:
             task_string += f"{val}"
         tmsp = time.strftime("%Y%m%d-%H%M%S")
-        filename = f"res/checkpoints/pretrained_{task_string}_{tmsp}.pt"
+        filename = f"res/checkpoints/{tmsp}_pretrained_{task_string}.pt"
 
         training_results = self._initialize_results_dict(epochs=config.epochs)
         train_loader_ap, val_loader_ap, \
@@ -857,7 +850,6 @@ class ExperimentTracker:
             prefetch=PREFETCH,
             persistent_workers=PERSISTENT_WORKERS,
             pin_memory=PIN_MEMORY,
-            use_contrastive_ap=config.use_contrastive_loss,
             batch_size=BATCH_SIZE_PRETRAIN,
         )
 
@@ -869,7 +861,7 @@ class ExperimentTracker:
         trainer = PretrainingTrainer(
             model=model,
             config=config,
-            use_contrastive_ap=config.use_contrastive_loss,
+            use_contrastive_loss=config.use_contrastive_loss,
             tasks=config.pretraining_tasks,
             gradient_accumulation=config.gradient_accumulation,
         )
@@ -1035,6 +1027,13 @@ class ExperimentTracker:
 
 
 
+    # def run_evaluation(self, pretrained_path, tasks=["hateful_memes", "mm_imdb"]):
+
+    #     model = ViLBERT.load_model(pretrained_path, device="cuda" if torch.cuda.is_available() else "cpu")
+
+    #     for task in tasks:
+    #         # evaluate on test sets
+
 
 
 
@@ -1048,10 +1047,10 @@ class ExperimentTracker:
 def main():
 
     tracker = ExperimentTracker()
-    # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
-    tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
-                                       #task="mm_imdb")
-                                       task="hateful_memes")
+    tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
+    # tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
+    #                                    #task="mm_imdb")
+    #                                    task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
 

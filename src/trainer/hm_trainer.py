@@ -100,6 +100,10 @@ class HatefulMemesTrainer(BaseTrainer):
                 preds = self.model.fc(fused_representation)
                 preds = preds.squeeze()     #[bs]
                 label = label.float()       #[bs]
+                # print(label)
+                # probs = torch.sigmoid(preds)
+                # print(f"preds: {preds}")
+                # print(f"probs: {probs}")
 
 
                 loss_info = self.info_nce(text_embedding, vision_embedding)
