@@ -154,22 +154,6 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 ## TODO
 **immediate:**
 - [ ] is finetuned good performance indicator for pretraining good performance?
-
-- [ ] fix pretraining, several things are wrong
-	- [ ] compare ap contrastive with the contrastive in downstream
-	- [ ] pretraining problem with contrastive learning
-	- [ ] train loss is bigger then validation loss
-		```
-		2025-10-03 11:52:35 - INFO  - experiment_tracker.py:_run_pretrain:927 - Epoch 1/4,
-		train loss MLM: 6.6594,
-		test loss MLM: 4.7586,
-		train loss AP: 0.6794,
-		test loss AP: 0.6195,
-		accuracy AP: 0.6492
-		train loss MIM: 4.8037,
-		test loss MIM: 4.1261
-		```
-
 - [ ] seed from config, not global var
 	- [ ] convert all torchvision to albuminations + seeding
 
@@ -177,16 +161,51 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] fix coattentions not really saved in intermediate_representations,
 	- [ ] better logic for that
 
-
-
 - [ ] analysis of pretrained models: discrepancies in end representation of streams
 
 - [ ] experiment_tracker:
 	- [ ] implement other tasks in run experiment
 
+- [ ] include test set for:
+	- [ ] upmc food
+	- [ ] mm imdb
+	- [ ] hateful memes	- problem here, there are no labels
 
 
 ## Results
+
+## 04.10
+
+Validation loss is lower then train loss supposedly because of different applications of data augmentation. But still further investigation is necessary.
+
+```
+Epoch 1/10,
+    train loss MLM: 8.6090,
+    test loss MLM: 6.8610,
+    train loss AP: 1.1787,
+    test loss AP: 2.0275,
+    accuracy AP: 0.2557
+    train loss MIM: 5.2101,
+    test loss MIM: 4.0759
+
+Epoch 2/10,
+    train loss MLM: 6.0135,
+    test loss MLM: 5.3457,
+    train loss AP: 1.0411,
+    test loss AP: 0.7532,
+    accuracy AP: 0.9408
+    train loss MIM: 3.2613,
+    test loss MIM: 2.5418
+
+Epoch 3/10,
+    train loss MLM: 5.0081,
+    test loss MLM: 4.7833,
+    train loss AP: 0.9024,
+    test loss AP: 0.3898,
+    accuracy AP: 0.9962
+    train loss MIM: 1.9494,
+    test loss MIM: 1.3295
+```
 
 ## 03.10 - comparision: pretrain+finetune vs. finetune-only
 temp:
@@ -270,7 +289,6 @@ Epoch 9/9, Train Loss: 0.3080, Val Loss: 0.6075, Val Acc: 0.7347
 finetune only:
 
 ```
-2025-10-03 11:19:00 - INFO  - experiment_tracker.py:_run_task:609 - saving results to 20251003-111900_experiment_coattn_9-10-11
 Epoch 1/9, Train Loss: 0.6492, Val Loss: 0.6186, Val Acc: 0.6647
 Epoch 2/9, Train Loss: 0.5813, Val Loss: 0.6058, Val Acc: 0.6665
 Epoch 3/9, Train Loss: 0.5195, Val Loss: 0.5627, Val Acc: 0.7106
@@ -287,7 +305,15 @@ Epoch 9/9, Train Loss: 0.2274, Val Loss: 0.8106, Val Acc: 0.7171
 pretrain+finetune:
 
 ```
-temp
+Epoch 1/9, Train Loss: 0.6470, Val Loss: 0.6426, Val Acc: 0.6371
+Epoch 2/9, Train Loss: 0.5864, Val Loss: 0.5747, Val Acc: 0.7012
+Epoch 3/9, Train Loss: 0.5149, Val Loss: 0.5340, Val Acc: 0.7435
+Epoch 4/9, Train Loss: 0.4523, Val Loss: 0.5290, Val Acc: 0.7535
+Epoch 5/9, Train Loss: 0.3981, Val Loss: 0.5523, Val Acc: 0.7459
+Epoch 6/9, Train Loss: 0.3512, Val Loss: 0.5634, Val Acc: 0.7541
+Epoch 7/9, Train Loss: 0.3070, Val Loss: 0.6012, Val Acc: 0.7547
+Epoch 8/9, Train Loss: 0.2778, Val Loss: 0.6168, Val Acc: 0.7465
+Epoch 9/9, Train Loss: 0.2567, Val Loss: 0.6364, Val Acc: 0.7476
 ```
 
 </figure>
@@ -314,10 +340,25 @@ Epoch 9/9, Train Loss: 0.2876, Val Loss: 0.6868, Val Acc: 0.7165
 pretrain+finetune:
 
 ```
-temp
+Epoch 1/9, Train Loss: 0.6417, Val Loss: 0.6292, Val Acc: 0.6500
+Epoch 2/9, Train Loss: 0.5896, Val Loss: 0.5708, Val Acc: 0.7147
+Epoch 3/9, Train Loss: 0.5329, Val Loss: 0.5483, Val Acc: 0.7394
+Epoch 4/9, Train Loss: 0.4880, Val Loss: 0.5358, Val Acc: 0.7429
+Epoch 5/9, Train Loss: 0.4368, Val Loss: 0.5468, Val Acc: 0.7382
+Epoch 6/9, Train Loss: 0.4018, Val Loss: 0.5689, Val Acc: 0.7424
+Epoch 7/9, Train Loss: 0.3700, Val Loss: 0.5749, Val Acc: 0.7382
+Epoch 8/9, Train Loss: 0.3451, Val Loss: 0.5971, Val Acc: 0.7335
+Epoch 9/9, Train Loss: 0.3297, Val Loss: 0.6135, Val Acc: 0.7324
+
 ```
 
 </figure>
+
+$\Rightarrow$*Pretraining impact varies by architecture:*
+- Late fusion: +3.8% improvement (huge)
+- Mid fusion: +1.3%
+- Early fusion: +0.8%
+- Asymmetric: +1.5%
 
 
 

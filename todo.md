@@ -169,3 +169,17 @@
 	- [x] current workaround: probab in get_items is at 0
 	-             if random.random() < 0.0:       # TODO: remove
 - [x] mixed saving of intermediates: sometimes cls, sometimes full_seq
+- [x] fix pretraining, several things are wrong
+	- [x] compare ap contrastive with the contrastive in downstream
+	- [x] pretraining problem with contrastive learning
+	- [x] train loss is bigger then validation loss
+		```
+		2025-10-03 11:52:35 - INFO  - experiment_tracker.py:_run_pretrain:927 - Epoch 1/4,
+		train loss MLM: 6.6594,
+		test loss MLM: 4.7586,
+		train loss AP: 0.6794,
+		test loss AP: 0.6195,
+		accuracy AP: 0.6492
+		train loss MIM: 4.8037,
+		test loss MIM: 4.1261
+		```

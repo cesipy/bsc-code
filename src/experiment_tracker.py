@@ -221,7 +221,7 @@ class ExperimentTracker:
 
         tmsp = time.strftime("%Y%m%d-%H%M%S")
         # storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
-        storage_path = f"sqlite:///{self.save_dir}res/experiments/multi_task_optim.db"
+        storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
         study_name = f"multi_task_study_{tmsp}"
 
 
@@ -837,7 +837,7 @@ class ExperimentTracker:
         for val in tasks_vals:
             task_string += f"{val}"
         tmsp = time.strftime("%Y%m%d-%H%M%S")
-        filename = f"res/checkpoints/pretrained_{task_string}_{tmsp}.pt"
+        filename = f"res/checkpoints/{tmsp}_pretrained_{task_string}.pt"
 
         training_results = self._initialize_results_dict(epochs=config.epochs)
         train_loader_ap, val_loader_ap, \
@@ -850,7 +850,6 @@ class ExperimentTracker:
             prefetch=PREFETCH,
             persistent_workers=PERSISTENT_WORKERS,
             pin_memory=PIN_MEMORY,
-            use_contrastive_ap=config.use_contrastive_loss,
             batch_size=BATCH_SIZE_PRETRAIN,
         )
 
@@ -862,7 +861,7 @@ class ExperimentTracker:
         trainer = PretrainingTrainer(
             model=model,
             config=config,
-            use_contrastive_ap=config.use_contrastive_loss,
+            use_contrastive_loss=config.use_contrastive_loss,
             tasks=config.pretraining_tasks,
             gradient_accumulation=config.gradient_accumulation,
         )
@@ -1028,6 +1027,13 @@ class ExperimentTracker:
 
 
 
+    # def run_evaluation(self, pretrained_path, tasks=["hateful_memes", "mm_imdb"]):
+
+    #     model = ViLBERT.load_model(pretrained_path, device="cuda" if torch.cuda.is_available() else "cpu")
+
+    #     for task in tasks:
+    #         # evaluate on test sets
+
 
 
 
@@ -1041,10 +1047,10 @@ class ExperimentTracker:
 def main():
 
     tracker = ExperimentTracker()
-    # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
-    tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
-                                       #task="mm_imdb")
-                                       task="hateful_memes")
+    tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
+    # tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
+    #                                    #task="mm_imdb")
+    #                                    task="hateful_memes")
     # best_coattn = tracker.optimize_coattn_for_accuracy(depth=5, n_trials=30)
 
 

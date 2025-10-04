@@ -74,51 +74,23 @@ class PretrainDatasetAP(Dataset):
         data: typing.List[typing.Tuple[str, str]], # path, text/caption
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor,
-        preprocessing_prediction_alignment: bool,    # whether to generate the dataset at first, or at runtime
-        use_contrastive_ap_loss: bool=False
+        preprocessing_prediction_alignment: bool=False,    # whether to generate the dataset at first, or at runtime
+        is_train:bool=False
         ):
         self.transform = None
         self.tokenizer = tokenizer
         self.image_processor = image_processor
         self.invalid_image_counter = 0
 
-        self.preprocessing_prediction_alignment = preprocessing_prediction_alignment
-        self.use_contrastive_ap_loss = use_contrastive_ap_loss
         self.data = self.__generate_pretrain_dataset(data)
         #TODO
+        self.is_train = is_train
         # self.data = self.exclude_invald_photos(self.data)
 
         # memory overload, load per element
         # self.data = self.__preprocess_data(self.data)
 
-    def __preprocess_data(self, data:typing.List[typing.Tuple[Task, str, str, int]]):
-        # TODO: only temp!
-        data = data[:500]
-        data_tensor = []
-        for i, dp in enumerate(data):
-            if i % 500 == 0:
-                info_str = f"Processing {i}/{len(data)} images"
-                print(info_str)
-                self.logger.info(info_str)
-            task, text, img_path, label = dp
 
-            img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
-            text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
-
-            if img_embeddings is None or text_embeddings is None:
-                continue
-
-            label_tensor = torch.tensor(label, dtype=torch.long)
-
-            dict_entry = {
-                "task": task,
-                "img": img_embeddings,
-                "label": label_tensor,
-                "text": text_embeddings,
-            }
-            data_tensor.append(dict_entry)
-
-        return data_tensor
 
     def __generate_pretrain_dataset(
         self,
@@ -141,27 +113,7 @@ class PretrainDatasetAP(Dataset):
         data_list = data
         true_alignment = [(Task.ALIGNMENT_PREDICTION, dp[0], dp[1], 1)
                           for dp in data_list]
-
-        if self.preprocessing_prediction_alignment:
-
-            false_alignment = []
-            dataset_length = len(true_alignment)
-            for i in range(dataset_length):
-                random_idx = i
-                while random_idx == i:
-                    random_idx = random.randint(0, dataset_length - 1)
-
-                dp_path = data_list[i][0]
-                text = data_list[random_idx][1]
-                # shape: task, path, text, label
-                false_alignment.append((Task.ALIGNMENT_PREDICTION, dp_path, text, 0 ))
-
-            data_list = true_alignment + false_alignment
-            random.shuffle(data_list)
-
-            return data_list
-        else:
-            return true_alignment
+        return true_alignment
 
 
     def mask_tokens(self, token_ids, tokenizer: PreTrainedTokenizerFast, mask_prob=0.15):
@@ -219,23 +171,22 @@ class PretrainDatasetAP(Dataset):
 
         assert task == Task.ALIGNMENT_PREDICTION, "something is completely wrong in the data processing step"
 
-        if not self.preprocessing_prediction_alignment and not self.use_contrastive_ap_loss:
-            if random.random() < 0.5:       # TODO: create cc evaluation dataset
+        if random.random() < 0.5:       # TODO: create cc evaluation dataset
 
-                # swap out text with some other caption
-                random_idx = index
-                while random_idx == index:
-                    random_idx = random.randint(0, len(self.data) - 1)
+            # swap out text with some other caption
+            random_idx = index
+            while random_idx == index:
+                random_idx = random.randint(0, len(self.data) - 1)
 
-                text = self.data[random_idx][2]  # get text from random index
-                label = 0
-            else:
-                label = 1
+            text = self.data[random_idx][2]  # get text from random index
+            label = 0
+        else:
+            label = 1
 
         img_embeddings = dataset_utils.process_image(img=img_path, transform=None)
         text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
 
-        if random.random() <0.5:
+        if self.is_train and random.random() <0.5:
             transform = torchvision.transforms.Compose(
                 [
                 # transforms.RandomResizedCrop(224, scale=(0.6, 1.0)),
@@ -276,13 +227,14 @@ class PretrainDatasetMLM(Dataset):
         data: typing.List[typing.Tuple[str, str]], # path, text/caption
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor,
-
+        is_train:bool=False
         ):
         self.logger = Logger()
         self.transform = None
         self.tokenizer = tokenizer
         self.image_processor = image_processor
         self.invalid_image_counter = 0
+
 
 
         self.data = self.__generate_pretrain_dataset(data)
@@ -292,32 +244,6 @@ class PretrainDatasetMLM(Dataset):
         # memory overload, load per element
         # self.data = self.__preprocess_data(self.data)
 
-    def __preprocess_data(self, data:typing.List[typing.Tuple[Task, str, str, int]]):
-        # TODO: only temp!
-        data = data[:500]
-        data_tensor = []
-        for i, dp in enumerate(data):
-            if i % 500 == 0:
-                print(f"Processing {i}/{len(data)} images")
-            task, text, img_path, label = dp
-
-            img_embeddings = get_image_embedding(img_path, image_processor=self.image_processor)
-            text_embeddings = get_text_embedding(text, tokenizer=self.tokenizer)
-
-            if img_embeddings is None or text_embeddings is None:
-                continue
-
-            label_tensor = torch.tensor(label, dtype=torch.long)
-
-            dict_entry = {
-                "task": task,
-                "img": img_embeddings,
-                "label": label_tensor,
-                "text": text_embeddings,
-            }
-            data_tensor.append(dict_entry)
-
-        return data_tensor
 
     def __generate_pretrain_dataset(
         self,
@@ -497,13 +423,11 @@ class PretrainDatasetMIM(Dataset):
             weak_img = self.transforms_weak(original_img)
             img_embeddings["pixel_values"] = weak_img.unsqueeze(0)  # Add batch dim back
 
-
             strong_img = self.transforms_strong(original_img)
             masked_img, masked_patches_idxs = self.__mask_image(strong_img)
         else:
 
             masked_img, masked_patches_idxs = self.__mask_image(original_img)
-
 
         assert task == Task.MASKED_IM, "something is completely wrong in the data processing step"
 

@@ -84,11 +84,11 @@ def pretrain(tasks:Optional[Task]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Ta
         model=model,
         config=config,
         tasks=tasks,
-        use_contrastive_ap=USE_CONTRASTIVE_LOSS,
+        use_contrastive_loss=USE_CONTRASTIVE_LOSS,
         gradient_accumulation=GRADIENT_ACCUMULATION
 
     )
-    
+
     hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
         batch_size=BATCH_SIZE_ANALYSIS,
         num_workers=4,

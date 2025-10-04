@@ -21,7 +21,7 @@ NUM_HIDDEN_LAYERS = 12
 NUM_ATTENTION_HEADS = 12
 NUM_BI_ATTENTION_HEADS = 8
 COATTN_HIDDEN_SIZE = 1024
-DROPOUT_PROB        = 0.08
+DROPOUT_PROB        =  0.08
 VIT_MODEL_NAME = "vit_base_patch16_224"
 #default vals for them
 DEPTH = 12          # how many co-attn layers in transformer
@@ -182,3 +182,10 @@ class ViLBERTConfig:
             seed=config_dict.get("seed", SEED),
         )
         return config
+
+
+
+if __name__ == "__main__":
+    config = ViLBERTConfig()
+
+    print(len(config.__dict__))
