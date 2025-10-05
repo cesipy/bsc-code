@@ -166,8 +166,16 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] experiment_tracker:
 	- [ ] implement other tasks in run experiment
 
+- [ ] try running on mm_imdb with slightly bigger lr, more epochs, when does it plateau?
+    - [ ] report for hm; this is pretty known, as most of the current progress is for HM.
+    - [ ] report for upmcfood
+
+- [ ] run visualization and alignment for trained model.
+    - needs to restore model with highest acc/ lowest loss
+
 - [ ] include test set for:
 	- [ ] upmc food
 	- [ ] mm imdb
 	- [ ] hateful memes	- problem here, there are no labels
 
+- [ ] larger k in mknn

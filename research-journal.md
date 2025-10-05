@@ -1,6 +1,394 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+## 05.10 comparison with contrastive loss:
+
+
+
+### contrastive loss: alignment metrics
+the best performing epoch (loss) was chosen here.
+
+**comparison all metrics**:
+<figure>
+TODO: for one metric, all 4 different configs in one plot => better comparison
+<img src="./res/markdown_res/early_fusion_all_metrics0510.png">
+
+<img src="./res/markdown_res/mid_fusion_all_metrics0510.png">
+</figure>
+
+
+<figure>
+comparison of mknn alone: <br>
+<img src="./res/markdown_res/mknn_simple0510.png">
+
+<br>
+<img src="./res/markdown_res/fusion_comparison_finetune0510.png">
+</figure>
+
+
+**early fusion**:
+<figure>
+finetune only:
+
+```
+Epoch 5/9, Train Loss: 0.5056, Val Loss: 0.5574, Val Acc: 0.7259
+layer0  (co-attn- 0): cosine=-0.0235, CKA=0.234, SVCCA=0.000, mknn=0.019, rank=0.035, procrustes=129.51
+layer1  (co-attn- 0): cosine=-0.0205, CKA=0.203, SVCCA=0.000, mknn=0.026, rank=0.041, procrustes=153.52
+layer2  (co-attn- 1): cosine=-0.0256, CKA=0.180, SVCCA=0.000, mknn=0.246, rank=0.261, procrustes=243.90
+layer3  (co-attn- 1): cosine= 0.0113, CKA=0.151, SVCCA=0.000, mknn=0.402, rank=0.331, procrustes=299.74
+layer4  (co-attn- 1): cosine= 0.0218, CKA=0.108, SVCCA=0.000, mknn=0.478, rank=0.510, procrustes=388.62
+layer5  (co-attn- 0): cosine= 0.0213, CKA=0.097, SVCCA=0.000, mknn=0.388, rank=0.368, procrustes=406.17
+layer6  (co-attn- 0): cosine=-0.0003, CKA=0.076, SVCCA=0.000, mknn=0.311, rank=0.305, procrustes=432.57
+layer7  (co-attn- 0): cosine=-0.0188, CKA=0.045, SVCCA=0.000, mknn=0.195, rank=0.211, procrustes=512.33
+layer8  (co-attn- 0): cosine= 0.0029, CKA=0.041, SVCCA=0.000, mknn=0.089, rank=0.127, procrustes=715.27
+layer9  (co-attn- 0): cosine=-0.0204, CKA=0.044, SVCCA=0.000, mknn=0.042, rank=0.068, procrustes=997.47
+layer10 (co-attn- 0): cosine=-0.0057, CKA=0.042, SVCCA=0.000, mknn=0.040, rank=0.064, procrustes=1353.76
+layer11 (co-attn- 0): cosine= 0.0023, CKA=0.043, SVCCA=0.000, mknn=0.044, rank=0.074, procrustes=1925.59
+```
+
+contrastive pretrain + non-contrastive finetune:
+
+```
+Epoch 4/9, Train Loss: 0.5157, Val Loss: 0.5414, Val Acc: 0.7418
+layer0  (co-attn- 0): cosine=-0.0104, CKA=0.254, SVCCA=0.000, mknn=0.023, rank=0.031, procrustes=107.97
+layer1  (co-attn- 0): cosine= 0.0051, CKA=0.230, SVCCA=0.000, mknn=0.029, rank=0.033, procrustes=127.30
+layer2  (co-attn- 1): cosine=-0.0021, CKA=0.193, SVCCA=0.000, mknn=0.086, rank=0.097, procrustes=368.72
+layer3  (co-attn- 1): cosine=-0.0073, CKA=0.128, SVCCA=0.000, mknn=0.113, rank=0.159, procrustes=479.01
+layer4  (co-attn- 1): cosine=-0.0052, CKA=0.091, SVCCA=0.000, mknn=0.106, rank=0.139, procrustes=530.17
+layer5  (co-attn- 0): cosine=-0.0232, CKA=0.074, SVCCA=0.000, mknn=0.125, rank=0.152, procrustes=553.71
+layer6  (co-attn- 0): cosine=-0.0077, CKA=0.064, SVCCA=0.000, mknn=0.169, rank=0.185, procrustes=543.59
+layer7  (co-attn- 0): cosine= 0.0204, CKA=0.055, SVCCA=0.000, mknn=0.222, rank=0.242, procrustes=524.69
+layer8  (co-attn- 0): cosine= 0.0713, CKA=0.059, SVCCA=0.000, mknn=0.262, rank=0.254, procrustes=1001.63
+layer9  (co-attn- 0): cosine= 0.1759, CKA=0.052, SVCCA=0.000, mknn=0.255, rank=0.253, procrustes=2411.57
+layer10 (co-attn- 0): cosine= 0.2277, CKA=0.054, SVCCA=0.000, mknn=0.272, rank=0.275, procrustes=2613.87
+layer11 (co-attn- 0): cosine= 0.3667, CKA=0.048, SVCCA=0.000, mknn=0.296, rank=0.273, procrustes=2816.96
+```
+</figure>
+
+**mid-fusion**:
+
+<figure>
+finetune only:
+
+```
+Epoch 5/9, Train Loss: 0.4628, Val Loss: 0.5496, Val Acc: 0.7241
+layer0  (co-attn- 0): cosine=-0.0240, CKA=0.230, SVCCA=0.000, mknn=0.018, rank=0.030, procrustes=126.81
+layer1  (co-attn- 0): cosine=-0.0169, CKA=0.213, SVCCA=0.000, mknn=0.028, rank=0.040, procrustes=143.13
+layer2  (co-attn- 0): cosine=-0.0289, CKA=0.192, SVCCA=0.000, mknn=0.030, rank=0.040, procrustes=157.24
+layer3  (co-attn- 0): cosine=-0.0221, CKA=0.173, SVCCA=0.000, mknn=0.036, rank=0.040, procrustes=269.30
+layer4  (co-attn- 0): cosine=-0.0191, CKA=0.129, SVCCA=0.000, mknn=0.040, rank=0.041, procrustes=346.34
+layer5  (co-attn- 1): cosine=-0.0116, CKA=0.108, SVCCA=0.000, mknn=0.348, rank=0.334, procrustes=513.05
+layer6  (co-attn- 1): cosine= 0.0023, CKA=0.088, SVCCA=0.000, mknn=0.291, rank=0.247, procrustes=681.48
+layer7  (co-attn- 1): cosine=-0.0036, CKA=0.100, SVCCA=0.000, mknn=0.316, rank=0.260, procrustes=678.74
+layer8  (co-attn- 0): cosine=-0.0107, CKA=0.099, SVCCA=0.000, mknn=0.231, rank=0.206, procrustes=802.18
+layer9  (co-attn- 0): cosine= 0.0038, CKA=0.096, SVCCA=0.000, mknn=0.171, rank=0.168, procrustes=1023.46
+layer10 (co-attn- 0): cosine=-0.0208, CKA=0.092, SVCCA=0.000, mknn=0.137, rank=0.140, procrustes=1359.32
+layer11 (co-attn- 0): cosine=-0.0065, CKA=0.098, SVCCA=0.000, mknn=0.139, rank=0.137, procrustes=1977.33
+
+```
+
+contrastive pretrain + non-contrastive finetune:
+
+```
+Epoch 4/9, Train Loss: 0.4884, Val Loss: 0.5345, Val Acc: 0.7482
+layer0  (co-attn- 0): cosine=-0.0150, CKA=0.261, SVCCA=0.000, mknn=0.024, rank=0.034, procrustes=102.52
+layer1  (co-attn- 0): cosine=-0.0051, CKA=0.236, SVCCA=0.000, mknn=0.030, rank=0.038, procrustes=129.53
+layer2  (co-attn- 0): cosine=-0.0061, CKA=0.180, SVCCA=0.000, mknn=0.036, rank=0.047, procrustes=141.25
+layer3  (co-attn- 0): cosine=-0.0039, CKA=0.100, SVCCA=0.000, mknn=0.039, rank=0.042, procrustes=205.60
+layer4  (co-attn- 0): cosine=-0.0061, CKA=0.021, SVCCA=0.000, mknn=0.039, rank=0.046, procrustes=289.49
+layer5  (co-attn- 1): cosine= 0.0003, CKA=0.047, SVCCA=0.000, mknn=0.414, rank=0.379, procrustes=430.11
+layer6  (co-attn- 1): cosine= 0.0267, CKA=0.045, SVCCA=0.000, mknn=0.371, rank=0.321, procrustes=657.18
+layer7  (co-attn- 1): cosine= 0.0562, CKA=0.050, SVCCA=0.000, mknn=0.391, rank=0.368, procrustes=613.38
+layer8  (co-attn- 0): cosine= 0.0949, CKA=0.043, SVCCA=0.000, mknn=0.419, rank=0.403, procrustes=872.27
+layer9  (co-attn- 0): cosine= 0.2230, CKA=0.038, SVCCA=0.000, mknn=0.427, rank=0.421, procrustes=2859.72
+layer10 (co-attn- 0): cosine= 0.3183, CKA=0.043, SVCCA=0.000, mknn=0.446, rank=0.431, procrustes=3312.24
+layer11 (co-attn- 0): cosine= 0.5112, CKA=0.041, SVCCA=0.000, mknn=0.457, rank=0.385, procrustes=3785.06
+```
+</figure>
+
+**late-fusion**:
+
+<figure>
+finetune only:
+
+```
+
+```
+
+contrastive pretrain + non-contrastive finetune:
+
+```
+
+```
+</figure>
+
+**asymmetric_fusion fusion**:
+<figure>
+finetune only:
+
+```
+
+```
+
+contrastive pretrain + non-contrastive finetune:
+
+```
+
+```
+</figure>
+
+
+
+
+
+
+### Direct comparison: contrastive vs non-contrastive
+both are pretrained+finetune
+<figure>
+
+**early fusion**:
+
+non-contrastive:
+
+```
+Epoch 1/9, Train Loss: 0.6387, Val Loss: 0.6144, Val Acc: 0.6647
+Epoch 2/9, Train Loss: 0.5947, Val Loss: 0.5833, Val Acc: 0.7018
+Epoch 3/9, Train Loss: 0.5440, Val Loss: 0.5458, Val Acc: 0.7318
+Epoch 4/9, Train Loss: 0.5056, Val Loss: 0.5456, Val Acc: 0.7441
+Epoch 5/9, Train Loss: 0.4614, Val Loss: 0.5546, Val Acc: 0.7265
+Epoch 6/9, Train Loss: 0.4292, Val Loss: 0.5636, Val Acc: 0.7235
+Epoch 7/9, Train Loss: 0.3917, Val Loss: 0.5910, Val Acc: 0.7235
+Epoch 8/9, Train Loss: 0.3775, Val Loss: 0.6165, Val Acc: 0.7071
+Epoch 9/9, Train Loss: 0.3581, Val Loss: 0.6256, Val Acc: 0.7065
+```
+
+<br>
+contrastive:
+
+```
+Epoch 1/9, Train Loss: 0.6540, Val Loss: 0.6384, Val Acc: 0.6418
+Epoch 2/9, Train Loss: 0.6033, Val Loss: 0.5823, Val Acc: 0.7035
+Epoch 3/9, Train Loss: 0.5486, Val Loss: 0.5498, Val Acc: 0.7459
+Epoch 4/9, Train Loss: 0.5157, Val Loss: 0.5414, Val Acc: 0.7418
+Epoch 5/9, Train Loss: 0.4743, Val Loss: 0.5503, Val Acc: 0.7318
+Epoch 6/9, Train Loss: 0.4492, Val Loss: 0.5474, Val Acc: 0.7300
+Epoch 7/9, Train Loss: 0.4193, Val Loss: 0.5652, Val Acc: 0.7253
+Epoch 8/9, Train Loss: 0.3939, Val Loss: 0.5728, Val Acc: 0.7247
+Epoch 9/9, Train Loss: 0.3777, Val Loss: 0.5939, Val Acc: 0.7212
+```
+</figure>
+
+
+<figure>
+
+**mid-fusion**:
+
+non-contrastive:
+```
+Epoch 1/9, Train Loss: 0.6381, Val Loss: 0.6272, Val Acc: 0.6559
+Epoch 2/9, Train Loss: 0.5806, Val Loss: 0.5645, Val Acc: 0.7159
+Epoch 3/9, Train Loss: 0.5195, Val Loss: 0.5283, Val Acc: 0.7447
+Epoch 4/9, Train Loss: 0.4702, Val Loss: 0.5368, Val Acc: 0.7435
+Epoch 5/9, Train Loss: 0.4224, Val Loss: 0.5454, Val Acc: 0.7388
+Epoch 6/9, Train Loss: 0.3892, Val Loss: 0.5509, Val Acc: 0.7347
+Epoch 7/9, Train Loss: 0.3490, Val Loss: 0.5728, Val Acc: 0.7435
+Epoch 8/9, Train Loss: 0.3255, Val Loss: 0.5849, Val Acc: 0.7324
+Epoch 9/9, Train Loss: 0.3080, Val Loss: 0.6075, Val Acc: 0.7347
+```
+<br>
+contrastive:
+
+```
+Epoch 1/9, Train Loss: 0.6628, Val Loss: 0.6153, Val Acc: 0.6688
+Epoch 2/9, Train Loss: 0.5876, Val Loss: 0.5713, Val Acc: 0.7082
+Epoch 3/9, Train Loss: 0.5316, Val Loss: 0.5433, Val Acc: 0.7353
+Epoch 4/9, Train Loss: 0.4884, Val Loss: 0.5345, Val Acc: 0.7482
+Epoch 5/9, Train Loss: 0.4405, Val Loss: 0.5364, Val Acc: 0.7588
+Epoch 6/9, Train Loss: 0.4046, Val Loss: 0.5407, Val Acc: 0.7400
+Epoch 7/9, Train Loss: 0.3710, Val Loss: 0.5522, Val Acc: 0.7488
+Epoch 8/9, Train Loss: 0.3413, Val Loss: 0.5577, Val Acc: 0.7400
+Epoch 9/9, Train Loss: 0.3285, Val Loss: 0.5795, Val Acc: 0.7412
+```
+
+</figure>
+
+
+**waiting still for data below!**
+
+<figure>
+
+**late fusion**:
+
+non-contrastive:
+
+```
+Epoch 1/9, Train Loss: 0.6470, Val Loss: 0.6426, Val Acc: 0.6371
+Epoch 2/9, Train Loss: 0.5864, Val Loss: 0.5747, Val Acc: 0.7012
+Epoch 3/9, Train Loss: 0.5149, Val Loss: 0.5340, Val Acc: 0.7435
+Epoch 4/9, Train Loss: 0.4523, Val Loss: 0.5290, Val Acc: 0.7535
+Epoch 5/9, Train Loss: 0.3981, Val Loss: 0.5523, Val Acc: 0.7459
+Epoch 6/9, Train Loss: 0.3512, Val Loss: 0.5634, Val Acc: 0.7541
+Epoch 7/9, Train Loss: 0.3070, Val Loss: 0.6012, Val Acc: 0.7547
+Epoch 8/9, Train Loss: 0.2778, Val Loss: 0.6168, Val Acc: 0.7465
+Epoch 9/9, Train Loss: 0.2567, Val Loss: 0.6364, Val Acc: 0.7476
+```
+
+<br>
+
+contrastive:
+
+```
+temp
+```
+
+</figure>
+
+<figure>
+
+**asymmetric_fusion**:
+
+non-contrastive:
+
+```
+Epoch 1/9, Train Loss: 0.6417, Val Loss: 0.6292, Val Acc: 0.6500
+Epoch 2/9, Train Loss: 0.5896, Val Loss: 0.5708, Val Acc: 0.7147
+Epoch 3/9, Train Loss: 0.5329, Val Loss: 0.5483, Val Acc: 0.7394
+Epoch 4/9, Train Loss: 0.4880, Val Loss: 0.5358, Val Acc: 0.7429
+Epoch 5/9, Train Loss: 0.4368, Val Loss: 0.5468, Val Acc: 0.7382
+Epoch 6/9, Train Loss: 0.4018, Val Loss: 0.5689, Val Acc: 0.7424
+Epoch 7/9, Train Loss: 0.3700, Val Loss: 0.5749, Val Acc: 0.7382
+Epoch 8/9, Train Loss: 0.3451, Val Loss: 0.5971, Val Acc: 0.7335
+Epoch 9/9, Train Loss: 0.3297, Val Loss: 0.6135, Val Acc: 0.7324
+```
+<br>
+
+contrastive:
+
+```
+temp
+
+```
+
+</figure>
+
+
+
+
+### Comparison of contrastive
+finetune only (no contrastive) vs. pretrain+finetune (with contrastive)
+<figure>
+
+**early fusion**:
+
+finetune only:
+
+```
+Epoch 1/9, Train Loss: 0.6611, Val Loss: 0.6398, Val Acc: 0.6329
+Epoch 2/9, Train Loss: 0.6132, Val Loss: 0.6032, Val Acc: 0.6882
+Epoch 3/9, Train Loss: 0.5744, Val Loss: 0.6052, Val Acc: 0.6900
+Epoch 4/9, Train Loss: 0.5426, Val Loss: 0.5747, Val Acc: 0.7176
+Epoch 5/9, Train Loss: 0.5056, Val Loss: 0.5574, Val Acc: 0.7259
+Epoch 6/9, Train Loss: 0.4831, Val Loss: 0.5579, Val Acc: 0.7276
+Epoch 7/9, Train Loss: 0.4610, Val Loss: 0.5761, Val Acc: 0.7259
+Epoch 8/9, Train Loss: 0.4430, Val Loss: 0.5616, Val Acc: 0.7206
+Epoch 9/9, Train Loss: 0.4317, Val Loss: 0.5724, Val Acc: 0.7276
+```
+
+<br>
+pretrain+finetune:
+
+```
+Epoch 1/9, Train Loss: 0.6540, Val Loss: 0.6384, Val Acc: 0.6418
+Epoch 2/9, Train Loss: 0.6033, Val Loss: 0.5823, Val Acc: 0.7035
+Epoch 3/9, Train Loss: 0.5486, Val Loss: 0.5498, Val Acc: 0.7459
+Epoch 4/9, Train Loss: 0.5157, Val Loss: 0.5414, Val Acc: 0.7418
+Epoch 5/9, Train Loss: 0.4743, Val Loss: 0.5503, Val Acc: 0.7318
+Epoch 6/9, Train Loss: 0.4492, Val Loss: 0.5474, Val Acc: 0.7300
+Epoch 7/9, Train Loss: 0.4193, Val Loss: 0.5652, Val Acc: 0.7253
+Epoch 8/9, Train Loss: 0.3939, Val Loss: 0.5728, Val Acc: 0.7247
+Epoch 9/9, Train Loss: 0.3777, Val Loss: 0.5939, Val Acc: 0.7212
+```
+</figure>
+
+
+<figure>
+
+**mid-fusion**:
+
+finetune only:
+```
+Epoch 1/9, Train Loss: 0.6658, Val Loss: 0.6512, Val Acc: 0.6312
+Epoch 2/9, Train Loss: 0.6160, Val Loss: 0.5974, Val Acc: 0.6912
+Epoch 3/9, Train Loss: 0.5563, Val Loss: 0.5798, Val Acc: 0.7135
+Epoch 4/9, Train Loss: 0.5086, Val Loss: 0.5506, Val Acc: 0.7388
+Epoch 5/9, Train Loss: 0.4628, Val Loss: 0.5496, Val Acc: 0.7241
+Epoch 6/9, Train Loss: 0.4281, Val Loss: 0.5578, Val Acc: 0.7247
+Epoch 7/9, Train Loss: 0.4020, Val Loss: 0.5890, Val Acc: 0.7265
+Epoch 8/9, Train Loss: 0.3681, Val Loss: 0.5752, Val Acc: 0.7159
+Epoch 9/9, Train Loss: 0.3558, Val Loss: 0.5942, Val Acc: 0.7206
+```
+<br>
+pretrain+finetune:
+
+```
+Epoch 1/9, Train Loss: 0.6628, Val Loss: 0.6153, Val Acc: 0.6688
+Epoch 2/9, Train Loss: 0.5876, Val Loss: 0.5713, Val Acc: 0.7082
+Epoch 3/9, Train Loss: 0.5316, Val Loss: 0.5433, Val Acc: 0.7353
+Epoch 4/9, Train Loss: 0.4884, Val Loss: 0.5345, Val Acc: 0.7482
+Epoch 5/9, Train Loss: 0.4405, Val Loss: 0.5364, Val Acc: 0.7588
+Epoch 6/9, Train Loss: 0.4046, Val Loss: 0.5407, Val Acc: 0.7400
+Epoch 7/9, Train Loss: 0.3710, Val Loss: 0.5522, Val Acc: 0.7488
+Epoch 8/9, Train Loss: 0.3413, Val Loss: 0.5577, Val Acc: 0.7400
+Epoch 9/9, Train Loss: 0.3285, Val Loss: 0.5795, Val Acc: 0.7412
+```
+
+</figure>
+
+
+**waiting still for data below!**
+
+<figure>
+
+**late fusion**:
+
+finetune only:
+
+```
+temp
+```
+
+<br>
+
+pretrain+finetune:
+
+```
+temp
+```
+
+</figure>
+
+<figure>
+
+**asymmetric_fusion**:
+
+finetune only:
+
+```
+temp
+```
+<br>
+
+pretrain+finetune:
+
+```
+temp
+
+```
+
+</figure>
+
+
+
 ## 04.10
 
 ### long pretrain (600k samples - 7 epochs)
@@ -44,17 +432,8 @@ for each configuration the visualizations of the best validation accuracy are sh
 
 finetune only:
 
-```
-Epoch 1/9, Train Loss: 0.6614, Val Loss: 0.6427, Val Acc: 0.6318
-Epoch 2/9, Train Loss: 0.6114, Val Loss: 0.5991, Val Acc: 0.6859
-Epoch 3/9, Train Loss: 0.5621, Val Loss: 0.5745, Val Acc: 0.7112
-Epoch 4/9, Train Loss: 0.5244, Val Loss: 0.5609, Val Acc: 0.7318
-Epoch 5/9, Train Loss: 0.4817, Val Loss: 0.5553, Val Acc: 0.7359
-Epoch 6/9, Train Loss: 0.4717, Val Loss: 0.5617, Val Acc: 0.7135
-Epoch 7/9, Train Loss: 0.4531, Val Loss: 0.5607, Val Acc: 0.7306
-Epoch 8/9, Train Loss: 0.4216, Val Loss: 0.5618, Val Acc: 0.7347
-Epoch 9/9, Train Loss: 0.4030, Val Loss: 0.5745, Val Acc: 0.7324
-```
+<img src="./res/markdown_res/20251004-173540_experiment_coattn_2-3-4/hateful_memes/20251004-173540_e5_mutual_knn_matrices.png">
+
 
 <br>
 pretrain+finetune:
@@ -69,7 +448,7 @@ pretrain+finetune:
 **mid-fusion**:
 
 finetune only:
-```
+<!-- ```
 Epoch 1/9, Train Loss: 0.6654, Val Loss: 0.6309, Val Acc: 0.6465
 Epoch 2/9, Train Loss: 0.6023, Val Loss: 0.5760, Val Acc: 0.7165
 Epoch 3/9, Train Loss: 0.5367, Val Loss: 0.5566, Val Acc: 0.7312
@@ -79,7 +458,9 @@ Epoch 6/9, Train Loss: 0.3993, Val Loss: 0.5765, Val Acc: 0.7106
 Epoch 7/9, Train Loss: 0.3716, Val Loss: 0.5760, Val Acc: 0.7212
 Epoch 8/9, Train Loss: 0.3407, Val Loss: 0.6163, Val Acc: 0.7188
 Epoch 9/9, Train Loss: 0.3179, Val Loss: 0.6525, Val Acc: 0.7224
-```
+``` -->
+
+<img src="./res/markdown_res/20251004-185017_experiment_coattn_5-6-7/hateful_memes/20251004-185017_e5_mutual_knn_matrices.png">
 <br>
 pretrain+finetune:
 <img src="./res/markdown_res/20251003-091732_experiment_coattn_5-6-7/hateful_memes/20251003-091732_e3_mutual_knn_matrices.png">
@@ -92,7 +473,7 @@ pretrain+finetune:
 **late fusion**:
 
 finetune only:
-
+<!--
 ```
 Epoch 1/9, Train Loss: 0.6492, Val Loss: 0.6186, Val Acc: 0.6647
 Epoch 2/9, Train Loss: 0.5813, Val Loss: 0.6058, Val Acc: 0.6665
@@ -103,8 +484,8 @@ Epoch 6/9, Train Loss: 0.3439, Val Loss: 0.6235, Val Acc: 0.7118
 Epoch 7/9, Train Loss: 0.2888, Val Loss: 0.6880, Val Acc: 0.7165
 Epoch 8/9, Train Loss: 0.2510, Val Loss: 0.7209, Val Acc: 0.6971
 Epoch 9/9, Train Loss: 0.2274, Val Loss: 0.8106, Val Acc: 0.7171
-```
-
+``` -->
+<img src="./res/markdown_res/20251004-200457_experiment_coattn_9-10-11/hateful_memes/20251004-200457_e7_mutual_knn_matrices.png">
 <br>
 
 pretrain+finetune:
@@ -119,7 +500,7 @@ pretrain+finetune:
 
 finetune only:
 
-```
+<!-- ```
 Epoch 1/9, Train Loss: 0.6534, Val Loss: 0.6224, Val Acc: 0.6565
 Epoch 2/9, Train Loss: 0.5891, Val Loss: 0.5786, Val Acc: 0.7059
 Epoch 3/9, Train Loss: 0.5282, Val Loss: 0.5505, Val Acc: 0.7276
@@ -129,8 +510,10 @@ Epoch 6/9, Train Loss: 0.3793, Val Loss: 0.5924, Val Acc: 0.7000
 Epoch 7/9, Train Loss: 0.3554, Val Loss: 0.6132, Val Acc: 0.7165
 Epoch 8/9, Train Loss: 0.3166, Val Loss: 0.6373, Val Acc: 0.7141
 Epoch 9/9, Train Loss: 0.2876, Val Loss: 0.6868, Val Acc: 0.7165
-```
+``` -->
+<img src="./res/markdown_res/20251004-211937_experiment_coattn_3-5-7-9/hateful_memes/20251004-211937_e3_mutual_knn_matrices.png">
 <br>
+
 
 pretrain+finetune:
 
@@ -496,7 +879,8 @@ two main experiments for my thesis:
     - what are the correlations? maybe with matrix (pearson correlation m.)
 
 
-4) are representational alignment measures directly after coattention always higher/better in terms of alignment
+4) are representational alignment measures directly after coattention always higher/bett
+er in terms of alignment
 
 
 
@@ -553,7 +937,7 @@ finetuned vs untrained: <br>
 
 
 
-<!-- ## 23.09 -->
+## 23.09
 today I implemented grad-cam to follow gradients of activations on multimidal input. Here I compared the attention maps of a finetuned model vs. an untrained model.
 
 results are pretty good for some inputs, for other not so. Note that coattention-config is `vi_biattention_ids = [4,8]`, `t_biattention_ids = [10,11]`.
@@ -588,6 +972,11 @@ hm hyperparam optim on lr and fusion strat in `res/experiments/multi_task_optim_
 
 ## 22.09
 finished run for hyperparam optim for hm and mm-imdb in `res/experiments/multi_task_optim_20250918-134352.db`.
+
+
+
+### Archive
+the entries below are with quite different architectures. By now (4.10.25) the code base changed quite a lot.
 
 ## 15.09
 **interesting observation**:
