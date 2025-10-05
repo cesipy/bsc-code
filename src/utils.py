@@ -7,6 +7,7 @@ import torch; from torch import nn
 import gc; import time
 from functools import wraps
 import matplotlib.pyplot as plt
+import albumentations as A
 
 from PIL import Image
 
@@ -85,10 +86,11 @@ def get_seeded_generator(seed:int):
 
 def worker_init_fn(worker_id):
     #https://docs.pytorch.org/docs/stable/notes/randomness.html#dataloader
-    worker_seed = torch.initial_seed() % 2**32
+    worker_seed = (torch.initial_seed() + worker_id) % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
+    A.core.serialization.SERIALIZABLE_REGISTRY['random'] = random.Random(worker_seed)
 
 
 

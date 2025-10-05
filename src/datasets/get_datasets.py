@@ -37,8 +37,8 @@ def get_alignment_dataloaders(
     num_workers: int,
     pin_memory: bool,
     prefetch_factor: int,
+    seed: int,
     num_samples:int = 1000,
-    seed: int = SEED,
     )-> typing.Tuple[DataLoader, DataLoader, DataLoader]:
     """
     returns tuple of dataloader in the following order:
@@ -95,7 +95,7 @@ def get_alignment_dataloaders(
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     dataloader_cc = DataLoader(
@@ -106,7 +106,7 @@ def get_alignment_dataloaders(
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
     dataloader_imdb = DataLoader(
         dataset=dataset_imdb,
@@ -116,7 +116,7 @@ def get_alignment_dataloaders(
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
 
@@ -132,6 +132,7 @@ def get_dataloaders_pretrain(
     num_workers,
     prefetch,
     persistent_workers,
+    seed:int,
     pin_memory=True,
     ):
     """
@@ -199,7 +200,7 @@ def get_dataloaders_pretrain(
         persistent_workers=persistent_workers,
         prefetch_factor=prefetch,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     val_loader_mim = DataLoader(
@@ -211,7 +212,7 @@ def get_dataloaders_pretrain(
         persistent_workers=persistent_workers,
         prefetch_factor=prefetch,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     train_loader_ap = DataLoader(
@@ -223,7 +224,7 @@ def get_dataloaders_pretrain(
         persistent_workers=persistent_workers,
         prefetch_factor=prefetch,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     val_loader_ap = DataLoader(
@@ -235,7 +236,7 @@ def get_dataloaders_pretrain(
         persistent_workers=persistent_workers,
         prefetch_factor=prefetch,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     train_loader_mlm = DataLoader(
@@ -247,7 +248,7 @@ def get_dataloaders_pretrain(
         persistent_workers=persistent_workers,
         prefetch_factor=prefetch,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     val_loader_mlm = DataLoader(
@@ -259,7 +260,7 @@ def get_dataloaders_pretrain(
         persistent_workers=persistent_workers,
         prefetch_factor=prefetch,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     return (
@@ -274,12 +275,12 @@ def get_dataloaders_pretrain(
 def get_mmimdb_datasets(
     train_test_ratio: float,
     batch_size: int,
+    seed: int,
     num_workers: int=0,
     pin_memory: bool = False,
     prefetch_factor: int = None,
     persistent_workers: bool = False,
     use_train_augmentation:bool=True,
-    seed: int = SEED,
 ) -> typing.Tuple[DataLoader, DataLoader]:
     """
     get the mmimdb dataset. per default enables data augmentation on testset
@@ -333,7 +334,7 @@ def get_mmimdb_datasets(
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     val_dataloader = DataLoader(
@@ -345,7 +346,7 @@ def get_mmimdb_datasets(
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     return train_dataloader, val_dataloader
@@ -420,7 +421,7 @@ def get_hateful_memes_datasets(
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     val_dataloader = DataLoader(
@@ -432,7 +433,7 @@ def get_hateful_memes_datasets(
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     return train_dataloader, val_dataloader
@@ -441,6 +442,7 @@ def get_hateful_memes_datasets(
 def get_easyvqa_datasets(
     batch_size: int,
     num_workers: int,
+    seed:int,
     pin_memory: bool = False,
     prefetch_factor: int = 4,
     persistent_workers: bool = True,
@@ -482,7 +484,7 @@ def get_easyvqa_datasets(
         prefetch_factor=prefetch_factor,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     val_dataloader = DataLoader(
@@ -494,7 +496,7 @@ def get_easyvqa_datasets(
         prefetch_factor=prefetch_factor,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     return train_dataloader, val_dataloader
@@ -503,6 +505,7 @@ def get_upmc_datasets(
     train_test_ratio: float,
     batch_size: int,
     num_workers: int,
+    seed:int,
     pin_memory: bool = False,
     prefetch_factor: int = 4,
     persistent_workers: bool = False,
@@ -570,7 +573,7 @@ def get_upmc_datasets(
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     val_dataloader = DataLoader(
@@ -582,7 +585,7 @@ def get_upmc_datasets(
         pin_memory=pin_memory,
         persistent_workers=persistent_workers,
         worker_init_fn=utils.worker_init_fn,
-        generator=utils.get_seeded_generator(SEED),
+        generator=utils.get_seeded_generator(seed),
     )
 
     return  train_dataloader, val_dataloader

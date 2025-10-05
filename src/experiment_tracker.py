@@ -419,7 +419,6 @@ class ExperimentTracker:
 
         train_loader, val_loader = datasets.get_hateful_memes_datasets(
             train_test_ratio=TRAIN_TEST_RATIO,
-            # train_test_ratio=0.1,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -475,6 +474,13 @@ class ExperimentTracker:
                 filename_extension = f"{tmsp}_e{i+1}"
                 analysis.run_alignment_visualization(dataloader=hm_dataloader, model=model,
                     dir_name=dir_name, filename_extension=filename_extension)
+        if tmsp:
+            save_path = f"res/checkpoints/{tmsp}_finetuned_hateful_memes.pt"
+            trainer.model.save_model(save_path)
+            info_str = f"Saved finetuned model to {save_path}"
+            logger.info(info_str)
+            print(info_str)
+
         return training_results
 
     def run_single_experiment_mm_imdb(
@@ -565,6 +571,12 @@ class ExperimentTracker:
                 analysis.run_alignment_visualization(dataloader=imdb_dataloader, model=model,
                                                      dir_name=dir_name, filename_extension=filename_extension)
 
+        if tmsp:
+            save_path = f"res/checkpoints/{tmsp}_finetuned_mm_imdb.pt"
+            trainer.model.save_model(save_path)
+            info_str = f"Saved finetuned model to {save_path}"
+            logger.info(info_str)
+            print(info_str)
         return training_results
 
     def _get_filename(self, config: ExperimentConfig):
@@ -653,6 +665,7 @@ class ExperimentTracker:
         # TODO: also include use_contrastive as param to optimize
 
         print(f"seed = {experiment_config.seed}")
+        logger.info(f"seed = {experiment_config.seed}")
         utils.set_seeds(experiment_config.seed)
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
 
@@ -804,7 +817,6 @@ class ExperimentTracker:
 
 
     def save_results(self, training_results: dict, config: ExperimentConfig, filename:str):
-
         training_results["config"] = {
             "t_biattention_ids": config.t_biattention_ids,
             "v_biattention_ids": config.v_biattention_ids,
