@@ -37,7 +37,6 @@ def get_alignment_dataloaders(
     num_workers: int,
     pin_memory: bool,
     prefetch_factor: int,
-    seed: int,
     num_samples:int = 1000,
     )-> typing.Tuple[DataLoader, DataLoader, DataLoader]:
     """
