@@ -1,10 +1,14 @@
 import time
 
 import torch; from torch import nn; from torch.utils.data import DataLoader
+import torch.nn.functional as F
 from ckatorch.core import cka_batch, cka_base
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+#the platonic hypothesis metrics
+import metrics; import metrics_llmrepsim
 
 from tqdm import tqdm
 
@@ -484,7 +488,245 @@ def run_alignment_visualization(
         _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=KNN_K,
             dir_name=dir_name, filename_extension=filename_extension)
 
+
+
+
+
+
+
+
+
+def get_alignment_data(dataloader: DataLoader, model:ViLBERT):
+    model.eval()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+
+        layers = {}
+
+
+
+    for i in range(model.depth):
+        layers[i] = {
+            "text_embeddings": [],
+            "vision_embeddings": [],
+            "is_cross_attention": True,#i in model.cross_attention_layers,
+            "layer": i
+        }
+
+
+
+
+    for i, batch in enumerate(dataloader):
+        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+        label = batch["label"].to(device)
+
+        with torch.no_grad():
+            text_embedding, image_embedding, intermediate_representations =model.forward(
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+                save_intermediate_representations=True
+            )
+
+            tmp_txt = intermediate_representations[-1]["text_embedding"][:, 0, :]
+            # print(tmp_txt.shape)
+            # print(f"len intermed: {len(intermediate_representations)}")
+            # print(f"shape of intermediates: {intermediate_representations[0]}")
+            # print(f"{intermediate_representations[-1]['text_embedding'].shape}")
+            # print(tmp_txt.shape, text_embedding.shape)
+
+            cmp_shape_t = text_embedding.shape
+            cmp_shape_v = image_embedding.shape
+
+            assert torch.equal(text_embedding , intermediate_representations[-1]["text_embedding"][:, 0, :])
+            assert torch.equal(image_embedding , intermediate_representations[-1]["vision_embedding"][:, 0, :])
+            del text, image, text_embedding, image_embedding
+            for entry in intermediate_representations:
+                text_embedding = entry["text_embedding"].detach().cpu()   # [bs, dim]
+                vision_embedding = entry["vision_embedding"].detach().cpu() # [bs, dim]
+                layer = entry["layer"]
+
+                text_cls =  text_embedding[:,0,:]   # [bs, dim]
+                vision_cls = vision_embedding[:,0,:] # [bs, dim]
+                # print(f"vision_cls shape: {vision_cls.shape}, text_cls shape: {text_cls.shape}")
+                assert text_cls.shape == cmp_shape_t
+                assert vision_cls.shape == cmp_shape_v
+
+                layers[layer]["text_embeddings"].append(text_cls)
+                layers[layer]["vision_embeddings"].append(vision_cls)
+
+    for layer in layers.keys():
+        layers[layer]["text_embeddings"] = torch.cat(layers[layer]["text_embeddings"], dim=0)
+        layers[layer]["vision_embeddings"] = torch.cat(layers[layer]["vision_embeddings"], dim=0)
+
+    return layers
+
+def calculate_metrics_old(text_embeddings, vision_embeddings):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    text_embeddings = text_embeddings.to(device)
+    vision_embeddings = vision_embeddings.to(device)
+
+    norm_t = F.normalize(text_embeddings, dim=-1)
+    norm_v = F.normalize(vision_embeddings, dim=-1)
+
+    mknn = measures.mutual_knn_alignment_gpu_advanced(
+        Z1=norm_t,
+        Z2=norm_v,
+        k=KNN_K
+    )
+
+    rank_sim = measures.rank_similarity(
+        X=norm_t,
+        Y=norm_v,
+        k=KNN_K
+    )
+
+    procrustes_dist = measures.orthogonal_procrustes_distance(
+        X=text_embeddings,
+        Y=vision_embeddings
+    )
+
+    cka_linear = measures.cka(
+        text_embedding=text_embeddings.unsqueeze(0),
+        vision_embedding=vision_embeddings.unsqueeze(0)
+    )
+
+    # svcca = measures.svcca_similarity(text_embedding=text_embeddings, vision_embedding=vision_embeddings)
+    svcca = 0.0
+
+    linear_r2 = measures.linear_r2_alignment(
+        X=text_embeddings,
+        Y=vision_embeddings
+    )
+
+    rsa = measures.rsa_similarity(
+        X=text_embeddings,
+        Y=vision_embeddings
+    )
+
+
+
+    return {
+        "mknn": mknn,
+        "rank_sim": rank_sim,
+        "procrustes_dist": procrustes_dist,
+        "cka_linear": cka_linear,
+        "svcca": svcca,
+        "linear_r2": linear_r2,
+        "rsa": rsa
+    }
+
+def calculate_metrics(text_embeddings, vision_embeddings):
+    norm_t = F.normalize(text_embeddings, dim=-1)
+    norm_v = F.normalize(vision_embeddings, dim=-1)
+
+    cycle_knn = metrics.AlignmentMetrics.cycle_knn(feats_A=norm_t, feats_B=norm_v, topk=KNN_K)
+    mknn = metrics.AlignmentMetrics.measure("mutual_knn", text_embeddings, vision_embeddings, topk=KNN_K)
+    cka = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings)
+    cka_rbf = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings, kernel_metric="rbf")
+    unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(text_embeddings, vision_embeddings)
+    svcca = metrics.AlignmentMetrics.svcca(text_embeddings, vision_embeddings, cca_dim=10)
+    cknna = metrics.AlignmentMetrics.cknna(norm_t, norm_v, topk=KNN_K)
+
+    return {
+        "cycle_knn": cycle_knn,
+        "mknn": mknn,
+        "cka": cka,
+        "cka_rbf": cka_rbf,
+        "unbiased_cka": unbiased_cka,
+        "svcca": svcca,
+        "cknna": cknna
+    }
+
+def get_additional_metrics(text_embeddings, vision_embeddings):
+    # really big differences
+    procrustes_ = measures.orthogonal_procrustes_distance(X=text_embeddings, Y=vision_embeddings)
+    procrustes = metrics_llmrepsim.orthogonal_procrustes(R=text_embeddings, Rp=vision_embeddings)
+
+    # they are pretty similar,
+    jaccard_ = measures.jaccard_similarity(X=text_embeddings, Y=vision_embeddings)
+    jaccard = metrics_llmrepsim.jaccard_similarity(R=text_embeddings, Rp=vision_embeddings)
+
+    # moderate diffs
+    rsa_ = measures.rsa_similarity(X=text_embeddings, Y=vision_embeddings)
+    rsa= metrics_llmrepsim.representational_similarity_analysis(R=text_embeddings, Rp=vision_embeddings)
+    # print(f"old procrustes: {procrustes_} vs. new: {procrustes}; diff: {procrustes - procrustes_}")
+    # print(f"old jaccard: {jaccard_} vs. new: {jaccard}; diff: {jaccard - jaccard_}")
+    # print(f"old rsa: {rsa_} vs. new: {rsa}; diff: {rsa - rsa_}")
+
+
+    return {
+        "procrustes": procrustes,
+        "jaccard": jaccard,
+        "rsa": rsa
+    }
+
+
 def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
+    layers_data = get_alignment_data(dataloader=dataloader, model=model)
+
+    num_layers = len(layers_data.keys())
+    for i in range(num_layers):
+        data = layers_data[i]
+        text_embeddings = data["text_embeddings"]
+        vision_embeddings = data["vision_embeddings"]
+
+        metrics_old = calculate_metrics_old(
+            text_embeddings=text_embeddings,
+            vision_embeddings=vision_embeddings)
+
+        metrics_new = calculate_metrics(
+            text_embeddings=text_embeddings,
+            vision_embeddings=vision_embeddings)
+
+        metrics_add = get_additional_metrics(text_embeddings=text_embeddings, vision_embeddings=vision_embeddings)
+
+
+        info_str = (f"layer {i:2}: mknn = {metrics_old['mknn']:4.2f}, "
+               f"cka(lin) = {metrics_old['cka_linear']:5.2f}, "
+               f"svcca = {metrics_old['svcca']:5.2f}, "
+               f"rank-sim = {metrics_old['rank_sim']:5.2f}, "
+               f"procrust = {metrics_old['procrustes_dist']:7.2f}, "
+        )
+        info_str2 = (f"layer {i:2}: mknn = {metrics_new['mknn']:4.2f}, "
+                f"cka(lin)= {metrics_new['cka']:5.2f}, "
+                f"svcca= {metrics_new['svcca']:4.2f}, "
+                f"cka(rbf)= {metrics_new['cka_rbf']:5.2f}, "
+                f"cka(unb)= {metrics_new['unbiased_cka']:5.2f}, "
+                f"cknn-a= {metrics_new['cknna']:4.2f}, "
+                f"cycleknn= {metrics_new['cycle_knn']:4.2f}")
+
+        # print(info_str)
+        print(info_str2)
+        logger.info(info_str)
+        logger.info(info_str2)
+
+    return_dict = {}
+    for i in range(num_layers):
+        return_dict[i] = {
+            "mknn": metrics_new["mknn"],
+            "cka": metrics_new["cka"],
+            "cka_rbf": metrics_new["cka_rbf"],
+            "unbiased_cka": metrics_new["unbiased_cka"],
+            "svcca": metrics_new["svcca"],
+            "cknna": metrics_new["cknna"],
+            "cycle_knn": metrics_new["cycle_knn"],
+            "procrustes": metrics_add["procrustes"],
+            "jaccard": metrics_add["jaccard"],
+            "rsa": metrics_add["rsa"],
+            "r2": metrics_old["linear_r2"]
+        }
+    return return_dict
+
+
+
+def analyse_alignment_(dataloader: DataLoader, model: ViLBERT):
+    get_alignment_data(dataloader=dataloader, model=model)
     model.eval()
 
     with torch.no_grad():
@@ -517,13 +759,30 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
                 save_intermediate_representations=True
             )
             # print(f"intermed_reps shape: {intermediate_representations[0]}")
-
+            print(f"intermed len: {len(intermediate_representations)}")
             for repr_dict in intermediate_representations:
                 layer = repr_dict["layer"]
                 cls_text = repr_dict["text_embedding"][:,0,:].detach().cpu()   # [bs, dim]
                 cls_vision = repr_dict["vision_embedding"][:,0,:].detach().cpu() # [bs, dim]
                 layers[layer]["text_embeddings"].append(cls_text)
                 layers[layer]["vision_embeddings"].append(cls_vision)
+
+
+                norm_t = F.normalize(cls_text, dim=-1)
+                norm_v = F.normalize(cls_vision, dim=-1)
+
+                mknn_own = measures.mutual_knn_alignment_gpu_advanced(
+                    Z1=norm_t,
+                    Z2=norm_v,
+                    k=KNN_K
+                )
+                mknn_n = metrics.AlignmentMetrics.measure(
+                    "mutual_knn",
+                    norm_t,
+                    norm_v,
+                    topk=KNN_K)
+
+                print(f"Diff: {mknn_own - mknn_n}; Layer {layer}, mKNN (old impl) = {mknn_own:.4f}, mKNN (new impl) = {mknn_n:.4f}")
 
             del intermediate_representations
             del text
@@ -581,6 +840,12 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             # Z2=current_vision,
             k=KNN_K
         )
+        mknn_n = metrics.AlignmentMetrics.measure(
+            "mutual_knn",
+            F.normalize(current_text, dim=-1),
+            F.normalize(current_vision, dim=-1),
+            topk=KNN_K
+        )
         ranked = measures.rank_similarity(
             # X=current_text,
             # Y=current_vision,
@@ -592,9 +857,12 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
             Y=current_vision,
         )
 
-        mknn_values[i] = mknn_cls
+        print(f"diff of mknns: {mknn_n - mknn_cls}")
+
+        mknn_values[i] = mknn_n # mknn_cls
         rank_values[i] = ranked
         procrustes_values[i] = procrustes
+
 
 
 
@@ -892,8 +1160,8 @@ def analyse(
                 f"mknn={full_epoch_measure:.3f}, "
                 f"rank={rank_measure:.3f}, "
                 f"procrustes={procrustes_measure:7.2f}",
-                f"linear_r2={avg_linear_r2:.2f}, "
-                f"rsa={avg_rsa:.4f}"
+                f"linear_r2={avg_linear_r2:5.2f}, "
+                f"rsa={avg_rsa:5.2f}"
 
             )
             print(info_str)

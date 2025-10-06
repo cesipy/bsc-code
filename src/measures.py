@@ -1,5 +1,5 @@
 import torch; from torch import nn
-import numpy as np
+import numpy as np; 
 from scipy.stats import spearmanr
 
 from ckatorch.core import cka_base, cka_batch
@@ -525,8 +525,8 @@ def max_similarity_patch_token(
 
 
 if __name__ == "__main__":
-    t1 = torch.rand((100,197, 768), )
-    t2 = torch.rand((100, 197,768), )
+    t1 = torch.rand((1,197, 768), )
+    t2 = torch.rand((1, 197,768), )
 
     t_half = t1.clone()
     t_temp = t2.clone()

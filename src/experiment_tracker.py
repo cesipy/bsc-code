@@ -817,6 +817,16 @@ class ExperimentTracker:
 
 
     def save_results(self, training_results: dict, config: ExperimentConfig, filename:str):
+        def convert_to_native(obj):
+            if isinstance(obj, dict):
+                return {k: convert_to_native(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_to_native(item) for item in obj]
+            elif isinstance(obj, (np.integer, np.floating)):
+                return obj.item()
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return obj
         training_results["config"] = {
             "t_biattention_ids": config.t_biattention_ids,
             "v_biattention_ids": config.v_biattention_ids,
@@ -833,7 +843,7 @@ class ExperimentTracker:
         filename = os.path.join(self.save_dir, filename)
 
         with open(filename, "w") as f:
-            json.dump(training_results, f, indent=4)
+            json.dump(convert_to_native(training_results), f, indent=4)
 
     def _run_pretrain(
         self,
