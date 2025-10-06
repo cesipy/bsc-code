@@ -179,3 +179,9 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 	- [ ] hateful memes	- problem here, there are no labels
 
 - [ ] larger k in mknn
+- [ ] implement baseline
+- [ ] fix intermediate collection
+- [ ] correlation analysis: not for all tasks, architectures and epochs, only focussing on one
+
+- [ ] alignment analysis:
+    - [ ] compare sizes: same config, different seeds and analysis - size
