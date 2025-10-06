@@ -59,6 +59,11 @@ def set_seeds(seed:int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True
+    torch.manual_seed(seed=seed)
+    random.seed(seed)
+    torch.use_deterministic_algorithms(True)        # wicthig!!
+    np.random.seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
     # with reproducability unfortuantely the below does not work.
     # various speedups for models, adapted from karpathy's gpt2 video
@@ -73,11 +78,6 @@ def set_seeds(seed:int):
     # torch.backends.cudnn.enabled = True
 
 
-    torch.manual_seed(seed=seed)
-    random.seed(seed)
-    # torch.use_deterministic_algorithms(True)
-    np.random.seed(seed)
-    torch.cuda.manual_seed_all(seed)
 
 def get_seeded_generator(seed:int):
     g = torch.Generator()

@@ -28,7 +28,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 4000
+ALIGNMENT_ANALYSIS_SIZE = 1000
 SKIP_ALIGNMENT = False
 
 
@@ -656,6 +656,9 @@ class ExperimentTracker:
         tasks:list[str]=["hateful_memes", "mm_imdb"],
         pretrained_model_path: Optional[str] = None,
     ) -> dict:
+        print(f"seed = {experiment_config.seed}")
+        logger.info(f"seed = {experiment_config.seed}")
+        utils.set_seeds(experiment_config.seed)
         assert tasks != None
         for task in tasks:
             assert task in tasklib.all_task_list
@@ -664,9 +667,6 @@ class ExperimentTracker:
 
         # TODO: also include use_contrastive as param to optimize
 
-        print(f"seed = {experiment_config.seed}")
-        logger.info(f"seed = {experiment_config.seed}")
-        utils.set_seeds(experiment_config.seed)
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
 
         for task in tasks:

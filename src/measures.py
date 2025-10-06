@@ -4,6 +4,10 @@ import numpy as np
 from ckatorch.core import cka_base, cka_batch
 import cca_core
 
+from logger import Logger
+
+logger = Logger()
+
 
 #----------
 #utils
@@ -360,10 +364,10 @@ def svcca_similarity(
 
     try:
         # print(f"reshaped text input shape: {text_input.shape}")
-        result = cca_core.get_cca_similarity(
+        result = cca_core.robust_cca_similarity(
             text_input,
             vision_input,
-            verbose=False
+            compute_dirns=False
         )
 
         # single value result
@@ -372,6 +376,7 @@ def svcca_similarity(
         return result
     except np.linalg.LinAlgError as e:
         print(f"LinAlgError during SVCCA computation: {e}")
+        logger.error(f"LinAlgError during SVCCA computation: {e}")
         return 0.0
 
 def mutual_nearest_neighbor_alignment(text_embeds, vision_embeds, k=5):

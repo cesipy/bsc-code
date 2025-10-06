@@ -713,10 +713,10 @@ def process_intermediate_repr(
         # #TODO: FIX
 
         svcca_sim = 0.0
-        # svcca_sim = measures.svcca_similarity(
-        #     text_embedding=representation["text_embedding"],
-        #     vision_embedding=representation["vision_embedding"]
-        # )
+        svcca_sim = measures.svcca_similarity(
+            text_embedding=representation["text_embedding"],
+            vision_embedding=representation["vision_embedding"]
+        )
 
         # cka_sim = 0.0
         # max_similarity_tp = 0.0
