@@ -55,8 +55,12 @@ def get_alignment_dataloaders(
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
     data_list_hm = generate_data_list(path_hm)
-    random.shuffle(data_list_hm)
-    # TODO: not needed for every sample!
+    train_idx = int(len(data_list_hm) * TRAIN_TEST_RATIO)
+
+
+    data_list_hm = data_list_hm[train_idx:]
+    # random.shuffle(data_list_hm)    # validation set is shuffled
+
 
     assert num_samples <= len(data_list_hm)
 

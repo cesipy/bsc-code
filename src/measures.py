@@ -1,5 +1,6 @@
 import torch; from torch import nn
 import numpy as np
+from scipy.stats import spearmanr
 
 from ckatorch.core import cka_base, cka_batch
 import cca_core
@@ -37,6 +38,62 @@ def pairwise_knn(
 
 #--------
 #measures
+
+def linear_r2_alignment(X, Y, test_ratio=0.2, ridge=1e-3):
+    Xc = X - X.mean(dim=0, keepdim=True)
+    Yc = Y - Y.mean(dim=0, keepdim=True)
+    n = Xc.shape[0]
+    idx = torch.randperm(n)
+
+    # for the same data it was almost always 1.0 => nearly perfect alignment
+    split = int(n * (1 - test_ratio))
+    X_train, X_test = Xc[idx[:split]], Xc[idx[split:]]
+    Y_train, Y_test = Yc[idx[:split]], Yc[idx[split:]]
+
+    # ridge solution
+    XtX = X_train.T @ X_train + ridge * torch.eye(X_train.shape[1], device=X.device)
+    XtY = X_train.T @ Y_train
+    W = torch.linalg.solve(XtX, XtY)
+    Y_pred = X_test @ W
+
+    ss_res = torch.sum((Y_test - Y_pred) ** 2)
+    ss_tot = torch.sum((Y_test - Y_test.mean(dim=0, keepdim=True)) ** 2)
+    return (1 - ss_res / ss_tot).item()
+
+
+def rsa_similarity(X: torch.Tensor, Y: torch.Tensor, metric="cosine") -> float:
+    """
+    Representational Similarity Analysis (RSA) correlation.
+    Args:
+        X, Y: [n_samples, d]
+        metric: 'cosine' or 'euclidean'
+    Returns:
+        Spearman correlation between RDMs.
+    """
+    X = X - X.mean(dim=0, keepdim=True)
+    Y = Y - Y.mean(dim=0, keepdim=True)
+
+    if metric == "cosine":
+        sim_X = torch.nn.functional.cosine_similarity(
+            X.unsqueeze(1), X.unsqueeze(0), dim=-1
+        )
+        sim_Y = torch.nn.functional.cosine_similarity(
+            Y.unsqueeze(1), Y.unsqueeze(0), dim=-1
+        )
+        D_X = 1 - sim_X
+        D_Y = 1 - sim_Y
+    else:
+        D_X = torch.cdist(X, X)
+        D_Y = torch.cdist(Y, Y)
+
+    # Vectorize upper triangle (excluding diagonal)
+    iu = torch.triu_indices(D_X.shape[0], D_X.shape[1], offset=1)
+    dx = D_X[iu[0], iu[1]].cpu().numpy()
+    dy = D_Y[iu[0], iu[1]].cpu().numpy()
+
+    # Compute correlation
+    corr, _ = spearmanr(dx, dy)
+    return float(corr)
 
 def rank_similarity(
     X: torch.Tensor,        # [n, d]
@@ -465,3 +522,21 @@ def max_similarity_patch_token(
     )
 
     return max_sims
+
+
+if __name__ == "__main__":
+    t1 = torch.rand((100,197, 768), )
+    t2 = torch.rand((100, 197,768), )
+
+    t_half = t1.clone()
+    t_temp = t2.clone()
+    # t_half = t_half + t_temp    # results in 0.5
+    idx = 77
+    t_half[:, :, :idx] = t1[:, :, :idx]
+    t_half[:, :, idx:] = t2[:, :, idx:]
+
+    cka_diff = cka(t1, t2)
+    cka_identical = cka(t1, t1)
+    cka_half = cka(t1, t_half)
+
+    print(f"CKA identical: {cka_identical}, CKA different: {cka_diff}, CKA half: {cka_half}")

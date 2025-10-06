@@ -575,13 +575,17 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     #     print(f"Layer {i}: mKNN (CLS) = {mknn_cls:.4f}, mKNN (Seq) = {mknn_seq:.4f}")
 
         mknn_cls = measures.mutual_knn_alignment_gpu_advanced(
-            Z1=current_text,
-            Z2=current_vision,
+            Z1=torch.nn.functional.normalize(current_text, dim=-1),
+            Z2=torch.nn.functional.normalize(current_vision, dim=-1),
+            # Z1=current_text,
+            # Z2=current_vision,
             k=KNN_K
         )
         ranked = measures.rank_similarity(
-            X=current_text,
-            Y=current_vision,
+            # X=current_text,
+            # Y=current_vision,
+            X=torch.nn.functional.normalize(current_text, dim=-1),
+            Y=torch.nn.functional.normalize(current_vision, dim=-1),
             k=KNN_K)
         procrustes = measures.orthogonal_procrustes_distance(
             X=current_text,
@@ -693,6 +697,8 @@ def process_intermediate_repr(
 
         # logger.info(f"dim before calculating cka: {representation['text_embedding'].shape}, {representation['vision_embedding'].shape}")
         cka_sim = measures.cka(
+            # text_embedding=torch.nn.functional.normalize(representation["text_embedding"], dim=-1),
+            # vision_embedding=torch.nn.functional.normalize(representation["vision_embedding"], dim=-1)
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
         )
@@ -714,6 +720,8 @@ def process_intermediate_repr(
 
         svcca_sim = 0.0
         svcca_sim = measures.svcca_similarity(
+            # torch.nn.functional.normalize(representation["text_embedding"], dim=-1),
+            # torch.nn.functional.normalize(representation["vision_embedding"], dim=-1)
             text_embedding=representation["text_embedding"],
             vision_embedding=representation["vision_embedding"]
         )
@@ -750,6 +758,16 @@ def process_intermediate_repr(
             vision_embedding=vision_embedding_sample
         )
 
+        rsa_sim = measures.rsa_similarity(
+            X=text_embedding_sample,
+            Y=vision_embedding_sample
+        )
+
+        linear_r2 = measures.linear_r2_alignment(
+            X=text_embedding_sample,
+            Y=vision_embedding_sample
+        )
+
 
 
 
@@ -762,6 +780,8 @@ def process_intermediate_repr(
                 "max_similarity_tp": max_similarity_tp,
                 "max_similarity_pt": max_similarity_pt,
                 "svcca_similarity": svcca_sim,
+                "rsa_similarity": rsa_sim,
+                "linear_r2": linear_r2
             }
         )
 
@@ -833,6 +853,8 @@ def analyse(
             max_similarity_values_tp = [m["max_similarity_tp"] for m in measures]
             max_similarity_values_pt = [m["max_similarity_pt"] for m in measures]
             svcca_values = [m["svcca_similarity"] for m in measures]
+            linear_r2_values = [m["linear_r2"] for m in measures]
+            rsa_values = [m["rsa_similarity"] for m in measures]
 
 
 
@@ -841,6 +863,8 @@ def analyse(
             avg_max_similarity_tp = sum(max_similarity_values_tp) / len(max_similarity_values_tp)
             avg_max_similarity_pt = sum(max_similarity_values_pt) / len(max_similarity_values_pt)
             avg_svcca = sum(svcca_values) / len(svcca_values)
+            avg_linear_r2 = sum(linear_r2_values) / len(linear_r2_values)
+            avg_rsa = sum(rsa_values) / len(rsa_values)
 
 
             metrics = {
@@ -851,21 +875,25 @@ def analyse(
                 "SVCCA": avg_svcca,
                 "mknn_full_epoch": full_epoch_measure,
                 "rank_full_epoch": rank_measure,
-                "procrustes_full_epoch": procrustes_measure
+                "procrustes_full_epoch": procrustes_measure,
+                "linear_r2": avg_linear_r2,
+                "rsa": avg_rsa
             }
 
             # info_str = f"layer {layer_name} (co-attn-{is_cross_attention}): " + \
             #         ", ".join([f"{k}={v:.4f}" for k, v in metrics.items()])
             info_str = (
                 f"layer {layer_name:7} (co-attn-{is_cross_attention:2}): "
-                f"cosine={avg_cosine:7.4f}, "
+                f"cosine={avg_cosine:7.3f}, "
                 f"CKA={avg_cka:.3f}, "
                 # f"max_sim_tp={avg_max_similarity_tp:.4f}, "
                 # f"max_sim_pt={avg_max_similarity_pt:.4f}, "
                 f"SVCCA={avg_svcca:.3f}, "
                 f"mknn={full_epoch_measure:.3f}, "
                 f"rank={rank_measure:.3f}, "
-                f"procrustes={procrustes_measure:4.2f}"
+                f"procrustes={procrustes_measure:7.2f}",
+                f"linear_r2={avg_linear_r2:.2f}, "
+                f"rsa={avg_rsa:.4f}"
 
             )
             print(info_str)

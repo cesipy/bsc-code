@@ -28,7 +28,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 1000
+ALIGNMENT_ANALYSIS_SIZE = 256
 SKIP_ALIGNMENT = False
 
 
@@ -418,7 +418,7 @@ class ExperimentTracker:
         )
 
         train_loader, val_loader = datasets.get_hateful_memes_datasets(
-            train_test_ratio=TRAIN_TEST_RATIO,
+            train_test_ratio=config.train_test_ratio,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,
@@ -507,7 +507,7 @@ class ExperimentTracker:
         )
 
         train_loader, val_loader = datasets.get_mmimdb_datasets(
-            train_test_ratio=TRAIN_TEST_RATIO,
+            train_test_ratio=config.train_test_ratio,
             # train_test_ratio=0.1,
             batch_size=BATCH_SIZE_DOWNSTREAM,
             num_workers=NUM_WORKERS,
