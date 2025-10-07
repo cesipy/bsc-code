@@ -28,7 +28,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 256
+ALIGNMENT_ANALYSIS_SIZE = 400
 SKIP_ALIGNMENT = False
 
 
@@ -193,7 +193,8 @@ class ExperimentTracker:
 
             training_results = self.run_finetune(
                 experiment_config=config,
-                run_visualizations=False  # is too compute intensive, not wanted here
+                run_visualizations=False,  # is too compute intensive, not wanted here
+                run_alignment_analysis=False,
             )
 
             if optimization_objective == "acc":
@@ -223,6 +224,7 @@ class ExperimentTracker:
         # storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
         storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
         study_name = f"multi_task_study_{tmsp}"
+        # study_name = f"multi_task_study_20251004-131802"
 
 
         study = optuna.create_study(
@@ -279,6 +281,7 @@ class ExperimentTracker:
             training_results = self.run_finetune(
                 config,
                 run_visualizations=False,  # is too compute intensive, not wanted here,
+                # run_alignment_analysis=True,
                 tasks=[task]
             )
 
@@ -432,14 +435,13 @@ class ExperimentTracker:
             num_workers=0,
             pin_memory=False,
             prefetch_factor=None,
-            num_samples=ALIGNMENT_ANALYSIS_SIZE,
             seed=config.seed,
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
 
         if not skip_alignment_analysis:
-            alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
+            alignment_metrics = self._analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][0] = alignment_metrics
 
         if run_visualization:
@@ -468,7 +470,7 @@ class ExperimentTracker:
             training_results["hateful_memes"]["training"][i+1]["val_acc"] = acc
             alignment_metrics = {}
             if not skip_alignment_analysis:
-                alignment_metrics = self.analyse_alignment(model=model, dataloader=hm_dataloader)
+                alignment_metrics = self._analyse_alignment(model=model, dataloader=hm_dataloader)
             training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
             if run_visualization:
                 filename_extension = f"{tmsp}_e{i+1}"
@@ -476,6 +478,7 @@ class ExperimentTracker:
                     dir_name=dir_name, filename_extension=filename_extension)
         if tmsp:
             save_path = f"res/checkpoints/{tmsp}_finetuned_hateful_memes.pt"
+            training_results["hateful_memes"]["model_path"] = save_path
             trainer.model.save_model(save_path)
             info_str = f"Saved finetuned model to {save_path}"
             logger.info(info_str)
@@ -523,14 +526,13 @@ class ExperimentTracker:
             num_workers=0,
             pin_memory=False,
             prefetch_factor=None,
-            num_samples=ALIGNMENT_ANALYSIS_SIZE,
             seed=config.seed,
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
 
         if not skip_alignment_analysis:
-            alignment_metrics = self.analyse_alignment(model=model, dataloader=imdb_dataloader)
+            alignment_metrics = self._analyse_alignment(model=model, dataloader=imdb_dataloader)
             training_results["mm_imdb"]["alignment"][0] = alignment_metrics
 
         if run_visualization:
@@ -561,7 +563,7 @@ class ExperimentTracker:
             alignment_metrics = {}
             if not skip_alignment_analysis:
 
-                alignment_metrics = self.analyse_alignment(
+                alignment_metrics = self._analyse_alignment(
                     model=model, dataloader=imdb_dataloader)
 
             training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
@@ -573,6 +575,7 @@ class ExperimentTracker:
 
         if tmsp:
             save_path = f"res/checkpoints/{tmsp}_finetuned_mm_imdb.pt"
+            training_results["mm_imdb"]["model_path"] = save_path
             trainer.model.save_model(save_path)
             info_str = f"Saved finetuned model to {save_path}"
             logger.info(info_str)
@@ -740,7 +743,7 @@ class ExperimentTracker:
 
 
 
-    def analyse_alignment(
+    def _analyse_alignment(
         self,
         model: ViLBERT,
         dataloader: datasets.DataLoader,
@@ -841,7 +844,6 @@ class ExperimentTracker:
         }
         filename += ".json"
         filename = os.path.join(self.save_dir, filename)
-
         with open(filename, "w") as f:
             json.dump(convert_to_native(training_results), f, indent=4)
 
@@ -903,7 +905,7 @@ class ExperimentTracker:
 
         # on untrained model
         if run_alignment_analysis:
-            alignment_metrics = self.analyse_alignment(model=model, dataloader=cc_dataloader)
+            alignment_metrics = self._analyse_alignment(model=model, dataloader=cc_dataloader)
             training_results["pretraining"]["alignment"][0] = alignment_metrics
         if run_visualizations:
             filename_extention = f"{tmsp}_e0"
@@ -951,7 +953,7 @@ class ExperimentTracker:
             }
 
             if run_alignment_analysis:
-                alignment_metrics = self.analyse_alignment(model=model, dataloader=cc_dataloader)
+                alignment_metrics = self._analyse_alignment(model=model, dataloader=cc_dataloader)
                 training_results["pretraining"]["alignment"][epoch+1] = alignment_metrics
             if run_visualizations:
                 filename_extention = f"{tmsp}_e{epoch+1}"
@@ -1059,6 +1061,31 @@ class ExperimentTracker:
 
 
 
+    def analyse_alignment(self, model:ViLBERT, num_samples:int, task:str):
+        assert task in ["hateful_memes", "mm_imdb", "cc"]       #  TODO: add more tasks
+        dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
+            batch_size=BATCH_SIZE_ANALYSIS,
+            num_workers=0,  pin_memory=False, prefetch_factor=None,
+            num_samples=num_samples,
+            seed=model.config.seed
+        )
+
+        if task == "hateful_memes":
+            dataloader = dataloader_hm
+        elif task == "mm_imdb":
+            dataloader = dataloader_imdb
+        elif task == "cc":
+            dataloader = dataloader_cc
+        else:
+            assert False
+
+        alignment_metrics = self._analyse_alignment(model=model, dataloader=dataloader)
+        print(alignment_metrics)
+
+        return alignment_metrics
+
+
+
 
 
 
@@ -1069,7 +1096,7 @@ class ExperimentTracker:
 def main():
 
     tracker = ExperimentTracker()
-    tracker.optimize_parameters_multi(n_trials=100, optimization_objective="loss")
+    tracker.optimize_parameters_multi(n_trials=100, optimization_objective="acc")
     # tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
     #                                    #task="mm_imdb")
     #                                    task="hateful_memes")

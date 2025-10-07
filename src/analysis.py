@@ -500,6 +500,7 @@ def get_alignment_data(dataloader: DataLoader, model:ViLBERT):
     model.eval()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    model = model.to(device)
     with torch.no_grad():
         torch.cuda.empty_cache()
 
@@ -608,8 +609,6 @@ def calculate_metrics_old(text_embeddings, vision_embeddings):
         X=text_embeddings,
         Y=vision_embeddings
     )
-
-
 
     return {
         "mknn": mknn,
