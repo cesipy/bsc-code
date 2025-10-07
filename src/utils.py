@@ -8,6 +8,9 @@ import gc; import time
 from functools import wraps
 import matplotlib.pyplot as plt
 import albumentations as A
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import pearsonr, spearmanr
 
 from PIL import Image
 
@@ -19,6 +22,66 @@ from logger import Logger
 
 logger = Logger()
 
+
+
+
+def visualize_correlation_matrix(result, metric="mknn", corr_func=pearsonr, save_path=None):
+    """Create and visualize a correlation matrix heatmap."""
+    sizes = sorted(result.keys())
+    n = len(sizes)
+
+    # Initialize matrix
+    corr_matrix = np.zeros((n, n))
+
+    # Compute correlations
+    for i, size1 in enumerate(sizes):
+        for j, size2 in enumerate(sizes):
+            if i == j:
+                corr_matrix[i, j] = 1.0
+            else:
+                data1 = np.array(result[size1][metric])
+                data2 = np.array(result[size2][metric])
+                r, p = corr_func(data1, data2)
+                corr_matrix[i, j] = r
+
+    # Create heatmap
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    im = ax.imshow(corr_matrix, cmap='RdYlGn', vmin=-1, vmax=1, aspect='auto')
+
+    # Set ticks and labels
+    ax.set_xticks(np.arange(n))
+    ax.set_yticks(np.arange(n))
+    ax.set_xticklabels(sizes)
+    ax.set_yticklabels(sizes)
+
+    # Rotate x labels
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+    # Add colorbar
+    cbar = plt.colorbar(im, ax=ax, label='Correlation Coefficient')
+
+    # Add text annotations
+    for i in range(n):
+        for j in range(n):
+            text = ax.text(j, i, f'{corr_matrix[i, j]:.2f}',
+                          ha="center", va="center", color="black", fontsize=10)
+
+    ax.set_title(f'{metric.upper()} Correlation Matrix ({corr_func.__name__})',
+                 fontsize=14, pad=20)
+    ax.set_xlabel('Sample Size', fontsize=12)
+    ax.set_ylabel('Sample Size', fontsize=12)
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved to {save_path}")
+
+    # plt.show()
+    # plt.close()
+
+    return corr_matrix
 
 def visualize_loss(info_losses, normal_losses, total_losses):
     import matplotlib.pyplot as plt

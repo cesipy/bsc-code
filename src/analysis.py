@@ -496,10 +496,8 @@ def run_alignment_visualization(
 
 
 
-def get_alignment_data(dataloader: DataLoader, model:ViLBERT):
+def get_alignment_data(dataloader: DataLoader, model:ViLBERT, device="cuda" if torch.cuda.is_available() else "cpu"):
     model.eval()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
     model = model.to(device)
     with torch.no_grad():
         torch.cuda.empty_cache()
@@ -666,8 +664,11 @@ def get_additional_metrics(text_embeddings, vision_embeddings):
     }
 
 
-def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
-    layers_data = get_alignment_data(dataloader=dataloader, model=model)
+def analyse_alignment(dataloader: DataLoader, model: ViLBERT,
+        device = "cuda" if torch.cuda.is_available() else "cpu"):
+    layers_data = get_alignment_data(dataloader=dataloader, model=model, device=device)
+
+    metric_adds, metric_news, metric_olds = [],[],[]
 
     num_layers = len(layers_data.keys())
     for i in range(num_layers):
@@ -685,6 +686,9 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
 
         metrics_add = get_additional_metrics(text_embeddings=text_embeddings, vision_embeddings=vision_embeddings)
 
+        metric_adds.append(metrics_add)
+        metric_news.append(metrics_new)
+        metric_olds.append(metrics_old)
 
         info_str = (f"layer {i:2}: mknn = {metrics_old['mknn']:4.2f}, "
                f"cka(lin) = {metrics_old['cka_linear']:5.2f}, "
@@ -708,17 +712,17 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT):
     return_dict = {}
     for i in range(num_layers):
         return_dict[i] = {
-            "mknn": metrics_new["mknn"],
-            "cka": metrics_new["cka"],
-            "cka_rbf": metrics_new["cka_rbf"],
-            "unbiased_cka": metrics_new["unbiased_cka"],
-            "svcca": metrics_new["svcca"],
-            "cknna": metrics_new["cknna"],
-            "cycle_knn": metrics_new["cycle_knn"],
-            "procrustes": metrics_add["procrustes"],
-            "jaccard": metrics_add["jaccard"],
-            "rsa": metrics_add["rsa"],
-            "r2": metrics_old["linear_r2"]
+            "mknn": metric_news[i]["mknn"],
+            "cka": metric_news[i]["cka"],
+            "cka_rbf": metric_news[i]["cka_rbf"],
+            "unbiased_cka": metric_news[i]["unbiased_cka"],
+            "svcca": metric_news[i]["svcca"],
+            "cknna": metric_news[i]["cknna"],
+            "cycle_knn": metric_news[i]["cycle_knn"],
+            "procrustes": metric_adds[i]["procrustes"],
+            "jaccard": metric_adds[i]["jaccard"],
+            "rsa": metric_adds[i]["rsa"],
+            "r2": metric_olds[i]["linear_r2"]
         }
     return return_dict
 

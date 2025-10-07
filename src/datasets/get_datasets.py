@@ -57,10 +57,9 @@ def get_alignment_dataloaders(
     data_list_hm = generate_data_list(path_hm)
     train_idx = int(len(data_list_hm) * TRAIN_TEST_RATIO)
 
-
+    # has len 1700
     data_list_hm = data_list_hm[train_idx:]
     # random.shuffle(data_list_hm)    # validation set is shuffled
-
 
     assert num_samples <= len(data_list_hm)
 

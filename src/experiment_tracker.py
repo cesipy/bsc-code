@@ -747,9 +747,11 @@ class ExperimentTracker:
         self,
         model: ViLBERT,
         dataloader: datasets.DataLoader,
+        device:str = "cuda" if torch.cuda.is_available() else "cpu",
         #TODO: implemet mmimdb loader
     ):
-        measures_per_layer = analysis.analyse_alignment(dataloader=dataloader, model=model)
+        measures_per_layer = analysis.analyse_alignment(dataloader=dataloader, model=model,
+            device=device)
         return measures_per_layer
 
     def create_model(self, config: ViLBERTConfig) -> ViLBERT:
@@ -1061,7 +1063,8 @@ class ExperimentTracker:
 
 
 
-    def analyse_alignment(self, model:ViLBERT, num_samples:int, task:str):
+    def analyse_alignment(self, model:ViLBERT, num_samples:int, task:str,
+        device:str="cuda" if torch.cuda.is_available() else "cpu"):
         assert task in ["hateful_memes", "mm_imdb", "cc"]       #  TODO: add more tasks
         dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
@@ -1069,6 +1072,7 @@ class ExperimentTracker:
             num_samples=num_samples,
             seed=model.config.seed
         )
+
 
         if task == "hateful_memes":
             dataloader = dataloader_hm
@@ -1078,9 +1082,10 @@ class ExperimentTracker:
             dataloader = dataloader_cc
         else:
             assert False
+        print(f"len dataloader: {len(dataloader.dataset)}")
 
-        alignment_metrics = self._analyse_alignment(model=model, dataloader=dataloader)
-        print(alignment_metrics)
+        alignment_metrics = self._analyse_alignment(model=model, dataloader=dataloader, device=device )
+        # print(alignment_metrics)
 
         return alignment_metrics
 
