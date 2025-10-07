@@ -42,6 +42,8 @@ def visualize_correlation_matrix(result, metric="mknn", corr_func=pearsonr, save
                 data1 = np.array(result[size1][metric])
                 data2 = np.array(result[size2][metric])
                 r, p = corr_func(data1, data2)
+                if p > 0.025:
+                    print(f"Warning: correlation between {size1} and {size2} for {metric} is not significant (p={p:.3f}, r={r:.3f})")
                 corr_matrix[i, j] = r
 
     # Create heatmap

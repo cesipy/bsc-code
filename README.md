@@ -184,4 +184,6 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] correlation analysis: not for all tasks, architectures and epochs, only focussing on one
 
 - [ ] alignment analysis:
-    - [ ] compare sizes: same config, different seeds and analysis - size
+    - [ ] compare bs-analysis-sizes: same config, different seeds and analysis - size
+    - [ ] test set in hm instead of train: even if val -loss declines, alignment still increases (with train loss decreasing)
+    - [ ] normalize all the metrics
