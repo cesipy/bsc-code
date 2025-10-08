@@ -1,8 +1,48 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+## 08.10
+
+correlation analysis between metrics:
+<figure>
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_pearson.png" width=300>
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_spearman.png" width=300>
+</figure>
+
+=> seems that a lot of metrics are redundant. I choose only four metrics to go further:
+- mknn: similar to cknna, jaccard
+- cka:
+- svcca: similar to rsa and cycle_knn
+- procrustes
+
+
+also: exclude r2 and cka_rbf
+
+
+
+
 
 ## 07.10
+
+Also adapted visualizations to the new metrics calculation with proper normalization. The following shows the resulting visualization comparing initialized to epoch 6:
+```
+Epoch 6/6, Train Loss: 0.4473, Val Loss: 0.5459, Val Acc: 0.7347
+```
+
+<figure>
+
+**cka**: untrained vs e6 <br>
+<img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_cka_matrices.png" width=400>
+<img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_cka_matrices.png" width=400>
+
+**mknn**: untrained vs e6
+<img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_mutual_knn_matrices.png" width=400>
+<img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_mutual_knn_matrices.png" width=400>
+
+
+</figure>
+
+---
 
 Currently two experiments:
 - c703i-gpu10: optuna multi-objective optimization of coattn-placement (still running, but paused and resumed to collect data for correlation analysis)
@@ -28,19 +68,18 @@ Experiment on dataset size for alignment representations with only two different
 - really high correlation for the other metrics, but cka_rbf needs higher sample sizes like 512; all visualizations are stored in `res/markdown_res/hm_two_arch-sample_size_corr-0710`.
 <figure>
 pearsonr vs spearmanr:
-<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_pearsonr.png" width=300><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_spearmanr.png" width=300>
+<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_pearsonr.png" width=250><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_spearmanr.png" width=250>
 
 <br>
 both show really good corerlation with pvals < 0.002
 
 <br>
 same results for *mknn*:
-<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_pearsonr.png" width=300><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_spearmanr.png" width=300>
+<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_pearsonr.png" width=250><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_spearmanr.png" width=250>
 
 </figure>
 
 $\Rightarrow$ `num_samples=512` seems to be a good size!
-
 
 
 
