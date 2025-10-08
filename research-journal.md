@@ -1,9 +1,116 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+## 08.10
+
+correlation analysis between metrics:
+<figure>
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_pearson.png" width=300>
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_spearman.png" width=300>
+</figure>
+
+=> seems that a lot of metrics are redundant. I choose only four metrics to go further:
+- mknn: similar to cknna, jaccard
+- cka:
+- svcca: similar to rsa and cycle_knn
+- procrustes
+
+
+also: exclude r2 and cka_rbf
+
+
+
+
+
+## 07.10
+
+Also adapted visualizations to the new metrics calculation with proper normalization. The following shows the resulting visualization comparing initialized to epoch 6:
+```
+Epoch 6/6, Train Loss: 0.4473, Val Loss: 0.5459, Val Acc: 0.7347
+```
+
+<figure>
+
+**cka**: untrained vs e6 <br>
+<img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_cka_matrices.png" width=400>
+<img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_cka_matrices.png" width=400>
+
+**mknn**: untrained vs e6
+<img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_mutual_knn_matrices.png" width=400>
+<img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_mutual_knn_matrices.png" width=400>
+
+
+</figure>
+
+---
+
+Currently two experiments:
+- c703i-gpu10: optuna multi-objective optimization of coattn-placement (still running, but paused and resumed to collect data for correlation analysis)
+- c703i-gpu5: train 12 models (different architecture&seeds) for metric analysis.
+
+
+Experiment on dataset size for alignment representations with only two different pretrains on random architectures, it showed that:
+- r2 and cycle_knn are not statistically significant.
+    ```
+    Warning: correlation between 64 and 512 for cycle_knn is not significant (p=0.273, r=0.233)
+    Warning: correlation between 64 and 1024 for cycle_knn is not significant (p=0.708, r=0.081)
+    Warning: correlation between 256 and 64 for cycle_knn is not significant (p=0.078, r=0.367)
+    Warning: correlation between 1024 and 64 for cycle_knn is not significant (p=0.708, r=0.081)
+    ...
+    ```
+
+    ```
+    Warning: correlation between 512 and 1024 for r2 is not significant (p=0.176, r=0.286)
+    Warning: correlation between 1024 and 64 for r2 is not significant (p=0.123, r=0.323)
+    Warning: correlation between 1024 and 128 for r2 is not significant (p=0.735, r=0.073)
+    ```
+
+- really high correlation for the other metrics, but cka_rbf needs higher sample sizes like 512; all visualizations are stored in `res/markdown_res/hm_two_arch-sample_size_corr-0710`.
+<figure>
+pearsonr vs spearmanr:
+<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_pearsonr.png" width=250><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_spearmanr.png" width=250>
+
+<br>
+both show really good corerlation with pvals < 0.002
+
+<br>
+same results for *mknn*:
+<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_pearsonr.png" width=250><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_spearmanr.png" width=250>
+
+</figure>
+
+$\Rightarrow$ `num_samples=512` seems to be a good size!
+
+
+
+
+
+
+
+## 06.10
+
+fixed normalization for alignment metrix. All the neighborhood based metrics (mknn, rank, procrustes) are now calculated on normalized embeddings. This should give more stable results!
+
+also added new similarities:
+- linear r2 alginment: $\hat Y = WX$, how good is simple revertible transformation $W$?
+- representational similarity analysis (rsa): correlation of distance metrics
+
+also rewrote the logic for collecting data for repr. alignment with simpler steps:
+1) collect data batches from the alignment set in `get_alignment_data`
+2) caluculate metrics
+3) return them for saving
+
+in addition I found the libraries for metrics from the papers:
+- https://github.com/mklabunde/llm_repsim/blob/main/llmcomp/measures/procrustes.py  (towards understanding representational similarity in neural networks)
+- https://github.com/minyoungg/platonic-rep/ (platonic representation)
+
+Those repositories have well tested code already for this purpose. my implementations were a bit off (mknn was totally off, also cka lib I was using). As they tested their code, I'm going forward with their code for now, with a handful of metrics still relying on my implementation.
+
+
+Also worked further towards a correlation analysis of the different metrics and batchsizes
+
+
 ## 05.10 comparison with contrastive loss:
-
-
 
 
 
@@ -40,7 +147,7 @@ the best performing epoch (loss) was chosen here.
 <figure>
     <img src="./res/markdown_res//performance_summary-0610.png">
     in comparison to pretraining without contrastive loss: <br>
-    <img src="./res/markdown_res/performance_summary0610.png">
+    <img src="./res/markdown_res/performance_comparison0610.png">
 </figure>
 
 **early fusion**:

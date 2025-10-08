@@ -28,7 +28,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 400
+ALIGNMENT_ANALYSIS_SIZE = 512
 SKIP_ALIGNMENT = False
 
 
@@ -436,6 +436,7 @@ class ExperimentTracker:
             pin_memory=False,
             prefetch_factor=None,
             seed=config.seed,
+            num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
@@ -527,6 +528,7 @@ class ExperimentTracker:
             pin_memory=False,
             prefetch_factor=None,
             seed=config.seed,
+            num_samples=ALIGNMENT_ANALYSIS_SIZE
         )
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
@@ -748,10 +750,11 @@ class ExperimentTracker:
         model: ViLBERT,
         dataloader: datasets.DataLoader,
         device:str = "cuda" if torch.cuda.is_available() else "cpu",
+        knn_k=KNN_K,
         #TODO: implemet mmimdb loader
     ):
         measures_per_layer = analysis.analyse_alignment(dataloader=dataloader, model=model,
-            device=device)
+            device=device, knn_k=knn_k)
         return measures_per_layer
 
     def create_model(self, config: ViLBERTConfig) -> ViLBERT:
@@ -916,7 +919,7 @@ class ExperimentTracker:
             os.makedirs(exp_dir_name, exist_ok=True)
             analysis.run_alignment_visualization(
                 dataloader=cc_dataloader, model=model,
-                dir_name=exp_dir_name, filename_extension=filename_extention
+                dir_name=exp_dir_name, filename_extension=filename_extention,
             )
 
 
@@ -1063,8 +1066,8 @@ class ExperimentTracker:
 
 
 
-    def analyse_alignment(self, model:ViLBERT, num_samples:int, task:str,
-        device:str="cuda" if torch.cuda.is_available() else "cpu"):
+    def run_alignment_analysis(self, model:ViLBERT, num_samples:int, task:str,
+        device:str="cuda" if torch.cuda.is_available() else "cpu", knn_k=KNN_K):
         assert task in ["hateful_memes", "mm_imdb", "cc"]       #  TODO: add more tasks
         dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
@@ -1084,10 +1087,31 @@ class ExperimentTracker:
             assert False
         print(f"len dataloader: {len(dataloader.dataset)}")
 
-        alignment_metrics = self._analyse_alignment(model=model, dataloader=dataloader, device=device )
+        alignment_metrics = self._analyse_alignment(model=model, dataloader=dataloader, device=device, knn_k=knn_k)
         # print(alignment_metrics)
 
         return alignment_metrics
+
+    def run_visualization(self, model:ViLBERT, num_samples:int, task:str,
+        device:str="cuda" if torch.cuda.is_available() else "cpu"):
+        assert task in ["hateful_memes", "mm_imdb", "cc"]       #  TODO: add more tasks
+        dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
+            batch_size=BATCH_SIZE_ANALYSIS,
+            num_workers=0,  pin_memory=False, prefetch_factor=None,
+            num_samples=num_samples,
+            seed=model.config.seed
+        )
+        if task == "hateful_memes":
+            dataloader = dataloader_hm
+        elif task == "mm_imdb":
+            dataloader = dataloader_imdb
+        elif task == "cc":
+            dataloader = dataloader_cc
+        else:
+            assert False
+        print(f"len dataloader: {len(dataloader.dataset)}")
+
+
 
 
 
