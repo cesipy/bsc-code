@@ -29,11 +29,7 @@ def visualize_correlation_matrix(result, metric="mknn", corr_func=pearsonr, save
     """Create and visualize a correlation matrix heatmap."""
     sizes = sorted(result.keys())
     n = len(sizes)
-
-    # Initialize matrix
     corr_matrix = np.zeros((n, n))
-
-    # Compute correlations
     for i, size1 in enumerate(sizes):
         for j, size2 in enumerate(sizes):
             if i == j:
@@ -46,24 +42,15 @@ def visualize_correlation_matrix(result, metric="mknn", corr_func=pearsonr, save
                     print(f"Warning: correlation between {size1} and {size2} for {metric} is not significant (p={p:.3f}, r={r:.3f})")
                 corr_matrix[i, j] = r
 
-    # Create heatmap
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    im = ax.imshow(corr_matrix, cmap='RdYlGn', vmin=-1, vmax=1, aspect='auto')
-
-    # Set ticks and labels
+    im = ax.imshow(corr_matrix, cmap="magma", vmin=-1, vmax=1, aspect='auto')
     ax.set_xticks(np.arange(n))
     ax.set_yticks(np.arange(n))
     ax.set_xticklabels(sizes)
     ax.set_yticklabels(sizes)
-
-    # Rotate x labels
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-    # Add colorbar
     cbar = plt.colorbar(im, ax=ax, label='Correlation Coefficient')
-
-    # Add text annotations
     for i in range(n):
         for j in range(n):
             text = ax.text(j, i, f'{corr_matrix[i, j]:.2f}',
@@ -71,18 +58,90 @@ def visualize_correlation_matrix(result, metric="mknn", corr_func=pearsonr, save
 
     ax.set_title(f'{metric.upper()} Correlation Matrix ({corr_func.__name__})',
                  fontsize=14, pad=20)
-    ax.set_xlabel('Sample Size', fontsize=12)
-    ax.set_ylabel('Sample Size', fontsize=12)
-
+    ax.set_xlabel('Sample Size', fontsize=12);ax.set_ylabel('Sample Size', fontsize=12)
     plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight'); print(f"Saved to {save_path}")
 
+    # plt.show()
+    plt.close()
+
+    return corr_matrix
+
+def visualize_k_correlation_matrix(result, k_values, corr_func=spearmanr, save_path=None):
+    """Create correlation matrix heatmap for different K values."""
+    n = len(k_values)
+    corr_matrix = np.zeros((n, n))
+
+    for i, k1 in enumerate(k_values):
+        for j, k2 in enumerate(k_values):
+            if i == j:
+                corr_matrix[i, j] = 1.0
+            else:
+                data1 = np.array(result[k1]["mknn"])
+                data2 = np.array(result[k2]["mknn"])
+                r, p = corr_func(data1, data2)
+                if p > 0.025:
+                    print(f"Warning: K={k1} vs K={k2} not significant (p={p:.3f}, r={r:.3f})")
+                corr_matrix[i, j] = r
+
+    fig, ax = plt.subplots(figsize=(10, 8)); im = ax.imshow(corr_matrix, cmap="magma", vmin=-1, vmax=1, aspect='auto')
+    ax.set_xticks(np.arange(n));ax.set_yticks(np.arange(n))
+    ax.set_xticklabels([f'K={k}' for k in k_values]);ax.set_yticklabels([f'K={k}' for k in k_values])
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    cbar = plt.colorbar(im, ax=ax, label='Correlation Coefficient')
+    for i in range(n):
+        for j in range(n):
+            text = ax.text(j, i, f'{corr_matrix[i, j]:.2f}',
+                          ha="center", va="center", color="black", fontsize=10)
+
+    ax.set_title(f'MKNN: K-value Correlation Matrix ({corr_func.__name__})',
+                 fontsize=14, pad=20)
+    ax.set_xlabel('K value', fontsize=12);ax.set_ylabel('K value', fontsize=12);plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Saved to {save_path}")
 
-    # plt.show()
-    # plt.close()
+    plt.close()
+    return corr_matrix
 
+
+def visualize_metric_correlation_matrix(result, num_samples=512, metrics=None, corr_func=spearmanr, save_path=None):
+    """Create and visualize a correlation matrix heatmap between different metrics."""
+    if metrics is None:
+        metrics = ["mknn", "cka", "cka_rbf", "svcca", "cknna", "cycle_knn", "procrustes", "jaccard", "rsa", "r2"]
+
+    n = len(metrics)
+    corr_matrix = np.zeros((n, n))
+    for i, metric1 in enumerate(metrics):
+        for j, metric2 in enumerate(metrics):
+            if i == j:
+                corr_matrix[i, j] = 1.0
+            else:
+                data1 = np.array(result[num_samples][metric1])
+                data2 = np.array(result[num_samples][metric2])
+                r, p = corr_func(data1, data2)
+                if p > 0.025:
+                    print(f"Warning: correlation between {metric1} and {metric2} is not significant (p={p:.3f}, r={r:.3f})")
+                corr_matrix[i, j] = r
+    fig, ax = plt.subplots(figsize=(12, 10))
+    im = ax.imshow(corr_matrix, cmap="magma", vmin=-1, vmax=1, aspect='auto')
+    ax.set_xticks(np.arange(n));ax.set_yticks(np.arange(n))
+    ax.set_xticklabels(metrics);ax.set_yticklabels(metrics)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    cbar = plt.colorbar(im, ax=ax, label='Correlation Coefficient')
+    for i in range(n):
+        for j in range(n):
+            text = ax.text(j, i, f'{corr_matrix[i, j]:.2f}',
+                          ha="center", va="center", color="black", fontsize=9)
+    ax.set_title(f'Metric Correlation Matrix at {num_samples} samples ({corr_func.__name__})',
+                 fontsize=14, pad=20)
+    ax.set_xlabel('Metric', fontsize=12)
+    ax.set_ylabel('Metric', fontsize=12)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved to {save_path}")
     return corr_matrix
 
 def visualize_loss(info_losses, normal_losses, total_losses):

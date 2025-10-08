@@ -93,8 +93,6 @@ def get_hateful_memes_train_augmentation():
 
 def get_hateful_memes_train_augmentation_albumation(seed:int,get_advanced=False, ):
 
-    random.seed(seed)
-    np.random.seed(seed)
 
     hm_transforms = A.Compose([
         A.ColorJitter(
