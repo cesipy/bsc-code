@@ -1,22 +1,121 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
-## 08.10
+---
 
-correlation analysis between metrics:
+## 09.10
+Same experiment as yesterday, but symmetric coattention placement at `[5,6,9]`.
+
+<details open>
+<summary><b>Results</b></summary>
+
 <figure>
-    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_pearson.png" width=300>
-    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_spearman.png" width=300>
+  <figcaption><b>CKA — Non-contrastive vs. Contrastive</b></figcaption>
+  <div align="center">
+    <img src="./res/markdown_res/no_contr_20251008-210052_experiment_coattn_5-6-9/hateful_memes/20251008-210052_e4_cka_matrices.png" width="400">
+    <img src="./res/markdown_res/contr_20251008-212534_experiment_coattn_5-6-9/hateful_memes/20251008-212534_e4_cka_matrices.png" width="400">
+  </div>
+
+  <hr>
+
+  <figcaption><b>SVCCA</b></figcaption>
+  <div align="center">
+    <img src="./res/markdown_res/no_contr_20251008-210052_experiment_coattn_5-6-9/hateful_memes/20251008-210052_e4_svcca_matrices.png" width="400">
+    <img src="./res/markdown_res/contr_20251008-212534_experiment_coattn_5-6-9/hateful_memes/20251008-212534_e4_svcca_matrices.png" width="400">
+  </div>
+
+  <small><i>Preliminary pattern: both similarity structures behave consistently across methods.</i></small>
+</figure>
+</details>
+
+---
+
+## 08.10
+Finetune: contrastive vs non-contrastive on HM with late fusion (symmetric coattns at `[9,10,11]`).
+
+<details open>
+<summary><b>Results</b></summary>
+
+<figure>
+  <figcaption><b>CKA — Non-contrastive vs. Contrastive</b></figcaption>
+
+  <div align="center">
+    <img src="./res/markdown_res/20251008-184716_experiment_coattn_9-10-11/hateful_memes/20251008-184716_e4_cka_matrices.png" width="400">
+    <img src="./res/markdown_res/20251008-191822_experiment_coattn_9-10-11/hateful_memes/20251008-191822_e3_cka_matrices.png" width="400">
+  </div>
+
+  <blockquote>
+    <b>Observation:</b> The contrastive term results in more alignment.
+    In the contrastive run, text layers 9–11 are highly similar to all vision layers (decreasing from 11→0).
+    The non-contrastive model shows the inverse pattern.
+    Vision–vision similarity is also globally higher in the contrastive case.
+  </blockquote>
+
+  <hr>
+
+  <figcaption><b>SVCCA</b></figcaption>
+
+  <div align="center">
+    <img src="./res/markdown_res/20251008-184716_experiment_coattn_9-10-11/hateful_memes/20251008-184716_e4_svcca_matrices.png" width="400">
+    <img src="./res/markdown_res/20251008-191822_experiment_coattn_9-10-11/hateful_memes/20251008-191822_e3_svcca_matrices.png" width="400">
+  </div>
+
+  <small><i>Similar outcome as for CKA — SVCCA confirms the same layer-level trends.</i></small>
+</figure>
+</details>
+
+---
+
+## KNN-K Importance
+
+<details open>
+<summary><b>Spearman correlations between different K values</b></summary>
+
+```text
+K=  5 vs K= 10: r=0.9938, p=0.0000
+...
+K=  5 vs K=256: r=0.9074, p=0.0000
+K= 10 vs K= 16: r=0.9978, p=0.0000
+...
+K=128 vs K=256: r=0.9872, p=0.0000
+
+------------------------------------------------------------
+Within-model K consistency (mean across models):
+K=  5 vs K= 10: mean r=0.9668 ± 0.0215
+...
+K=  5 vs K=128: mean r=0.9021 ± 0.0715
+...
+K=128 vs K=256: mean r=0.9694 ± 0.0313
+```
+
+<blockquote>
+  <b>Conclusion:</b> K choice is not crucial — correlations remain consistently high across values.
+</blockquote>
+</details>
+
+---
+
+## Correlation Analysis Between Metrics
+
+<figure>
+  <div align="center">
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_pearson.png" width="300">
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_spearman.png" width="300">
+  </div>
+
+  <blockquote>
+    <b>Observation:</b> Many metrics appear redundant.
+    Proceeding with the following four:
+    <ul>
+      <li><b>mknn</b> – similar to cknna, jaccard</li>
+      <li><b>cka</b></li>
+      <li><b>svcca</b> – similar to rsa and cycle_knn</li>
+      <li><b>procrustes</b></li>
+    </ul>
+    <small><i>Excluding <code>r2</code> and <code>cka_rbf</code>.</i></small>
+  </blockquote>
 </figure>
 
-=> seems that a lot of metrics are redundant. I choose only four metrics to go further:
-- mknn: similar to cknna, jaccard
-- cka:
-- svcca: similar to rsa and cycle_knn
-- procrustes
-
-
-also: exclude r2 and cka_rbf
 
 
 
@@ -35,7 +134,7 @@ Epoch 6/6, Train Loss: 0.4473, Val Loss: 0.5459, Val Acc: 0.7347
 <img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_cka_matrices.png" width=400>
 <img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_cka_matrices.png" width=400>
 
-**mknn**: untrained vs e6
+**mknn**: untrained vs e6<br>
 <img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_mutual_knn_matrices.png" width=400>
 <img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_mutual_knn_matrices.png" width=400>
 

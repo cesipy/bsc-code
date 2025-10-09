@@ -532,7 +532,7 @@ def get_upmc_datasets(
     assert 0< train_test_ratio <1
 
     if use_train_augmentation:
-        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=False)
+        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=False, seed=seed)
     else: transform = None
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")

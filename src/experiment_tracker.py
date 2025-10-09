@@ -12,8 +12,8 @@ import optuna; from optuna import pruners
 
 
 from config import *
-from trainer import HatefulMemesTrainer, PretrainingTrainer
-from trainer import MM_IMDB_Trainer
+from trainer import HatefulMemesTrainer, PretrainingTrainer, UPMCTrainer, MM_IMDB_Trainer
+
 from vilbert import ViLBERT
 import utils
 import datasets
@@ -398,8 +398,125 @@ class ExperimentTracker:
 
 
 
-    def run_single_experiment_hateful_memes(
+    def _get_task_trainer(self, task:str, model:ViLBERT ):
+        if task == "hateful_memes":
+            trainer = HatefulMemesTrainer(
+                model=model,
+                config=model.config,
+                use_contrastive_loss=model.config.use_contrastive_loss,
+                gradient_accumulation=GRADIENT_ACCUMULATION
+            )
+        elif task == "mm_imdb":
+            trainer = MM_IMDB_Trainer(
+                model=model,
+                config=model.config,
+                use_contrastive_loss=model.config.use_contrastive_loss,
+                gradient_accumulation=GRADIENT_ACCUMULATION
+            )
+        elif task == "upmc_food":
+            trainer = UPMCTrainer(
+                model=model,
+                config=model.config,
+                use_contrastive_loss=model.config.use_contrastive_loss,
+                gradient_accumulation=GRADIENT_ACCUMULATION
+            )
+        else:
+            raise ValueError(f"unknown task: {task}")
+
+        return trainer
+
+
+
+    def _get_task_dataloader(
         self,
+        task:str,
+        config:ViLBERTConfig,
+    )-> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
+        """
+        Returns:
+            Tuple[DataLoader, DataLoader] train_dataloader, val_dataloader
+        """
+
+        if task == "hateful_memes":
+            train_loader, val_loader = datasets.get_hateful_memes_datasets(
+                train_test_ratio=config.train_test_ratio,
+                batch_size=BATCH_SIZE_DOWNSTREAM,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                prefetch_factor=PREFETCH,
+                persistent_workers=PERSISTENT_WORKERS,
+                use_train_augmentation=True,
+                seed=config.seed
+            )
+        elif task == "mm_imdb":
+            train_loader, val_loader = datasets.get_mmimdb_datasets(
+                train_test_ratio=config.train_test_ratio,
+                batch_size=BATCH_SIZE_DOWNSTREAM,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                prefetch_factor=PREFETCH,
+                persistent_workers=PERSISTENT_WORKERS,
+                use_train_augmentation=True,
+                seed=config.seed,
+            )
+
+        elif task == "upmc_food":
+            train_loader, val_loader = datasets.get_upmc_datasets(
+                train_test_ratio=config.train_test_ratio,
+                batch_size=BATCH_SIZE_DOWNSTREAM,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                prefetch_factor=PREFETCH,
+                persistent_workers=PERSISTENT_WORKERS,
+                use_train_augmentation=True,
+                seed=config.seed,
+            )
+
+        return train_loader, val_loader
+
+
+    def _get_task_alignment_dataloader(
+        self,
+        task: str,
+        config: ViLBERTConfig,
+    ):
+        if task == "hateful_memes":
+            alignment_dataloader, _, _ = datasets.get_alignment_dataloaders(
+                batch_size=BATCH_SIZE_ANALYSIS,
+                num_workers=0,
+                pin_memory=False,
+                prefetch_factor=None,
+                seed=config.seed,
+                num_samples=ALIGNMENT_ANALYSIS_SIZE
+            )
+        elif task == "mm_imdb":
+            _, _, alignment_dataloader = datasets.get_alignment_dataloaders(
+                batch_size=BATCH_SIZE_ANALYSIS,
+                num_workers=0,
+                pin_memory=False,
+                prefetch_factor=None,
+                seed=config.seed,
+                num_samples=ALIGNMENT_ANALYSIS_SIZE
+            )
+        # TODO: currently there is no alignment dataloader for upmc
+        elif task == "upmc_food":
+            _, alignment_dataloader, _ = datasets.get_alignment_dataloaders(
+                batch_size=BATCH_SIZE_ANALYSIS,
+                num_workers=0,
+                pin_memory=False,
+                prefetch_factor=None,
+                seed=config.seed,
+                num_samples=ALIGNMENT_ANALYSIS_SIZE
+            )
+        else:
+            raise ValueError(f"unknown task: {task}")
+
+        return alignment_dataloader
+
+
+    def run_single_experiment(
+        self,
+        task:str,
         config: ViLBERTConfig,
         training_results: dict,
         epochs: int,
@@ -409,45 +526,27 @@ class ExperimentTracker:
         tmsp: Optional[str] = None,
         pretrained_model=None
     ):
+        assert task in tasklib.all_task_list
+
         if pretrained_model:
             model = pretrained_model
         else:
             model = self.create_model(config)
-        trainer = HatefulMemesTrainer(
-            model=model,
-            config=config,
-            gradient_accumulation=GRADIENT_ACCUMULATION,
-            use_contrastive_loss=config.use_contrastive_loss,
-        )
+        trainer = self._get_task_trainer(task=task,model=model)
 
-        train_loader, val_loader = datasets.get_hateful_memes_datasets(
-            train_test_ratio=config.train_test_ratio,
-            batch_size=BATCH_SIZE_DOWNSTREAM,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
-            persistent_workers=PERSISTENT_WORKERS,
-            use_train_augmentation=True,
-            seed=config.seed
-        )
-        hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
-            batch_size=BATCH_SIZE_ANALYSIS,
-            num_workers=0,
-            pin_memory=False,
-            prefetch_factor=None,
-            seed=config.seed,
-            num_samples=ALIGNMENT_ANALYSIS_SIZE
-        )
+        train_loader, val_loader = self._get_task_dataloader(task=task, config=config)
+        alignment_dataloader = self._get_task_alignment_dataloader(task=task, config=config)
+
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
 
         if not skip_alignment_analysis:
-            alignment_metrics = self._analyse_alignment(model=model, dataloader=hm_dataloader)
-            training_results["hateful_memes"]["alignment"][0] = alignment_metrics
+            alignment_metrics = self._analyse_alignment(model=model, dataloader=alignment_dataloader)
+            training_results[task]["alignment"][0] = alignment_metrics
 
         if run_visualization:
             filename_extension = f"{tmsp}_e0"
-            analysis.run_alignment_visualization(dataloader=hm_dataloader, model=model,
+            analysis.run_alignment_visualization(dataloader=alignment_dataloader, model=model,
                                                  dir_name=dir_name, filename_extension=filename_extension)
 
         for i in range(epochs):
@@ -466,123 +565,32 @@ class ExperimentTracker:
             print(info_str)
             logger.info(info_str)
 
-            training_results["hateful_memes"]["training"][i+1]["train_loss"] = train_loss
-            training_results["hateful_memes"]["training"][i+1]["val_loss"] = test_loss
-            training_results["hateful_memes"]["training"][i+1]["val_acc"] = acc
-            alignment_metrics = {}
-            if not skip_alignment_analysis:
-                alignment_metrics = self._analyse_alignment(model=model, dataloader=hm_dataloader)
-            training_results["hateful_memes"]["alignment"][i+1] = alignment_metrics
-            if run_visualization:
-                filename_extension = f"{tmsp}_e{i+1}"
-                analysis.run_alignment_visualization(dataloader=hm_dataloader, model=model,
-                    dir_name=dir_name, filename_extension=filename_extension)
-        if tmsp:
-            save_path = f"res/checkpoints/{tmsp}_finetuned_hateful_memes.pt"
-            training_results["hateful_memes"]["model_path"] = save_path
-            trainer.model.save_model(save_path)
-            info_str = f"Saved finetuned model to {save_path}"
-            logger.info(info_str)
-            print(info_str)
-
-        return training_results
-
-    def run_single_experiment_mm_imdb(
-        self,
-        config: ViLBERTConfig,
-        training_results: dict,
-        epochs: int,
-        run_visualization: bool,
-        dir_name: Optional[str] = None,
-        skip_alignment_analysis: bool = False,
-        tmsp: Optional[str] = None,
-        pretrained_model=None
-    ):
-
-        if pretrained_model:
-            model = pretrained_model
-        else:
-            model = self.create_model(config)
-        trainer = MM_IMDB_Trainer(
-            model=model,
-            config=config,
-            gradient_accumulation=GRADIENT_ACCUMULATION,
-            use_contrastive_loss=config.use_contrastive_loss,
-        )
-
-        train_loader, val_loader = datasets.get_mmimdb_datasets(
-            train_test_ratio=config.train_test_ratio,
-            # train_test_ratio=0.1,
-            batch_size=BATCH_SIZE_DOWNSTREAM,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
-            persistent_workers=PERSISTENT_WORKERS,
-            use_train_augmentation=True,
-            seed=config.seed,
-        )
-        #TODO: get alignment data loader for mmimdb
-        hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
-            batch_size=BATCH_SIZE_ANALYSIS,
-            num_workers=0,
-            pin_memory=False,
-            prefetch_factor=None,
-            seed=config.seed,
-            num_samples=ALIGNMENT_ANALYSIS_SIZE
-        )
-        trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
-                                lr=config.learning_rate)
-
-        if not skip_alignment_analysis:
-            alignment_metrics = self._analyse_alignment(model=model, dataloader=imdb_dataloader)
-            training_results["mm_imdb"]["alignment"][0] = alignment_metrics
-
-        if run_visualization:
-            filename_extension = f"{tmsp}_e0"
-            analysis.run_alignment_visualization(dataloader=imdb_dataloader, model=model,
-                                                 dir_name=dir_name, filename_extension=filename_extension)
-
-        for i in range(epochs):
-            train_loss = self.train_model_step(
-                trainer=trainer,
-                train_dataloader=train_loader,
-            )
-            test_loss, acc = self.evaluate_model(
-                trainer=trainer,
-                dataloader=val_loader,
-            )
-            info_str = (
-                f"Epoch {i+1}/{epochs}, Train Loss: {train_loss:.4f}"
-                f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
-            )
-            print(info_str)
-            logger.info(info_str)
-
-            training_results["mm_imdb"]["training"][i+1]["train_loss"] = train_loss
-            training_results["mm_imdb"]["training"][i+1]["val_loss"] = test_loss
-            training_results["mm_imdb"]["training"][i+1]["val_acc"] = acc
+            training_results[task]["training"][i+1]["train_loss"] = train_loss
+            training_results[task]["training"][i+1]["val_loss"] = test_loss
+            training_results[task]["training"][i+1]["val_acc"] = acc
 
             alignment_metrics = {}
             if not skip_alignment_analysis:
 
                 alignment_metrics = self._analyse_alignment(
-                    model=model, dataloader=imdb_dataloader)
+                    model=model, dataloader=alignment_dataloader)
 
-            training_results["mm_imdb"]["alignment"][i+1] = alignment_metrics
+            training_results[task]["alignment"][i+1] = alignment_metrics
 
             if run_visualization:
                 filename_extension = f"{tmsp}_e{i+1}"
-                analysis.run_alignment_visualization(dataloader=imdb_dataloader, model=model,
-                                                     dir_name=dir_name, filename_extension=filename_extension)
+                analysis.run_alignment_visualization(dataloader=alignment_dataloader, model=model,
+                    dir_name=dir_name, filename_extension=filename_extension)
 
         if tmsp:
-            save_path = f"res/checkpoints/{tmsp}_finetuned_mm_imdb.pt"
-            training_results["mm_imdb"]["model_path"] = save_path
+            save_path = f"res/checkpoints/{tmsp}_finetuned_{task}.pt"
+            training_results[task]["model_path"] = save_path
             trainer.model.save_model(save_path)
             info_str = f"Saved finetuned model to {save_path}"
             logger.info(info_str)
             print(info_str)
         return training_results
+
 
     def _get_filename(self, config: ExperimentConfig):
         timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -618,37 +626,21 @@ class ExperimentTracker:
         exp_dir_name = os.path.join(self.visualization_dir, filename)
         os.makedirs(exp_dir_name, exist_ok=True)
 
-        if task_name == "hateful_memes":
-            exp_dir_name_hm = os.path.join(exp_dir_name, "hateful_memes")
-            os.makedirs(exp_dir_name_hm, exist_ok=True)
-            n_training_results = self.run_single_experiment_hateful_memes(
-                config=config,
-                training_results=training_results,
-                epochs=experiment_config.epochs,
-                dir_name=exp_dir_name_hm,
-                run_visualization=run_visualizations,
-                skip_alignment_analysis=not run_alignment_analysis,
-                tmsp=tmsp, pretrained_model=pretrained_model
-            )
-        elif task_name == "mm_imdb":
-            exp_dir_name_imdb = os.path.join(exp_dir_name, "mm_imdb")
-            os.makedirs(exp_dir_name_imdb, exist_ok=True)
-            n_training_results = self.run_single_experiment_mm_imdb(
-                config=config,
-                training_results=training_results,
-                epochs=experiment_config.epochs,
-                dir_name=exp_dir_name_imdb,
-                run_visualization=run_visualizations,
-                skip_alignment_analysis=not run_alignment_analysis,
-                tmsp=tmsp,
-                pretrained_model=pretrained_model
-            )
-        #TODO: other tasks
+        exp_dir_name = os.path.join(exp_dir_name, task_name)
+        os.makedirs(exp_dir_name, exist_ok=True)
+        training_results = self.run_single_experiment(
+            task=task_name,
+            config=config,
+            training_results=training_results,
+            epochs=experiment_config.epochs,
+            dir_name=exp_dir_name,
+            run_visualization=run_visualizations,
+            skip_alignment_analysis=not run_alignment_analysis,
+            tmsp=tmsp,
+            pretrained_model=pretrained_model
 
-        else:
-            raise ValueError(f"unknown single_task: {task_name}")
-
-        return n_training_results
+        )
+        return training_results
 
 
 
@@ -672,7 +664,7 @@ class ExperimentTracker:
 
         # TODO: also include use_contrastive as param to optimize
 
-        training_results = self._initialize_results_dict(epochs=experiment_config.epochs)
+        training_results = self._initialize_results_dict(epochs=experiment_config.epochs, tasks=tasks)
 
         for task in tasks:
             pretrained_model = None
@@ -701,27 +693,23 @@ class ExperimentTracker:
         )
         return training_results
 
-    def _initialize_results_dict(self, epochs ):
-        training_results = {
-            "hateful_memes": { "alignment": {}, "training": {} },
-            "mm_imdb": {  "alignment": {}, "training": {} },
-            "pretraining": { "alignment": {}, "training": {} },
-        }
-        # for initialized only, baseline comparision before training
-        training_results["hateful_memes"]["alignment"][0] = {}
-        training_results["mm_imdb"]["alignment"][0] = {}
-        training_results["pretraining"]["alignment"][0] = {}
+    def _initialize_results_dict(self, epochs, tasks=None ):
+        if tasks is None:
+            tasks = ["hateful_memes", "mm_imdb", "pretraining"]
+        training_results = {}
 
+        for task in tasks:
+            training_results[task] = {
+                "alignment": {0: {}},  # Initial state
+                "training": {}
+            }
 
-        for i in range(epochs):
-            curr_epoch = i+1    # 0 is uninitialized
-            training_results["hateful_memes"]["alignment"][curr_epoch] = {}
-            training_results["mm_imdb"]["alignment"][curr_epoch] = {}
-            training_results["hateful_memes"]["training"][curr_epoch] = {}
-            training_results["mm_imdb"]["training"][curr_epoch] = {}
-            training_results["pretraining"]["alignment"][curr_epoch] = {}
-            training_results["pretraining"]["training"][curr_epoch] = {}
-        return  training_results
+            # Initialize epochs
+            for epoch in range(1, epochs + 1):
+                training_results[task]["alignment"][epoch] = {}
+                training_results[task]["training"][epoch] = {}
+
+        return training_results
 
 
 
@@ -751,10 +739,11 @@ class ExperimentTracker:
         dataloader: datasets.DataLoader,
         device:str = "cuda" if torch.cuda.is_available() else "cpu",
         knn_k=KNN_K,
+        verbose=True,
         #TODO: implemet mmimdb loader
     ):
         measures_per_layer = analysis.analyse_alignment(dataloader=dataloader, model=model,
-            device=device, knn_k=knn_k)
+            device=device, knn_k=knn_k, verbose=verbose,)
         return measures_per_layer
 
     def create_model(self, config: ViLBERTConfig) -> ViLBERT:
@@ -1066,8 +1055,15 @@ class ExperimentTracker:
 
 
 
-    def run_alignment_analysis(self, model:ViLBERT, num_samples:int, task:str,
-        device:str="cuda" if torch.cuda.is_available() else "cpu", knn_k=KNN_K):
+    def run_alignment_analysis(
+        self,
+        model:ViLBERT,
+        num_samples:int,
+        task:str,
+        device:str="cuda" if torch.cuda.is_available() else "cpu",
+        knn_k=KNN_K,
+        verbose=True
+        ):
         assert task in ["hateful_memes", "mm_imdb", "cc"]       #  TODO: add more tasks
         dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
@@ -1085,9 +1081,9 @@ class ExperimentTracker:
             dataloader = dataloader_cc
         else:
             assert False
-        print(f"len dataloader: {len(dataloader.dataset)}")
+        # print(f"len dataloader: {len(dataloader.dataset)}")
 
-        alignment_metrics = self._analyse_alignment(model=model, dataloader=dataloader, device=device, knn_k=knn_k)
+        alignment_metrics = self._analyse_alignment(model=model, dataloader=dataloader, device=device, knn_k=knn_k, verbose=verbose)
         # print(alignment_metrics)
 
         return alignment_metrics
@@ -1109,10 +1105,58 @@ class ExperimentTracker:
             dataloader = dataloader_cc
         else:
             assert False
-        print(f"len dataloader: {len(dataloader.dataset)}")
+
+        analysis.run_alignment_visualization(
+            dataloader=dataloader,
+            model=model,
+            dir_name=self.visualization_dir,
+            filename_extension=f"viz_{task}"
+        )
 
 
 
+    def evaluate(self, model:ViLBERT, task:str):
+        assert task in ["hateful_memes", "mm_imdb"]
+
+        if task == "hateful_memes":
+            _, val_loader = datasets.get_hateful_memes_datasets(
+                train_test_ratio=TRAIN_TEST_RATIO,
+                batch_size=BATCH_SIZE_DOWNSTREAM,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                prefetch_factor=PREFETCH,
+                persistent_workers=PERSISTENT_WORKERS,
+                use_train_augmentation=False,
+                seed=model.config.seed
+            )
+            trainer = HatefulMemesTrainer(
+                model=model,
+                config=model.config,
+                gradient_accumulation=GRADIENT_ACCUMULATION,
+                use_contrastive_loss=model.config.use_contrastive_loss,
+            )
+            loss, acc = trainer.evaluate(val_loader)
+
+        elif task == "mm_imdb":
+            _, val_loader = datasets.get_mmimdb_datasets(
+                train_test_ratio=TRAIN_TEST_RATIO,
+                batch_size=BATCH_SIZE_DOWNSTREAM,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                prefetch_factor=PREFETCH,
+                persistent_workers=PERSISTENT_WORKERS,
+                use_train_augmentation=False,
+                seed=model.config.seed,
+            )
+            trainer = MM_IMDB_Trainer(
+                model=model,
+                config=model.config,
+                gradient_accumulation=GRADIENT_ACCUMULATION,
+                use_contrastive_loss=model.config.use_contrastive_loss,
+            )
+            loss, acc = trainer.evaluate(val_loader)
+
+        return loss, acc
 
 
 

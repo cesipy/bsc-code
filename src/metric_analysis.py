@@ -12,7 +12,9 @@ import utils
 
 from scipy.stats import pearsonr, spearmanr
 
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+import warnings     # should ignore all warnings,
+warnings.filterwarnings("ignore")
 
 logger = Logger()
 
@@ -32,7 +34,7 @@ def randomly_generate_config():
     return config_t, config_v
 
 
-def compare_knn_k_values(result, k_values):
+def compare_knn_k_values(result, k_values, n_models:int):
     """Compare mknn metric across different K values."""
     print("Spearman correlations between different K values:")
     logger.info("Spearman correlations between different K values:")
@@ -42,6 +44,26 @@ def compare_knn_k_values(result, k_values):
             data2 = np.array(result[k2]["mknn"])
             r, p = spearmanr(data1, data2)
             result_str = f"  K={k1:3d} vs K={k2:3d}: r={r:.4f}, p={p:.4f}"
+            print(result_str)
+            logger.info(result_str)
+
+    print(f"\n{'-'*60}")
+    print("Within-model K consistency (mean across models):")
+    logger.info("\nWithin-model K consistency (mean across models):")
+
+    for i, k1 in enumerate(k_values):
+        for k2 in k_values[i+1:]:
+            within_corrs = []
+            for model_idx in range(n_models):
+                start = model_idx * 12
+                end = start + 12
+                model_data1 = np.array(result[k1]["mknn"][start:end])
+                model_data2 = np.array(result[k2]["mknn"][start:end])
+                r, _ = spearmanr(model_data1, model_data2)
+                within_corrs.append(r)
+            mean_r = np.mean(within_corrs)
+            std_r = np.std(within_corrs)
+            result_str = f"  K={k1:3d} vs K={k2:3d}: mean r={mean_r:.4f} ± {std_r:.4f}"
             print(result_str)
             logger.info(result_str)
 
@@ -267,21 +289,33 @@ def main():
     for k in knn_ks:
         result[k] = {
             "mknn":[],
+            "running_time": []
         }
     for path in paths:
         model = ViLBERT.load_model(load_path=path)
         print(f"model coattentions - t_biattn: {model.config.text_cross_attention_layers}, v_biattn: {model.config.vision_cross_attention_layers}, path: {path}")
         for k in knn_ks:
-
+            t_s = time.time()
             info_str = f"knn_k correlation test with k={k}"
             print(info_str); logger.info(info_str)
 
             metrics = t.run_alignment_analysis(
-                model=model, num_samples=512, task="hateful_memes", device="cuda", knn_k=k)
+                model=model, num_samples=512, task="hateful_memes", device="cuda", knn_k=k, verbose=False)
             # only need to analyse mknn
             result[k]["mknn"].extend([metrics[i]["mknn"] for i in range(12)])
 
-    compare_knn_k_values(result, knn_ks)
+            t_e = time.time()
+
+            result[k]["running_time"].append(t_e-t_s)
+        print("-"*25 + "\n\n")
+
+    for k in knn_ks:
+        times = result[k]["running_time"]
+        info_str = f"knn_k={k}: avg running time: {np.mean(times):.2f}s ± {np.std(times):.2f}s over {len(times)} models"
+        print(info_str); logger.info(info_str)
+
+
+    compare_knn_k_values(result, knn_ks, n_models=len(paths))
     utils.visualize_k_correlation_matrix(
         result=result,
         k_values=knn_ks,
@@ -294,55 +328,6 @@ def main():
         corr_func=pearsonr,
         save_path="temp/knn_k_correlation_pearson.png"
     )
-
-
-
-
-
-
-
-
-
-
-
-    # ------------------------------------------------------------
-    # paths = []
-    # seed = 123
-
-    # for i in range(3):
-    #     t_biattn, v_biattn = randomly_generate_config()
-    #     infostr = f"Run {i+1}/3 with t_biattn={t_biattn}, v_biattn={v_biattn}"
-    #     logger.info(infostr)
-    #     print(infostr)
-    #     test_config = experiment_tracker.ExperimentConfig(
-    #         t_biattention_ids=t_biattn,
-    #         v_biattention_ids=v_biattn,
-    #         use_contrastive_loss=False,
-    #         epochs=4,
-    #         seed=seed,
-    #         learning_rate=3.55e-5
-    #     )
-    #     seed += 1
-
-    #     test_config_mm = experiment_tracker.ExperimentConfig(
-    #         t_biattention_ids=t_biattn,
-    #         v_biattention_ids=v_biattn,
-    #         use_contrastive_loss=False,
-    #         epochs=6,
-    #         seed=seed,
-    #         learning_rate=4e-5
-    #     )
-
-    #     seed+=1
-
-
-    #     res = t.run_finetune(experiment_config=test_config, tasks=["hateful_memes"], run_alignment_analysis=False)
-    #     paths.append(res["hateful_memes"]["model_path"])
-    #     res2 = t.run_finetune(experiment_config=test_config_mm, tasks=["mm_imdb"], run_alignment_analysis=False)
-    #     paths.append(res2["mm_imdb"]["model_path"])
-
-    # print(paths)
-
 
 
 

@@ -202,7 +202,6 @@ def get_text_embedding(text:str, tokenizer:PreTrainedTokenizerFast):
 
 def generate_data_list(path: str):
     dir_name = os.path.dirname(path)
-    print("dirname: ", dir_name)
 
     def read_jsonl(file_path):
         data = []

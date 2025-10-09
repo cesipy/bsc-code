@@ -190,4 +190,8 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] compare KNN_K
 - [ ] compare correlation of the measures
 
-- [ ] visualization for svvca
+- [x] visualization for svvca
+- [ ] visualizations with KNNK=32
+- [ ] check new measures with contrastive loss ON! and directly compare.
+    - maybe also contrastive pretraining
+    - also normal pretraining!

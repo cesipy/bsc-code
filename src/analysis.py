@@ -401,9 +401,13 @@ def get_additional_metrics(text_embeddings, vision_embeddings, knn_k):
     }
 
 
-def analyse_alignment(dataloader: DataLoader, model: ViLBERT,
-        device = "cuda" if torch.cuda.is_available() else "cpu",
-        knn_k=KNN_K):
+def analyse_alignment(
+    dataloader: DataLoader,
+    model: ViLBERT,
+    device = "cuda" if torch.cuda.is_available() else "cpu",
+    knn_k=KNN_K,
+    verbose=False
+    ):
     layers_data = get_alignment_data(dataloader=dataloader, model=model, device=device)
 
     metric_adds, metric_news, metric_olds = [],[],[]
@@ -431,12 +435,6 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT,
         metric_news.append(metrics_new)
         metric_olds.append(metrics_old)
 
-        info_str = (f"layer {i:2}: mknn = {metrics_old['mknn']:4.2f}, "
-               f"cka(lin) = {metrics_old['cka_linear']:5.2f}, "
-               f"svcca = {metrics_old['svcca']:5.2f}, "
-               f"rank-sim = {metrics_old['rank_sim']:5.2f}, "
-               f"procrust = {metrics_old['procrustes_dist']:7.2f}, "
-        )
         info_str2 = (f"layer {i:2}: mknn = {metrics_new['mknn']:4.2f}, "
                 f"cka(lin)= {metrics_new['cka']:5.2f}, "
                 f"svcca= {metrics_new['svcca']:4.2f}, "
@@ -446,9 +444,8 @@ def analyse_alignment(dataloader: DataLoader, model: ViLBERT,
                 f"cycleknn= {metrics_new['cycle_knn']:4.2f}")
 
         # print(info_str)
-        print(info_str2)
-        logger.info(info_str)
-        logger.info(info_str2)
+        if verbose:
+            print(info_str2);logger.info(info_str2)
 
     return_dict = {}
     for i in range(num_layers):
@@ -753,6 +750,8 @@ def cka_custom(X, Y):
 
     cka_score = numerator / denominator
     return cka_score.item()
+
+
 
 
 
