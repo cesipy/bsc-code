@@ -501,7 +501,7 @@ class PretrainingTrainer:
             normal_losses=self.normal_losses,
             info_losses=self.info_losses
         )
-        print(f"contrastive loss: {avg_loss_contrastive}")
+        # print(f"contrastive loss: {avg_loss_contrastive}")
         return avg_loss_ap, avg_loss_mlm, avg_loss_mim
 
 

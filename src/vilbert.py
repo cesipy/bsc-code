@@ -86,66 +86,6 @@ class Model(nn.Module, ABC):
     def forward(self, *args, **kwargs):
         pass
 
-class Baseline(Model):
-    def __init__(self, config: ViLBERTConfig):
-        super(Baseline, self).__init__(config)
-
-        # needed to work
-        self.depth = 1
-        self.config = config
-        cross_attention_layers = config.cross_attention_layers
-        self.cross_attention_layers = cross_attention_layers
-
-    def forward(self,
-        text_input_ids,
-        text_attention_mask=None,
-        text_token_type_ids=None,
-        image_pixel_values=None,
-        image_attention_mask=None,
-        output_attentions=False,
-        output_hidden_states=False,
-        save_intermediate_representations=False,
-    ):
-        text_output = self.bert(
-            input_ids=text_input_ids,
-            attention_mask=text_attention_mask,
-            token_type_ids=text_token_type_ids,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-        )
-
-        image_output = self.vit(
-            image_pixel_values,)
-
-        text_embedding = text_output.last_hidden_state
-        vision_embedding = image_output
-
-
-
-
-
-        if save_intermediate_representations:
-            intermediate_representations = []
-            current_dict = {
-                    "layer": 0,
-                    "text_embedding": text_embedding.clone(),
-                    "vision_embedding": vision_embedding.clone(),
-                    "is_cross_attention": False
-                }
-
-            intermediate_representations.append(current_dict)
-
-            text_embedding = text_embedding[:, 0, :]
-            vision_embedding = vision_embedding[:, 0, :]
-            return text_embedding, vision_embedding, intermediate_representations
-        text_embedding = text_embedding[:, 0, :]
-        vision_embedding = vision_embedding[:, 0, :]
-        return text_embedding, vision_embedding
-
-
-
-
-
 
 
 class VisionEmbeddings(nn.Module):

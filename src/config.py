@@ -78,7 +78,7 @@ if machine == "remote":
 else:
     BATCH_SIZE_ANALYSIS = 128
 
-KNN_K = 15      #value for k in knn
+KNN_K = 32      #value for k in knn
 NUM_SAMPLES_CLS =   2000
 NUM_SAMPLES_FULL_SEQ= 200 # lower, as this is full seq; mainly used for cka
 

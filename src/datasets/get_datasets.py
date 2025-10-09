@@ -449,7 +449,7 @@ def get_easyvqa_datasets(
     pin_memory: bool = False,
     prefetch_factor: int = 4,
     persistent_workers: bool = True,
-    use_train_augmentation: bool = False  # VQA typically doesn't need augmentation
+    use_train_augmentation: bool = False  
 ) -> typing.Tuple[DataLoader, DataLoader]:
     """
     Get the EasyVQA dataset for train and validation

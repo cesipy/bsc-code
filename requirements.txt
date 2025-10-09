@@ -21,3 +21,4 @@ grad-cam
 statsmodels
 pymp-pypi
 torchaudio
+lovely-tensors
