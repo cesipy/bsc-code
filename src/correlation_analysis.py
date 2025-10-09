@@ -9,11 +9,13 @@ import numpy as np
 from scipy.stats import pearsonr, spearmanr
 import experiment_tracker
 from vilbert import *
+from logger import Logger
 
 
 import warnings     # should ignore all warnings,
 warnings.filterwarnings("ignore")
 
+logger = Logger()
 
 
 def was_task_analysed(task, content):
@@ -21,26 +23,64 @@ def was_task_analysed(task, content):
     return content[task]["alignment"]["0"] != {}
 
 def check_correlation(accs, losses, vals, metric:str,  corr_fn=pearsonr):
-
     assert len(accs) == len(losses) == len(vals)
-
     r_a, p_a = corr_fn(accs, vals)
     r_l, p_l = corr_fn(losses, vals)
+    info_str1 = f"corr. of {metric:14} with acc : r={r_a:+.3f}, p={p_a:.3f}"
+    info_str2 = f"corr. of {metric:14} with loss: r={r_l:+.3f}, p={p_l:.3f}"
 
-    print(f"Correlation of {metric:10} with acc : r={r_a:+.3f}, p={p_a:.3f}")
-    print(f"Correlation of {metric:10} with loss: r={r_l:+.3f}, p={p_l:.3f}")
 
 
 def main():
 
     paths = [
-        "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
-        "res/checkpoints/20251007-201826_finetuned_mm_imdb.pt",
-        "res/checkpoints/20251008-141240_finetuned_hateful_memes.pt",
-        "res/checkpoints/20251008-144350_finetuned_mm_imdb.pt",
-        "res/checkpoints/20251008-154319_finetuned_hateful_memes.pt",
-        "res/checkpoints/20251008-160257_finetuned_mm_imdb.pt",
-        "res/checkpoints/20251008-170044_finetuned_hateful_memes.pt"
+        # on gaming pc
+        # "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
+        # "res/checkpoints/20251007-201826_finetuned_mm_imdb.pt",
+        # "res/checkpoints/20251008-141240_finetuned_hateful_memes.pt",
+        # "res/checkpoints/20251008-144350_finetuned_mm_imdb.pt",
+        # "res/checkpoints/20251008-154319_finetuned_hateful_memes.pt",
+        # "res/checkpoints/20251008-160257_finetuned_mm_imdb.pt",
+        # "res/checkpoints/20251008-170044_finetuned_hateful_memes.pt"
+
+        # ---------------------------------------------------------
+        #uni gpus
+        "res/checkpoints/20251006-211344_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251006-211344_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251006-224233_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251006-224233_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251007-160301_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251007-160855_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251007-160855_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251007-162505_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251007-172924_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251007-173620_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-113042_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-113042_finetuned_mm_imdb.pt",
+        #not sure about them above, could be bad runs
+        "res/checkpoints/20251008-131105_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251008-143741_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-143741_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251008-161701_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-161701_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251008-174253_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-174253_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251008-193456_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-193456_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251008-211323_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-211323_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251008-223850_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251008-223850_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251009-004449_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251009-004449_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251009-023655_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251009-023655_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251009-042241_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251009-042241_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251009-060800_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251009-060800_finetuned_mm_imdb.pt",
+        "res/checkpoints/20251009-075441_finetuned_hateful_memes.pt",
+        "res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
     ]
     t = experiment_tracker.ExperimentTracker()
     num_samples = 512
@@ -72,6 +112,7 @@ def main():
         # loss_m, acc_m = .0,.0
 
         print(f"model {path}: \n\thateful_memes: val_loss={loss_h:.4f}, val_acc={acc_h:.4f}\n\tmm_imdb      : val_loss={loss_m:.4f}, val_acc={acc_m:.4f}")
+        logger.info(f"model {path}: \n\thateful_memes: val_loss={loss_h:.4f}, val_acc={acc_h:.4f}\n\tmm_imdb      : val_loss={loss_m:.4f}, val_acc={acc_m:.4f}")
         losses.extend([-loss_h, -loss_m])
         accs.extend([acc_h, acc_m])
 
@@ -84,11 +125,13 @@ def main():
     losses_array = np.array(losses)
 
     all_metrics = list(metrics[0].keys())
-    exclude = ["task", "val_loss", "val_acc", "id"]  # Don't correlate these with themselves
+    exclude = ["task", "val_loss", "val_acc", "id"]
     all_metrics = [m for m in all_metrics if m not in exclude]
 
     print("Pearson Correlations:")
+    logger.info("Pearson Correlations:")
     print("-" * 25)
+    logger.info("-" * 25)
     for metric in all_metrics:
         metric_array = np.array([m[metric] for m in metrics])
         check_correlation(
@@ -102,6 +145,7 @@ def main():
     print(f"\n{'='*25}")
     print("Spearman Correlations:")
     print("-" * 25)
+    logger.info(f"\n{'='*25}");logger.info("Spearman Correlations:");logger.info("-" * 25)
     for metric in all_metrics:
         metric_array = np.array([m[metric] for m in metrics])
         check_correlation(

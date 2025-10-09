@@ -46,14 +46,14 @@ def main():
     configs = [
         {
             "name": "early_fusion",
-            "t_biattention_ids": [2, 3, 4],
-            "v_biattention_ids": [2, 3, 4],
+            "t_biattention_ids": [3, 4, 6],
+            "v_biattention_ids": [3, 4, 6],
         },
-        {
-            "name": "middle_fusion",
-            "t_biattention_ids": [5, 6, 7],
-            "v_biattention_ids": [5, 6, 7],
-        },
+        # {
+        #     "name": "middle_fusion",
+        #     "t_biattention_ids": [5, 6, 7],
+        #     "v_biattention_ids": [5, 6, 7],
+        # },
         {
             "name": "late_fusion",
             "t_biattention_ids": [9, 10, 11],
@@ -73,25 +73,15 @@ def main():
         use_contrastive_loss=False,
         epochs=4,
         seed=42,
-        learning_rate=3.5e-5
-    )
-    conf_contrastive = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=[5,6,9],
-        v_biattention_ids=[5,6,9],
-        use_contrastive_loss=True,
-        epochs=4,
-        seed=42,
-        learning_rate=3.5e-5
+        learning_rate=4e-5
     )
 
-    # t.run_finetune(experiment_config=conf, tasks=["hateful_memes"], run_alignment_analysis=True, run_visualizations=True)
+
+    # t.run_finetune(experiment_config=conf, tasks=["upmc_food"], run_alignment_analysis=True, run_visualizations=True)
     # t.run_finetune(experiment_config=conf_contrastive, tasks=["hateful_memes"], run_alignment_analysis=True, run_visualizations=True)
     # print("completed all finetuning")
 
-
-
-    seeds = [45, 123, 456]
-    analysis_num_samples = [100, 400, 1000]
+    seeds = [4261, 1213, ]
     paths = []
 
     total_r = len(seeds) * len(configs)
@@ -108,17 +98,16 @@ def main():
                 t_biattention_ids=config["t_biattention_ids"],
                 v_biattention_ids=config["v_biattention_ids"],
                 use_contrastive_loss=False,
-                epochs=5,
-                learning_rate=3.2e-5,
+                epochs=6,
+                learning_rate=4e-5,
                 seed=seed,
             )
-
-            finetune_config_mm_imdb = experiment_tracker.ExperimentConfig(
+            finetune_config_upmc = experiment_tracker.ExperimentConfig(
                 t_biattention_ids=config["t_biattention_ids"],
                 v_biattention_ids=config["v_biattention_ids"],
                 use_contrastive_loss=False,
                 epochs=6,
-                learning_rate=3.8e-5,
+                learning_rate=4e-5,
                 seed=seed,
             )
 
@@ -126,28 +115,20 @@ def main():
                 experiment_config=finetune_config_hm,
                 run_visualizations=False,
                 run_alignment_analysis=False,
-                tasks=["hateful_memes"],
-            )
-            results_mm_imdb = t.run_finetune(
-                experiment_config=finetune_config_mm_imdb,
-                run_visualizations=False,
-                run_alignment_analysis=False,
                 tasks=["mm_imdb"],
             )
+            results_upmc = t.run_finetune(
+                experiment_config=finetune_config_upmc,
+                run_visualizations=False,
+                run_alignment_analysis=False,
+                tasks=["upmc_food"],
+            )
 
-            trained_models[key] = {
-                "hateful_memes": results_hm["hateful_memes"]["model_path"],
-                "mm_imdb": results_mm_imdb["mm_imdb"]["model_path"],
-            }
-            paths.append(results_hm["hateful_memes"]["model_path"])
-            paths.append(results_mm_imdb["mm_imdb"]["model_path"])
+            paths.append(results_hm["mm_imdb"]["model_path"])
+            paths.append(results_upmc["upmc_food"]["model_path"])
 
             # print("completed training")
-            # path = "res/checkpoints/20251007-113613_finetuned_hateful_memes.pt"
-            # # path = results_hm["hateful_memes"]["model_path"]
-            # model = ViLBERT.load_model(path,
-            #     "cuda" if torch.cuda.is_available() else "cpu")
-            # t.analyse_alignment(model, num_samples=1000, task="hateful_memes")
+
     print(paths)
 
     with open("trained_models.json", "w") as f:

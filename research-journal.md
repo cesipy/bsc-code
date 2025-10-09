@@ -4,6 +4,58 @@ This file contains all kinds of results and observations during my thesis work.
 ---
 
 ## 09.10
+
+need to include the new directory `res/checkpoints/ftonly_for_correlation-analysis` in the paths
+```
+# on gaming pc
+# "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
+# "res/checkpoints/20251007-201826_finetuned_mm_imdb.pt",
+# "res/checkpoints/20251008-141240_finetuned_hateful_memes.pt",
+# "res/checkpoints/20251008-144350_finetuned_mm_imdb.pt",
+# "res/checkpoints/20251008-154319_finetuned_hateful_memes.pt",
+# "res/checkpoints/20251008-160257_finetuned_mm_imdb.pt",
+# "res/checkpoints/20251008-170044_finetuned_hateful_memes.pt"
+
+# ---------------------------------------------------------
+#uni gpus
+"res/checkpoints/20251006-211344_finetuned_hateful_memes.pt",
+"res/checkpoints/20251006-211344_finetuned_mm_imdb.pt",
+"res/checkpoints/20251006-224233_finetuned_hateful_memes.pt",
+"res/checkpoints/20251006-224233_finetuned_mm_imdb.pt",
+"res/checkpoints/20251007-160301_finetuned_hateful_memes.pt",
+"res/checkpoints/20251007-160855_finetuned_hateful_memes.pt",
+"res/checkpoints/20251007-160855_finetuned_mm_imdb.pt",
+"res/checkpoints/20251007-162505_finetuned_mm_imdb.pt",
+"res/checkpoints/20251007-172924_finetuned_hateful_memes.pt",
+"res/checkpoints/20251007-173620_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-113042_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-113042_finetuned_mm_imdb.pt",
+#not sure about them above, could be bad runs
+"res/checkpoints/20251008-131105_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-143741_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-143741_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-161701_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-161701_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-174253_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-174253_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-193456_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-193456_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-211323_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-211323_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-223850_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-223850_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-004449_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-004449_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-023655_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-023655_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-042241_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-042241_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-060800_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-060800_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-075441_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
+```
+
 Same experiment as yesterday, but symmetric coattention placement at `[5,6,9]`.
 
 <details open>
