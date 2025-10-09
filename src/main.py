@@ -41,7 +41,20 @@ def randomly_generate_config():
 
 def main():
     t = experiment_tracker.ExperimentTracker()
+    print("good hm")
+    t,v = t.get_biattentions(num_coattn_layers= 2,
+        t_center= 4.204866112455652,
+        t_spread= 3.149664541279545,
+        v_center= 7.075933466334327,
+        v_spread= 1.5021909737136068)
+    print(t,v)
 
+    print("good both")
+    t,v= t.get_biattentions(num_coattn_layers =4,
+        t_center= 9.41235168443222,
+        t_spread =2.928327618277501,
+        v_center =7.845874844937789,
+        v_spread =2.6834436760417772)
 
     configs = [
         {
