@@ -14,5 +14,5 @@ class Task(Enum):
 
 # normal tasks here
 # TODO integrate everywhere
-all_task_list = ["mm_imdb", "hateful_memes", "upmc_food"]
+all_task_list = ["mm_imdb", "hateful_memes", "upmc_food", "easy_vqa"]
 

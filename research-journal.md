@@ -56,6 +56,40 @@ need to include the new directory `res/checkpoints/ftonly_for_correlation-analys
 "res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
 ```
 
+Easy vqa has acc=1 => really good! but shows decreasing alignment metrics, but thats okay.
+```
+Epoch 1/4, Train Loss: 0.8763, Val Loss: 0.3202, Val Acc: 0.8712
+layer  0: mknn = 0.07, cka(lin)=  0.01, svcca= 0.17, cka(rbf)=  0.03, cka(unb)=  0.00, cknn-a= 0.05, cycleknn= 0.79
+layer  1: mknn = 0.07, cka(lin)=  0.02, svcca= 0.16, cka(rbf)=  0.16, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.78
+layer  2: mknn = 0.07, cka(lin)=  0.02, svcca= 0.17, cka(rbf)=  0.25, cka(unb)=  0.01, cknn-a= 0.05, cycleknn= 0.79
+layer  3: mknn = 0.08, cka(lin)=  0.04, svcca= 0.21, cka(rbf)=  0.64, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.75
+layer  4: mknn = 0.08, cka(lin)=  0.05, svcca= 0.20, cka(rbf)=  0.84, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.77
+layer  5: mknn = 0.29, cka(lin)=  0.49, svcca= 0.52, cka(rbf)=  1.00, cka(unb)=  0.44, cknn-a= 0.26, cycleknn= 0.91
+layer  6: mknn = 0.30, cka(lin)=  0.52, svcca= 0.53, cka(rbf)=  1.00, cka(unb)=  0.46, cknn-a= 0.26, cycleknn= 0.90
+layer  7: mknn = 0.27, cka(lin)=  0.50, svcca= 0.46, cka(rbf)=  1.00, cka(unb)=  0.45, cknn-a= 0.23, cycleknn= 0.86
+layer  8: mknn = 0.24, cka(lin)=  0.45, svcca= 0.43, cka(rbf)=  1.00, cka(unb)=  0.39, cknn-a= 0.20, cycleknn= 0.86
+layer  9: mknn = 0.35, cka(lin)=  0.66, svcca= 0.58, cka(rbf)=  1.00, cka(unb)=  0.62, cknn-a= 0.32, cycleknn= 0.87
+layer 10: mknn = 0.27, cka(lin)=  0.40, svcca= 0.49, cka(rbf)=  1.00, cka(unb)=  0.35, cknn-a= 0.24, cycleknn= 0.85
+layer 11: mknn = 0.23, cka(lin)=  0.32, svcca= 0.45, cka(rbf)=  1.00, cka(unb)=  0.28, cknn-a= 0.19, cycleknn= 0.84
+```
+
+```
+Epoch 3/4, Train Loss: 0.0142, Val Loss: 0.0005, Val Acc: 1.0000
+layer  0: mknn = 0.07, cka(lin)=  0.01, svcca= 0.15, cka(rbf)=  0.03, cka(unb)= -0.02, cknn-a= 0.05, cycleknn= 0.81
+layer  1: mknn = 0.07, cka(lin)=  0.02, svcca= 0.17, cka(rbf)=  0.15, cka(unb)=  0.01, cknn-a= 0.05, cycleknn= 0.79
+layer  2: mknn = 0.07, cka(lin)=  0.02, svcca= 0.18, cka(rbf)=  0.24, cka(unb)=  0.01, cknn-a= 0.05, cycleknn= 0.76
+layer  3: mknn = 0.08, cka(lin)=  0.04, svcca= 0.20, cka(rbf)=  0.62, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.77
+layer  4: mknn = 0.08, cka(lin)=  0.06, svcca= 0.19, cka(rbf)=  0.81, cka(unb)=  0.03, cknn-a= 0.05, cycleknn= 0.76
+layer  5: mknn = 0.31, cka(lin)=  0.52, svcca= 0.52, cka(rbf)=  1.00, cka(unb)=  0.47, cknn-a= 0.28, cycleknn= 0.91
+layer  6: mknn = 0.32, cka(lin)=  0.54, svcca= 0.55, cka(rbf)=  1.00, cka(unb)=  0.49, cknn-a= 0.29, cycleknn= 0.92
+layer  7: mknn = 0.30, cka(lin)=  0.51, svcca= 0.50, cka(rbf)=  1.00, cka(unb)=  0.45, cknn-a= 0.25, cycleknn= 0.88
+layer  8: mknn = 0.25, cka(lin)=  0.44, svcca= 0.44, cka(rbf)=  1.00, cka(unb)=  0.38, cknn-a= 0.21, cycleknn= 0.87
+layer  9: mknn = 0.32, cka(lin)=  0.58, svcca= 0.52, cka(rbf)=  1.00, cka(unb)=  0.53, cknn-a= 0.28, cycleknn= 0.89
+layer 10: mknn = 0.24, cka(lin)=  0.21, svcca= 0.48, cka(rbf)=  1.00, cka(unb)=  0.18, cknn-a= 0.19, cycleknn= 0.88
+layer 11: mknn = 0.21, cka(lin)=  0.18, svcca= 0.47, cka(rbf)=  1.00, cka(unb)=  0.15, cknn-a= 0.17, cycleknn= 0.86
+```
+---
+
 Same experiment as yesterday, but symmetric coattention placement at `[5,6,9]`.
 
 <details open>

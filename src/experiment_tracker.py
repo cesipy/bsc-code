@@ -12,7 +12,7 @@ import optuna; from optuna import pruners
 
 
 from config import *
-from trainer import HatefulMemesTrainer, PretrainingTrainer, UPMCTrainer, MM_IMDB_Trainer
+from trainer import HatefulMemesTrainer, PretrainingTrainer, UPMCTrainer, MM_IMDB_Trainer, VQATrainer
 
 from vilbert import ViLBERT
 import utils
@@ -420,6 +420,12 @@ class ExperimentTracker:
                 use_contrastive_loss=model.config.use_contrastive_loss,
                 gradient_accumulation=GRADIENT_ACCUMULATION
             )
+        elif task =="easy_vqa":
+            trainer = VQATrainer(
+                model=model,
+                config=model.config,
+                gradient_accumulation=GRADIENT_ACCUMULATION,
+            )
         else:
             raise ValueError(f"unknown task: {task}")
 
@@ -471,6 +477,16 @@ class ExperimentTracker:
                 use_train_augmentation=True,
                 seed=config.seed,
             )
+        elif task == "easy_vqa":
+            train_loader, val_loader = datasets.get_easyvqa_datasets(
+                batch_size=BATCH_SIZE_DOWNSTREAM,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                prefetch_factor=PREFETCH,
+                persistent_workers=PERSISTENT_WORKERS,
+                seed=config.seed,
+                # use_train_augmentation=True,
+            )
 
         return train_loader, val_loader
 
@@ -500,6 +516,16 @@ class ExperimentTracker:
             )
         # TODO: currently there is no alignment dataloader for upmc
         elif task == "upmc_food":
+            _, alignment_dataloader, _ = datasets.get_alignment_dataloaders(
+                batch_size=BATCH_SIZE_ANALYSIS,
+                num_workers=0,
+                pin_memory=False,
+                prefetch_factor=None,
+                seed=config.seed,
+                num_samples=ALIGNMENT_ANALYSIS_SIZE
+            )
+        elif task == "easy_vqa":
+            # TODO: also just uses cc right now, needs proper dataset!
             _, alignment_dataloader, _ = datasets.get_alignment_dataloaders(
                 batch_size=BATCH_SIZE_ANALYSIS,
                 num_workers=0,
@@ -869,6 +895,7 @@ class ExperimentTracker:
             persistent_workers=PERSISTENT_WORKERS,
             pin_memory=PIN_MEMORY,
             batch_size=BATCH_SIZE_PRETRAIN,
+            seed=config.seed,
         )
 
         model = self.create_model(config=config)
@@ -894,6 +921,7 @@ class ExperimentTracker:
             pin_memory=False,
             prefetch_factor=4,
             num_samples=ALIGNMENT_ANALYSIS_SIZE,
+            seed=config.seed
         )
 
 

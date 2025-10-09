@@ -195,3 +195,10 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] check new measures with contrastive loss ON! and directly compare.
     - maybe also contrastive pretraining
     - also normal pretraining!
+
+- [ ] baselines:
+    - [ ] no coattn- is my code working?
+    - [ ] early fusion
+    - [ ] nocoattn with more layers to account for additional parameters in vilbert => vilbert #params == baseline #params
+
+- [ ] fix testset handling...
