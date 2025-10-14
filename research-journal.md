@@ -1,11 +1,109 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+
+
 ---
 
+
+
+## 13.10
+
+---
+next steps:
+- wait for pretraining run (5 architectures) to finish and start analysis
+- correlation between representational alignment metrics and performance
+
+
+**MM-IMDB (Val Acc @ Epoch 5):**
+
+| Architecture | Mean ± Std |
+|--------------|-----------|
+| **optuna2 [6,7,9,10]** | **0.9274 ± 0.0012** |
+| **late [9,10,11]** | **0.9270 ± 0.0011** |
+| **middle [5,6,7]** | 0.9258 ± 0.0008 |
+| optuna1 [6,8] | 0.9248 ± 0.0006 |
+| early [3,4,6] | 0.9242 ± 0.0006 |
+| **baseline []** | 0.9211 (1 seed) |
+
+**UPMC Food (Val Acc @ Epoch 5):**
+
+| Architecture | Mean ± Std |
+|--------------|-----------|
+| **late [9,10,11]** | **0.9377 ± 0.0010** |
+| **baseline []** | **0.9363 (1 seed)** |
+| optuna2 [6,7,9,10] | 0.9267 ± 0.0012 |
+| optuna1 [6,8] | 0.9252 ± 0.0020 |
+| middle [5,6,7] | 0.9183 ± 0.0013 |
+| early [3,4,6] | 0.9064 ± 0.0029 |
+
+
+
+$\Rightarrow$ UPMC-food does not really benefit from multimodality?
+
+
+
+---
+
+optuna runfinished in `multi_task_study_20251004-131802 (id=3)`
+
+<figure>
+<img src="res/markdown_res/optuna_study_result1-1410.png" width=800>
+<figcaption>parallel coordinate</figcaption>
+
+
+<img src="res/markdown_res/optuna_study_result2-1410.png" width=500>
+<figcaption>pareto front</figcaption>
+
+
+<img src="res/markdown_res/optuna_study_result3-1410.png" width=500>
+<figcaption>parameter importance</figcaption>
+
+
+</figure>
+
+<!-- temp: paths for finetunes:
+```
+model saved to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
+Saved finetuned model to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
+[
+'res/checkpoints/20251010-090441_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-095244_finetuned_upmc_food.pt',
+'res/checkpoints/20251010-130016_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-134820_finetuned_upmc_food.pt',
+'res/checkpoints/20251010-165605_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-174413_finetuned_upmc_food.pt',
+'res/checkpoints/20251010-205147_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-213953_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-004735_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-013540_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-044319_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-053123_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-083858_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-092703_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-123449_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-132257_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-163056_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-171905_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-202657_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-211506_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-000323_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-004732_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-033945_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-042355_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-071611_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-080813_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-113121_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-122323_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-154634_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-163839_finetuned_upmc_food.pt',
+'res/checkpoints/20251013-094844_finetuned_mm_imdb.pt',
+'res/checkpoints/20251013-094844_finetuned_upmc_food.pt,
+]
+``` -->
 ## 09.10
 
-need to include the new directory `res/checkpoints/ftonly_for_correlation-analysis` in the paths
+<!-- need to include the new directory `res/checkpoints/ftonly_for_correlation-analysis` in the paths
 ```
 # on gaming pc
 # "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
@@ -54,7 +152,7 @@ need to include the new directory `res/checkpoints/ftonly_for_correlation-analys
 "res/checkpoints/20251009-060800_finetuned_mm_imdb.pt",
 "res/checkpoints/20251009-075441_finetuned_hateful_memes.pt",
 "res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
-```
+``` -->
 
 Easy vqa has acc=1 => really good! but shows decreasing alignment metrics, but thats okay.
 ```
