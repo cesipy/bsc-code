@@ -1,4 +1,5 @@
 import os
+import socket
 from typing import Optional
 
 
@@ -65,7 +66,11 @@ PIN_MEMORY = False
 DOWNSTREAM_EPOCHS = 9
 DOWNSTREAM_LR     = 3.4e-5
 
-if machine == "remote":
+if socket.gethostname() == "c703i-gpu5":
+    BATCH_SIZE_DOWNSTREAM = 8
+    GRADIENT_ACCUMULATION_DOWNSTREAM = 64
+    print("on gpu5!")
+if socket.gethostname() == "c703i-gpu10":
     BATCH_SIZE_DOWNSTREAM = 24
     GRADIENT_ACCUMULATION_DOWNSTREAM = 22
 else:
