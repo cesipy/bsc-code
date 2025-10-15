@@ -88,7 +88,7 @@ def main():
 
     for config in configs:
         info_str = f"{'-'*25}\ntraining with coattn placements of {config['t_biattention_ids']} (text) and {config['v_biattention_ids']} (vision)"
-        print(info_str); logger.log(info_str)
+        print(info_str); logger.info(info_str)
         pretrain_config = experiment_tracker.ExperimentConfig(
             t_biattention_ids=config["t_biattention_ids"],
             v_biattention_ids=config["v_biattention_ids"],

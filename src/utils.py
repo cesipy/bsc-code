@@ -216,6 +216,54 @@ def worker_init_fn(worker_id):
 
     A.core.serialization.SERIALIZABLE_REGISTRY['random'] = random.Random(worker_seed)
 
+class EarlyStopping:
+    def __init__(
+        self,
+        patience:int,
+        continue_thresh:float=0.001,
+        mode:str="min",      # min for loss, max for acc
+    ):
+
+        self.patience = patience
+        self.continue_thresh = continue_thresh
+        self.mode = mode
+
+        self.best_score = float("inf") if mode == "min" else -float("inf")
+        self.p_counter = 0
+        self.best_epoch = -1
+
+
+    def _is_better(self, curr_score:float):
+        if self.mode ==  "min":
+            return curr_score < self.best_score - self.continue_thresh
+        else:
+            return curr_score > self.best_score + self.continue_thresh
+
+    def _is_actually_better(self, curr_score:float):
+        if self.mode ==  "min":
+            return curr_score < self.best_score
+        else:
+            return curr_score > self.best_score
+
+
+    def __call__(self, score:float, epoch:int):
+        if self._is_actually_better(curr_score=score):
+            self.best_score = score
+            self.best_epoch = epoch
+
+        if self._is_better(curr_score=score):
+            self.p_counter = 0
+            return False    # do not stop
+        else:
+            self.p_counter += 1
+            if self.p_counter >= self.patience:
+                return True
+            return False
+
+
+
+
+
 
 
 class Scheduler:

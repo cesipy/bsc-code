@@ -93,7 +93,11 @@ MIN_LR_FRACTION   = 0.2    #fraction of original lr => min_lr
 
 # --------------------------------------------------
 
-
+#early stopping
+USE_EARLY_STOPPING = True
+ES_CONTINUE_THRESH = 0.001
+ES_PATIENCE = 3
+ES_MODE = "max"  # min for loss, max for acc
 
 
 class ViLBERTConfig:

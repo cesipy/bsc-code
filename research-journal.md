@@ -5,6 +5,80 @@ This file contains all kinds of results and observations during my thesis work.
 
 ---
 
+## 14.10 current configurations under investigation
+
+| name        | t_biatt_id | v_biatt_id | notes |
+|-------------|------------|------------|-------|
+| baseline    | [] | [] | maybe more epochs needed, as there is  |
+| early_fusion| [3,4,5] | [3,4,5] |  |
+| middle_fusion | [6,7,8] | [6,7,8] |  |
+| late_fusion | [9,10,11] | [9,10,11] |  |
+| asymmetric_fusion | [6,7,8,9] | [3,5,7,9] |  |
+| optuna1 | [3,6] | [6,8] | good run for hm |
+| optuna2 | [7,9,10,11] | [6,7,9,10] | trade-off run for mm-imdb and hm|
+
+
+
+---
+
+<details closed>
+results of finetune-only:
+```
+2025-10-14 11:05:59 - INFO  - correlation_analysis.py:main:167 - Pearson Correlations:
+2025-10-14 11:05:59 - INFO  - correlation_analysis.py:main:169 - -------------------------
+corr. of mknn           with acc : r=+0.581, p=0.000
+corr. of mknn           with loss: r=+0.646, p=0.000
+corr. of cka            with acc : r=+0.322, p=0.011
+corr. of cka            with loss: r=+0.445, p=0.000
+corr. of cka_rbf        with acc : r=+0.062, p=0.631
+corr. of cka_rbf        with loss: r=+0.084, p=0.515
+corr. of unbiased_cka   with acc : r=+0.344, p=0.006
+corr. of unbiased_cka   with loss: r=+0.463, p=0.000
+corr. of svcca          with acc : r=+0.445, p=0.000
+corr. of svcca          with loss: r=+0.528, p=0.000
+corr. of cknna          with acc : r=+0.628, p=0.000
+corr. of cknna          with loss: r=+0.688, p=0.000
+corr. of cycle_knn      with acc : r=+0.388, p=0.002
+corr. of cycle_knn      with loss: r=+0.453, p=0.000
+corr. of procrustes     with acc : r=-0.213, p=0.097
+corr. of procrustes     with loss: r=-0.391, p=0.002
+corr. of jaccard        with acc : r=+0.630, p=0.000
+corr. of jaccard        with loss: r=+0.684, p=0.000
+corr. of rsa            with acc : r=+0.195, p=0.128
+corr. of rsa            with loss: r=+0.304, p=0.016
+corr. of r2             with acc : r=+0.340, p=0.007
+corr. of r2             with loss: r=+0.426, p=0.001
+2025-10-14 11:05:59 - INFO  - correlation_analysis.py:main:183 -
+=========================
+2025-10-14 11:05:59 - INFO  - correlation_analysis.py:main:183 - Spearman Correlations:
+2025-10-14 11:05:59 - INFO  - correlation_analysis.py:main:183 - -------------------------
+corr. of mknn           with acc : r=+0.385, p=0.002
+corr. of mknn           with loss: r=+0.567, p=0.000
+corr. of cka            with acc : r=+0.171, p=0.183
+corr. of cka            with loss: r=+0.451, p=0.000
+corr. of cka_rbf        with acc : r=+0.583, p=0.000
+corr. of cka_rbf        with loss: r=+0.518, p=0.000
+corr. of unbiased_cka   with acc : r=+0.200, p=0.119
+corr. of unbiased_cka   with loss: r=+0.468, p=0.000
+corr. of svcca          with acc : r=+0.367, p=0.003
+corr. of svcca          with loss: r=+0.580, p=0.000
+corr. of cknna          with acc : r=+0.398, p=0.001
+corr. of cknna          with loss: r=+0.578, p=0.000
+corr. of cycle_knn      with acc : r=+0.365, p=0.004
+corr. of cycle_knn      with loss: r=+0.548, p=0.000
+corr. of procrustes     with acc : r=-0.023, p=0.857
+corr. of procrustes     with loss: r=-0.416, p=0.001
+corr. of jaccard        with acc : r=+0.394, p=0.002
+corr. of jaccard        with loss: r=+0.573, p=0.000
+corr. of rsa            with acc : r=+0.102, p=0.428
+corr. of rsa            with loss: r=+0.355, p=0.005
+corr. of r2             with acc : r=+0.401, p=0.001
+corr. of r2             with loss: r=+0.604, p=0.000
+```
+
+$\rRightarrow$ negative correlation with procrustes, high correlation with cknna.
+Interesting: higher correlation with loss than with acc.
+</details>
 
 
 ## 13.10
@@ -17,14 +91,14 @@ next steps:
 
 **MM-IMDB (Val Acc @ Epoch 5):**
 
-| Architecture | Mean ± Std |
-|--------------|-----------|
-| **optuna2 [6,7,9,10]** | **0.9274 ± 0.0012** |
-| **late [9,10,11]** | **0.9270 ± 0.0011** |
-| **middle [5,6,7]** | 0.9258 ± 0.0008 |
-| optuna1 [6,8] | 0.9248 ± 0.0006 |
-| early [3,4,6] | 0.9242 ± 0.0006 |
-| **baseline []** | 0.9211 (1 seed) |
+| Architecture          | Mean ± Std |
+|-----------------------|-----------|
+|**optuna2 [6,7,9,10]** | **0.9274 ± 0.0012** |
+| **late [9,10,11]**    | **0.9270 ± 0.0011** |
+| **middle [5,6,7]**    | 0.9258 ± 0.0008 |
+| optuna1 [6,8]         | 0.9248 ± 0.0006 |
+| early [3,4,6]         | 0.9242 ± 0.0006 |
+| **baseline []**       | 0.9211 (1 seed) |
 
 **UPMC Food (Val Acc @ Epoch 5):**
 
@@ -38,14 +112,12 @@ next steps:
 | early [3,4,6] | 0.9064 ± 0.0029 |
 
 
-
 $\Rightarrow$ UPMC-food does not really benefit from multimodality?
-
 
 
 ---
 
-optuna runfinished in `multi_task_study_20251004-131802 (id=3)`
+optuna run finished in `multi_task_study_20251004-131802 (id=3)`
 
 <figure>
 <img src="res/markdown_res/optuna_study_result1-1410.png" width=800>
@@ -62,7 +134,14 @@ optuna runfinished in `multi_task_study_20251004-131802 (id=3)`
 
 </figure>
 
-<!-- temp: paths for finetunes:
+
+
+---
+
+<details closed>
+<summary><b>Paths</b></summary>
+Those are the paths of finetuned models without pretraining. To be used for correlation analysis.
+
 ```
 model saved to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
 Saved finetuned model to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
@@ -100,10 +179,14 @@ Saved finetuned model to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
 'res/checkpoints/20251013-094844_finetuned_mm_imdb.pt',
 'res/checkpoints/20251013-094844_finetuned_upmc_food.pt,
 ]
-``` -->
+```
+</details>
+
 ## 09.10
 
-<!-- need to include the new directory `res/checkpoints/ftonly_for_correlation-analysis` in the paths
+<details closed>
+
+need to include the new directory `res/checkpoints/ftonly_for_correlation-analysis` in the paths
 ```
 # on gaming pc
 # "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
@@ -152,7 +235,9 @@ Saved finetuned model to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
 "res/checkpoints/20251009-060800_finetuned_mm_imdb.pt",
 "res/checkpoints/20251009-075441_finetuned_hateful_memes.pt",
 "res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
-``` -->
+```
+
+</details>
 
 Easy vqa has acc=1 => really good! but shows decreasing alignment metrics, but thats okay.
 ```
