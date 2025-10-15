@@ -7,7 +7,7 @@ res/data/hateful_memes_data/img
 res/data/temp
 *__pycache__
 .python-version
-res/checkpoints/*.pt
+res/checkpoints/*
 logs
 res/training_losses.png
 res/data/conceptual-captions/Train_GCC-training.tsv

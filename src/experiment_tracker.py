@@ -4,6 +4,7 @@ from typing import Tuple, Optional
 import dataclasses
 import json
 import numpy as np
+import copy
 
 import torch
 
@@ -550,7 +551,8 @@ class ExperimentTracker:
         dir_name: Optional[str] = None,
         skip_alignment_analysis: bool = False,
         tmsp: Optional[str] = None,
-        pretrained_model=None
+        pretrained_model=None,
+
     ):
         assert task in tasklib.all_task_list
 
@@ -562,6 +564,11 @@ class ExperimentTracker:
 
         train_loader, val_loader = self._get_task_dataloader(task=task, config=config)
         alignment_dataloader = self._get_task_alignment_dataloader(task=task, config=config)
+
+        if USE_EARLY_STOPPING:
+            early_stopper = utils.EarlyStopping(
+                patience=ES_PATIENCE, continue_thresh=ES_CONTINUE_THRESH, mode=ES_MODE
+            )
 
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
@@ -594,6 +601,27 @@ class ExperimentTracker:
             training_results[task]["training"][i+1]["train_loss"] = train_loss
             training_results[task]["training"][i+1]["val_loss"] = test_loss
             training_results[task]["training"][i+1]["val_acc"] = acc
+
+            if USE_EARLY_STOPPING:
+                val = acc if ES_MODE == "max" else test_loss
+
+                if (ES_MODE == "max" and (val >= early_stopper.best_score)) or \
+                (ES_MODE == "min" and (val <= early_stopper.best_score)):
+                    best_model_state = copy.deepcopy(trainer.model.state_dict())
+
+                should_stop = early_stopper(val, i+1)
+
+                if should_stop:
+                    info_str = f"Early stopping at epoch {i+1}. Best {ES_MODE}: {early_stopper.best_score:.4f} at epoch {early_stopper.best_epoch}"
+                    print(info_str)
+                    logger.info(info_str)
+
+                    if best_model_state is not None:
+                        trainer.model.load_state_dict(best_model_state)
+                        info_str = f"restord model from epoch {early_stopper.best_epoch}"
+                        print(info_str);logger.info(info_str)
+
+                    break
 
             alignment_metrics = {}
             if not skip_alignment_analysis:
@@ -676,7 +704,7 @@ class ExperimentTracker:
         experiment_config: ExperimentConfig,
         run_visualizations:bool=False,
         run_alignment_analysis:bool=False,
-        tasks:list[str]=["hateful_memes", "mm_imdb"],
+        tasks:list[str]=["hateful_memes", "mm_imdb", "upmc_food"],
         pretrained_model_path: Optional[str] = None,
     ) -> dict:
         print(f"seed = {experiment_config.seed}")
