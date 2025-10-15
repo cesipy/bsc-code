@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore")
 logger = Logger()
 seed=1567
 ft_epochs = 4
-pt_epochs = 6
+pt_epochs = 7
 
 
 def main():
@@ -41,22 +41,20 @@ def main():
         t_biattention_ids=[],
         v_biattention_ids=[],
         use_contrastive_loss=False,
-        epochs=ft_epochs,
+        epochs=ft_epochs+2,
         learning_rate=3e-5,
         seed=seed,
     )
 
     baseline_results = t.run_pretrain(experiment_config=baseline,
-        tiny_fraction=True,
-        # num_samples=500_000,
-        # run_alignment_analysis=True,
-        # run_visualizations=True,
+        # tiny_fraction=True,
+        num_samples=500_000,
+        run_alignment_analysis=True,
+        run_visualizations=True,
         )
 
     t.run_finetune(
         experiment_config=baseline_ft,
-        # run_visualizations=True,
-        # run_alignment_analysis=True,
         tasks=["hateful_memes"],
         pretrained_model_path=baseline_results["model_path"]
     )
@@ -82,13 +80,23 @@ def main():
             "t_biattention_ids": [6, 7, 8, 9],
             "v_biattention_ids": [3, 5, 7, 9],
         },
+        {
+            "name": "optuna1",
+            "t_biattention_ids": [3,6],
+            "v_biattention_ids": [6,8],
+        },
+        {
+            "name": "optuna2",
+            "t_biattention_ids": [7, 9, 10, 11],
+            "v_biattention_ids": [6, 7, 9, 10],
+        }
     ]
 
     paths = []
 
     for config in configs:
         info_str = f"{'-'*25}\ntraining with coattn placements of {config['t_biattention_ids']} (text) and {config['v_biattention_ids']} (vision)"
-        print(info_str); logger.log(info_str)
+        print(info_str); logger.info(info_str)
         pretrain_config = experiment_tracker.ExperimentConfig(
             t_biattention_ids=config["t_biattention_ids"],
             v_biattention_ids=config["v_biattention_ids"],
