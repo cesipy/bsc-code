@@ -45,7 +45,8 @@ def main():
             e_conf = experiment_tracker.ExperimentConfig(
                 t_biattention_ids=t_biattns,
                 v_biattention_ids=v_biattns,
-                epochs=5,learning_rate=3.2e-5,seed=seed,
+                epochs=15,
+                learning_rate=3e-5,seed=seed,
                 use_contrastive_loss=False
             )
             res = t.run_finetune(experiment_config=e_conf,
@@ -54,7 +55,7 @@ def main():
                 pretrained_model_path=pretrained_path,
                 tasks=[task]
                 )
-            path = res["model_path"]
+            path = res[task]["model_path"]
             paths.append(path)
 
 

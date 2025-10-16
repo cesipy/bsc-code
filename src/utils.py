@@ -235,11 +235,12 @@ class EarlyStopping:
 
     def _is_better(self, curr_score:float):
         if self.mode ==  "min":
-            return curr_score < self.best_score - self.continue_thresh
+            return curr_score < self.best_score
         else:
-            return curr_score > self.best_score + self.continue_thresh
+            return curr_score > self.best_score
 
     def _is_actually_better(self, curr_score:float):
+        """not used anymore"""
         if self.mode ==  "min":
             return curr_score < self.best_score
         else:
@@ -247,11 +248,10 @@ class EarlyStopping:
 
 
     def __call__(self, score:float, epoch:int):
-        if self._is_actually_better(curr_score=score):
-            self.best_score = score
-            self.best_epoch = epoch
 
         if self._is_better(curr_score=score):
+            self.best_score = score
+            self.best_epoch = epoch
             self.p_counter = 0
             return False    # do not stop
         else:
