@@ -127,7 +127,7 @@ utils.set_seeds(SEED)
 #     use_train_augmentation=False,
 
 # )
-hm_dl, dl, imdb_dl = datasets.get_alignment_dataloaders(
+hm_dl, dl, imdb_dl, upmc_dl = datasets.get_alignment_dataloaders(
     batch_size=50,
     num_workers=NUM_WORKERS,
     pin_memory=PIN_MEMORY,

@@ -42,7 +42,7 @@ def get_alignment_dataloaders(
     )-> typing.Tuple[DataLoader, DataLoader, DataLoader]:
     """
     returns tuple of dataloader in the following order:
-    dataloader-hateful-memes, dataloader-conceputal-captions, dataloader-mmimdb
+    dataloader-hateful-memes, dataloader-conceputal-captions, dataloader-mmimdb, dataloader-upmc
     """
     utils.set_seeds(seed)
 
@@ -50,6 +50,13 @@ def get_alignment_dataloaders(
     path_hm       = "res/data/hateful_memes_data/train.jsonl"
     path_imdb     = "res/data/mm-imdb/images.h5"
     csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
+    if config.machine == "remote":
+        csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_test.csv"
+        img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+    else:
+        csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_test.csv"
+        img_path_upmc = "res/data/UPMC_Food-101/images"
+
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
@@ -90,6 +97,18 @@ def get_alignment_dataloaders(
         data=data_list_cc, tokenizer=tokenizer, image_processor=image_processor,
     )
 
+    dataset_upmc = UPMC_Dataset(
+        csv_path=csv_path_upmc,
+        img_path=img_path_upmc,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        is_train=False,
+        is_test=True,
+        max_samples=num_samples
+    )
+
+    assert len(dataset_hm) == len(dataset_cc) == len(dataset_imdb) == len(dataset_upmc)
+
     dataloader_hm = DataLoader(
         dataset=dataset_hm,
         batch_size=batch_size,
@@ -121,9 +140,19 @@ def get_alignment_dataloaders(
         worker_init_fn=utils.worker_init_fn,
         generator=utils.get_seeded_generator(seed),
     )
+    dataloader_upmc = DataLoader(
+        dataset=dataset_upmc,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(seed),
+    )
 
 
-    return dataloader_hm, dataloader_cc, dataloader_imdb
+    return dataloader_hm, dataloader_cc, dataloader_imdb, dataloader_upmc
 
 
 
@@ -449,7 +478,7 @@ def get_easyvqa_datasets(
     pin_memory: bool = False,
     prefetch_factor: int = 4,
     persistent_workers: bool = True,
-    use_train_augmentation: bool = False  
+    use_train_augmentation: bool = False
 ) -> typing.Tuple[DataLoader, DataLoader]:
     """
     Get the EasyVQA dataset for train and validation

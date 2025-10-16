@@ -29,6 +29,7 @@ class UPMC_Dataset(torch.utils.data.Dataset):
         tokenizer: PreTrainedTokenizerFast,
         image_processor: BaseImageProcessor,
         is_train:bool=True,
+        is_test:bool=False,
         train_test_ratio:float = TRAIN_TEST_RATIO,
         transform: typing.Optional[torchvision.transforms.Compose] = None,
         max_samples: typing.Optional[int] = None,
@@ -37,6 +38,7 @@ class UPMC_Dataset(torch.utils.data.Dataset):
         csv_data = pd.read_csv(csv_path)
         train_test_split_idx = int(train_test_ratio * len(csv_data))
         assert os.path.exists(img_path)
+        assert not (is_train and is_test)
 
         self.data = csv_data.sample(frac=1, random_state=46).reset_index(drop=True)  # shuffle the data
         self.imgs_path = img_path
@@ -45,16 +47,21 @@ class UPMC_Dataset(torch.utils.data.Dataset):
         col_class = self.data.loc[:, "class"].unique()  # np.array[str]
         print(f"classes {len(col_class)}")  # 101, same as the one_hot
 
-        if max_samples != None:
-            assert max_samples < len(csv_data)
-            self.data = csv_data[:max_samples]
-        elif max_samples == None and is_train:
-            self.data = csv_data[:train_test_split_idx]
-        elif max_samples == None and not is_train:
-            self.data = csv_data[train_test_split_idx:]
+        if is_test==True:
+            if max_samples is not None:
+                assert max_samples < len(self.data)
+                self.data = self.data[:max_samples]
         else:
-            print("smth is completely wrong! panicking!!!")
-            exit(0)
+            if max_samples != None:
+                assert max_samples < len(csv_data)
+                self.data = self.data[:max_samples]
+            elif max_samples == None and is_train:
+                self.data = csv_data[:train_test_split_idx]
+            elif max_samples == None and not is_train:
+                self.data = csv_data[train_test_split_idx:]
+            else:
+                print("smth is completely wrong! panicking!!!")
+                exit(0)
 
         self.is_train = is_train
         self.transform = transform
