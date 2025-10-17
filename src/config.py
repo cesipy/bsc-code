@@ -80,6 +80,8 @@ else:
 # analysis.py
 if machine == "remote":
     BATCH_SIZE_ANALYSIS = 128
+elif socket.gethostname() == "c703i-gpu5":
+    BATCH_SIZE_ANALYSIS = 64
 else:
     BATCH_SIZE_ANALYSIS = 128
 

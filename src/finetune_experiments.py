@@ -34,9 +34,9 @@ def main():
     v_biattns = modl.config.vision_cross_attention_layers
 
 
-    tasks = ["hateful_memes", "mm_imdb", "upmc_food"]
+    tasks = ["upmc_food","hateful_memes", "mm_imdb", ]
     paths = []
-    c = 0
+    c = 1
 
     for seed in seeds:
         for task in tasks:
@@ -57,6 +57,7 @@ def main():
                 )
             path = res[task]["model_path"]
             paths.append(path)
+            c+=1
 
 
     info_str =f"finished with paths: {paths}"
