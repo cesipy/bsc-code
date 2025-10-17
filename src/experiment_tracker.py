@@ -29,7 +29,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 512
+ALIGNMENT_ANALYSIS_SIZE = 499
 SKIP_ALIGNMENT = False
 
 
@@ -498,7 +498,7 @@ class ExperimentTracker:
         config: ViLBERTConfig,
     ):
         if task == "hateful_memes":
-            alignment_dataloader, _, _ = datasets.get_alignment_dataloaders(
+            alignment_dataloader, _, _,_ = datasets.get_alignment_dataloaders(
                 batch_size=BATCH_SIZE_ANALYSIS,
                 num_workers=0,
                 pin_memory=False,
@@ -507,7 +507,7 @@ class ExperimentTracker:
                 num_samples=ALIGNMENT_ANALYSIS_SIZE
             )
         elif task == "mm_imdb":
-            _, _, alignment_dataloader = datasets.get_alignment_dataloaders(
+            _, _, alignment_dataloader,_ = datasets.get_alignment_dataloaders(
                 batch_size=BATCH_SIZE_ANALYSIS,
                 num_workers=0,
                 pin_memory=False,
@@ -517,7 +517,7 @@ class ExperimentTracker:
             )
         # TODO: currently there is no alignment dataloader for upmc
         elif task == "upmc_food":
-            _, alignment_dataloader, _ = datasets.get_alignment_dataloaders(
+            _,_,_,alignment_dataloader = datasets.get_alignment_dataloaders(
                 batch_size=BATCH_SIZE_ANALYSIS,
                 num_workers=0,
                 pin_memory=False,
@@ -527,7 +527,7 @@ class ExperimentTracker:
             )
         elif task == "easy_vqa":
             # TODO: also just uses cc right now, needs proper dataset!
-            _, alignment_dataloader, _ = datasets.get_alignment_dataloaders(
+            _, alignment_dataloader, _,_ = datasets.get_alignment_dataloaders(
                 batch_size=BATCH_SIZE_ANALYSIS,
                 num_workers=0,
                 pin_memory=False,
@@ -943,7 +943,7 @@ class ExperimentTracker:
             total_training_steps=( len(train_loader_ap) + len(train_loader_mlm) + len(train_loader_mim)),
 
         )
-        hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
+        hm_dataloader, cc_dataloader, imdb_dataloader, upmc_dl = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=4,
             pin_memory=False,
@@ -1120,13 +1120,14 @@ class ExperimentTracker:
         knn_k=KNN_K,
         verbose=True
         ):
-        assert task in ["hateful_memes", "mm_imdb", "cc"]       #  TODO: add more tasks
-        dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
+        assert task in ["hateful_memes", "mm_imdb", "cc", "upmc_food"]       #  TODO: add more tasks
+        dataloader_hm, dataloader_cc, dataloader_imdb, dataloader_upmc = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=0,  pin_memory=False, prefetch_factor=None,
             num_samples=num_samples,
             seed=model.config.seed
         )
+        print(f"len of datasets:\n\t hm: {len(dataloader_hm.dataset)}, imdb: {len(dataloader_imdb.dataset)}, cc: {len(dataloader_cc.dataset)}, upmc: {len(dataloader_upmc.dataset)}")
 
 
         if task == "hateful_memes":
@@ -1135,6 +1136,8 @@ class ExperimentTracker:
             dataloader = dataloader_imdb
         elif task == "cc":
             dataloader = dataloader_cc
+        elif task == "upmc_food":
+            dataloader = dataloader_upmc
         else:
             assert False
         # print(f"len dataloader: {len(dataloader.dataset)}")
@@ -1147,7 +1150,7 @@ class ExperimentTracker:
     def run_visualization(self, model:ViLBERT, num_samples:int, task:str,
         device:str="cuda" if torch.cuda.is_available() else "cpu"):
         assert task in ["hateful_memes", "mm_imdb", "cc"]       #  TODO: add more tasks
-        dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
+        dataloader_hm, dataloader_cc, dataloader_imdb, dataloader_upmc = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=0,  pin_memory=False, prefetch_factor=None,
             num_samples=num_samples,
@@ -1171,8 +1174,28 @@ class ExperimentTracker:
 
 
 
-    def evaluate(self, model:ViLBERT, task:str):
-        assert task in ["hateful_memes", "mm_imdb"]
+    def evaluate(self, model:ViLBERT, task:str, dataset="test"):
+        """
+        evaluates model for a given task on either test or validation set.
+
+        Args:
+            model: ViLBERT, model to evaluate
+            task: str, task to evaluate on, either "hateful_memes" or "mm_imdb"
+            dataset: str, either "test" or "val", which dataset to use for evaluation; default is "test"
+
+        """
+        assert task in ["hateful_memes", "mm_imdb", "upmc_food"]
+        assert dataset in [ "test", "val" ]
+
+        dl = datasets.get_task_test_dataset(
+            task=task,
+            batch_size=BATCH_SIZE_DOWNSTREAM,
+            num_workers=NUM_WORKERS,
+            pin_memory=PIN_MEMORY,
+            prefetch_factor=PREFETCH,
+            persistent_workers=PERSISTENT_WORKERS,
+            seed=model.config.seed,
+        )
 
         if task == "hateful_memes":
             _, val_loader = datasets.get_hateful_memes_datasets(
@@ -1191,7 +1214,10 @@ class ExperimentTracker:
                 gradient_accumulation=GRADIENT_ACCUMULATION,
                 use_contrastive_loss=model.config.use_contrastive_loss,
             )
-            loss, acc = trainer.evaluate(val_loader)
+            if dataset == "test":
+                loss, acc = trainer.evaluate(dl)
+            else:
+                loss, acc = trainer.evaluate(val_loader)
 
         elif task == "mm_imdb":
             _, val_loader = datasets.get_mmimdb_datasets(
@@ -1210,7 +1236,32 @@ class ExperimentTracker:
                 gradient_accumulation=GRADIENT_ACCUMULATION,
                 use_contrastive_loss=model.config.use_contrastive_loss,
             )
-            loss, acc = trainer.evaluate(val_loader)
+            if dataset == "test":
+                loss, acc = trainer.evaluate(dl)
+            else:
+                loss, acc = trainer.evaluate(val_loader)
+
+        elif task == "upmc_food":
+            _, val_loader = datasets.get_upmc_datasets(
+                train_test_ratio=TRAIN_TEST_RATIO,
+                batch_size=BATCH_SIZE_DOWNSTREAM,
+                num_workers=NUM_WORKERS,
+                pin_memory=PIN_MEMORY,
+                prefetch_factor=PREFETCH,
+                persistent_workers=PERSISTENT_WORKERS,
+                use_train_augmentation=False,
+                seed=model.config.seed,
+            )
+            trainer = UPMCTrainer(
+                model=model,
+                config=model.config,
+                gradient_accumulation=GRADIENT_ACCUMULATION,
+                use_contrastive_loss=model.config.use_contrastive_loss,
+            )
+            if dataset == "test":
+                loss, acc = trainer.evaluate(dl)
+            else:
+                loss, acc = trainer.evaluate(val_loader)
 
         return loss, acc
 

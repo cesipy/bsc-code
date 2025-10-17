@@ -1,6 +1,16 @@
 import torch; from torch import nn
-import numpy as np; 
+import numpy as np;
 from scipy.stats import spearmanr
+
+import metrics; import metrics_llmrepsim
+import torch; import torch.nn.functional as F
+from config import *
+import datasets
+
+from vilbert import *
+
+import analysis
+
 
 from ckatorch.core import cka_base, cka_batch
 import cca_core
@@ -522,6 +532,84 @@ def max_similarity_patch_token(
     )
 
     return max_sims
+
+
+def sanity_check_metrics():
+    """Verify metrics behave as expected: identical=high, random=low"""
+    t1 = torch.rand((512, 768))
+    t2 = torch.rand((512, 768))
+    model_path = "res/checkpoints/20251013-finetunes-only/20251012-154634_finetuned_mm_imdb.pt"
+    model = ViLBERT.load_model(load_path=model_path, device="cuda")
+    # dl = datasets.get_task_test_dataset(task="mm_imdb", batch_size=BATCH_SIZE_ANALYSIS, num_workers=0, pin_memory=False, prefetch_factor=None, seed=10, persistent_workers=0)
+    _, _, dl, _ = datasets.get_alignment_dataloaders(
+        batch_size=BATCH_SIZE_ANALYSIS,
+        num_workers=0,
+        pin_memory=False,
+        prefetch_factor=None,
+        seed=10,
+        num_samples=512
+    )
+    data = analysis.get_alignment_data(dataloader=dl, model=model, device="cuda")
+
+    print(type(data))
+    layer3 = data[3]
+    print(type(layer3))
+    print(f"t_embeds: {layer3['text_embeddings'].shape}, v_embeds: {layer3['vision_embeddings'].shape}")
+    t1 = layer3["text_embeddings"]
+    t2 = layer3["vision_embeddings"]
+
+    svcca_identical = metrics.AlignmentMetrics.svcca(t1, t1, cca_dim=10)
+    svcca_random = metrics.AlignmentMetrics.svcca(t1, t2, cca_dim=10)
+
+    cka_identical = metrics.AlignmentMetrics.cka(t1, t1)
+    cka_random = metrics.AlignmentMetrics.cka(t1, t2)
+    cka_norm_identical = metrics.AlignmentMetrics.cka(F.normalize(t1, dim=-1), F.normalize(t1, dim=1))
+    cka_norm_random = metrics.AlignmentMetrics.cka(F.normalize(t1, dim=-1), F.normalize(t2, dim=1))
+
+
+    cka_unbiased_identical = metrics.AlignmentMetrics.cka(feats_A=t1, feats_B=t1, unbiased=True)
+    cka_unbiased_random = metrics.AlignmentMetrics.cka(feats_A=t1, feats_B=t2, unbiased=True)
+
+    mutual_knn_identical = metrics.AlignmentMetrics.mutual_knn(t1, t1, topk=KNN_K)
+    mutual_knn_random = metrics.AlignmentMetrics.mutual_knn(t1, t2, topk=KNN_K)
+
+    cknna_identical = metrics.AlignmentMetrics.cknna(t1, t1, topk=KNN_K)
+    cknna_random = metrics.AlignmentMetrics.cknna(t1, t2, topk=KNN_K)
+
+    cycle_knn_identical = metrics.AlignmentMetrics.cycle_knn(t1, t1, topk=KNN_K)
+    cycle_knn_random = metrics.AlignmentMetrics.cycle_knn(t1, t2, topk=KNN_K)
+
+    lcs_knn_identical = metrics.AlignmentMetrics.lcs_knn(t1, t1, topk=KNN_K)
+    lcs_knn_random = metrics.AlignmentMetrics.lcs_knn(t1, t2, topk=KNN_K)
+
+    edit_distance_identical = metrics.AlignmentMetrics.edit_distance_knn(t1, t1, topk=KNN_K)
+    edit_distance_random = metrics.AlignmentMetrics.edit_distance_knn(t1, t2, topk=KNN_K)
+
+    jaccard_identical = metrics_llmrepsim.jaccard_similarity(t1, t1, k=KNN_K)
+    jaccard_random = metrics_llmrepsim.jaccard_similarity(t1, t2, k=KNN_K)
+
+    procrustes_identical = metrics_llmrepsim.orthogonal_procrustes(t1, t1)
+    procrustes_random = metrics_llmrepsim.orthogonal_procrustes(t1, t2)
+
+    rsa_identical = metrics_llmrepsim.representational_similarity_analysis(t1, t1)
+    rsa_random = metrics_llmrepsim.representational_similarity_analysis(t1, t2)
+
+    print("=== SANITY CHECK ===")
+    print(f"SVCCA:           identical={svcca_identical:.4f}, random={svcca_random:.4f}")
+    print(f"CKA:             identical={cka_identical:.4f}, random={cka_random:.4f}")
+    print(f"CKA normed:      identical={cka_norm_identical:.4f}, random={cka_norm_random:.4f}")
+    print(f"CKA unbiased:    identical={cka_unbiased_identical:.4f}, random={cka_unbiased_random:.4f}")
+    print(f"Mutual KNN:      identical={mutual_knn_identical:.4f}, random={mutual_knn_random:.4f}")
+    print(f"CKNNA:           identical={cknna_identical:.4f}, random={cknna_random:.4f}")
+    print(f"Cycle KNN:       identical={cycle_knn_identical:.4f}, random={cycle_knn_random:.4f}")
+    print(f"LCS KNN:         identical={lcs_knn_identical:.4f}, random={lcs_knn_random:.4f}")
+    print(f"Edit Distance:   identical={edit_distance_identical:.4f}, random={edit_distance_random:.4f}")
+    print(f"Jaccard:         identical={jaccard_identical:.4f}, random={jaccard_random:.4f}")
+    print(f"Procrustes:      identical={procrustes_identical:.4f}, random={procrustes_random:.4f}")
+    print(f"RSA:             identical={rsa_identical:.4f}, random={rsa_random:.4f}")
+
+
+
 
 
 if __name__ == "__main__":

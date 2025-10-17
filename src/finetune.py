@@ -43,7 +43,7 @@ def finetune_down_stream_task(
     dataloader_hm, dataloader_cc, dataloader_imdb = None, None, None
 
     if analyze_alignment:
-        dataloader_hm, dataloader_cc, dataloader_imdb = datasets.get_alignment_dataloaders(
+        dataloader_hm, dataloader_cc, dataloader_imdb, dataloader_upmc = datasets.get_alignment_dataloaders(
             batch_size=BATCH_SIZE_ANALYSIS,
             num_workers=NUM_WORKERS,
             pin_memory=PIN_MEMORY,

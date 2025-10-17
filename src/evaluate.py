@@ -89,7 +89,7 @@ def train_and_eval_on_downstream_task(pretrained_model_path:str, use_contrastive
         # use_train_augmentation=False,
     )
 
-    hm_dataloader, cc_dataloader, imdb_dataloader = datasets.get_alignment_dataloaders(
+    hm_dataloader, cc_dataloader, imdb_dataloader, _ = datasets.get_alignment_dataloaders(
         batch_size=bs_alignment_analysis,
         num_workers=4,
         pin_memory=False,
@@ -155,7 +155,7 @@ def test_on_hm():
         limit_total_dataset=True,
     )
 
-    hm_dataloader, cc_dataloader, imdb_dataloader  = datasets.get_alignment_dataloaders(
+    hm_dataloader, cc_dataloader, imdb_dataloader,_  = datasets.get_alignment_dataloaders(
         batch_size=bs_alignment_analysis,
         num_workers=4,
         pin_memory=False,

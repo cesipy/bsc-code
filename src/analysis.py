@@ -269,7 +269,7 @@ def get_alignment_data(dataloader: DataLoader, model:ViLBERT, device="cuda" if t
     with torch.no_grad():
         torch.cuda.empty_cache()
 
-        layers = {}
+    layers = {}
 
 
 
