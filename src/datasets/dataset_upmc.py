@@ -43,14 +43,16 @@ class UPMC_Dataset(torch.utils.data.Dataset):
         self.data = csv_data.sample(frac=1, random_state=46).reset_index(drop=True)  # shuffle the data
         self.imgs_path = img_path
 
-        print(self.data.columns)
+        # print(self.data.columns)
         col_class = self.data.loc[:, "class"].unique()  # np.array[str]
-        print(f"classes {len(col_class)}")  # 101, same as the one_hot
+        # print(f"classes {len(col_class)}")  # 101, same as the one_hot
 
         if is_test==True:
             if max_samples is not None:
                 assert max_samples < len(self.data)
                 self.data = self.data[:max_samples]
+            else:
+                self.data = csv_data
         else:
             if max_samples != None:
                 assert max_samples < len(csv_data)

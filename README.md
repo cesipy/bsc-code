@@ -154,8 +154,7 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 ## TODO
 **immediate:**
 - [ ] is finetuned good performance indicator for pretraining good performance?
-- [ ] seed from config, not global var
-	- [ ] convert all torchvision to albuminations + seeding
+- [ ] convert all torchvision to albuminations + seeding
 
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 - [ ] fix coattentions not really saved in intermediate_representations,
@@ -165,23 +164,8 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 - [ ] experiment_tracker:
 	- [ ] implement other tasks in run experiment
-
-- [ ] try running on mm_imdb with slightly bigger lr, more epochs, when does it plateau?
-    - [ ] report for hm; this is pretty known, as most of the current progress is for HM.
-    - [ ] report for upmcfood
-
-- [ ] run visualization and alignment for trained model.
-    - needs to restore model with highest acc/ lowest loss
-
-- [ ] include test set for:
-	- [ ] upmc food
-	- [ ] mm imdb
-	- [ ] hateful memes	- problem here, there are no labels
-
-- [ ] larger k in mknn
-- [ ] implement baseline
+- [ ] implement baseline - early concat
 - [ ] fix intermediate collection
-- [ ] correlation analysis: not for all tasks, architectures and epochs, only focussing on one
 
 - [ ] alignment analysis:
     - [ ] compare bs-analysis-sizes: same config, different seeds and analysis - size
@@ -190,15 +174,28 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 - [ ] compare KNN_K
 - [ ] compare correlation of the measures
 
-- [x] visualization for svvca
-- [ ] visualizations with KNNK=32
-- [ ] check new measures with contrastive loss ON! and directly compare.
-    - maybe also contrastive pretraining
-    - also normal pretraining!
 
 - [ ] baselines:
     - [ ] no coattn- is my code working?
     - [ ] early fusion
     - [ ] nocoattn with more layers to account for additional parameters in vilbert => vilbert #params == baseline #params
 
-- [ ] fix testset handling...
+- [x] implement baseline - t_biattn_id=[], v_biattn_id=[]
+- [x] larger k in mknn
+- [x] correlation analysis: not for all tasks, architectures and epochs, only focussing on one
+- [x] visualization for svvca
+- [x] visualizations with KNNK=32
+- [x] check new measures with contrastive loss ON! and directly compare.
+    - maybe also contrastive pretraining
+    - also normal pretraining!
+- [x] fix testset handling...
+- [x] try running on mm_imdb with slightly bigger lr, more epochs, when does it plateau?
+    - [x] report for hm; this is pretty known, as most of the current progress is for HM.
+    - [x] report for upmcfood
+- [x] run visualization and alignment for trained model.
+    - needs to restore model with highest acc/ lowest loss
+- [x] include test set for:
+    - [x] upmc food
+    - [x] mm imdb
+    - [x] hateful memes	- problem here, there are no labels
+- [x] seed from config, not global var

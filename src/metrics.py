@@ -151,8 +151,8 @@ class AlignmentMetrics:
         U1_c, U2_c = cca.transform(U1, U2)
 
         # sometimes it goes to nan, this is just to avoid that
-        U1_c += 1e-10 * np.random.randn(*U1_c.shape)
-        U2_c += 1e-10 * np.random.randn(*U2_c.shape)
+        U1_c += 1e-100 * np.random.randn(*U1_c.shape)
+        U2_c += 1e-100 * np.random.randn(*U2_c.shape)
 
         # Compute SVCCA similarity
         svcca_similarity = np.mean(

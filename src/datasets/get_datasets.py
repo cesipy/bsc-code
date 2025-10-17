@@ -21,6 +21,8 @@ from logger import Logger
 from config import *; import config
 from .dataset_utils import get_image_embedding, get_text_embedding
 import augments_transforms
+import task as tasklib
+
 
 from .dataset_hateful_memes import HM_Dataset
 from .dataset_pretrain import *
@@ -31,6 +33,83 @@ from .dataset_upmc import *
 
 from .dataset_utils import generate_data_list, generate_data_list_pretrain
 
+
+def get_task_test_dataset(
+    task:str,
+    batch_size: int,
+    num_workers:int,
+    seed:int,
+    pin_memory: bool = False,
+    prefetch_factor: int = 4,
+    persistent_workers: bool = True,
+
+) -> DataLoader:
+
+
+    assert task in tasklib.all_task_list
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    if task=="hateful_memes":
+        path = "res/data/hateful_memes_data/dev.jsonl"
+        data_list = generate_data_list(path)
+
+
+        ds = HM_Dataset(
+            data=data_list,
+            tokenizer=tokenizer,
+            image_processor=image_processor,
+            transforms=None     # no need for transforms here
+        )
+
+    elif task=="mm_imdb":
+        path = "res/data/mm-imdb/images.h5"
+        csv_path = "res/data/mm-imdb/mmimdb_test.csv"
+
+        ds = MM_IMDB_Dataset(
+            csv_path=csv_path,
+            img_path=path,
+            tokenizer=tokenizer,
+            image_processor=image_processor,
+            train_test_ratio=None,
+            is_train = False,
+            is_test=True,
+            transform=None
+        )
+    elif task=="upmc_food":
+        if config.machine == "remote":
+            csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_test.csv"
+            img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+        else:
+            csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_test.csv"
+            img_path_upmc = "res/data/UPMC_Food-101/images"
+
+        ds = UPMC_Dataset(
+            csv_path=csv_path_upmc,
+            img_path=img_path_upmc,
+            tokenizer=tokenizer,
+            image_processor=image_processor,
+            is_train=False,
+            is_test=True,
+        )
+    elif task=="easy_vqa":
+        raise NotImplementedError
+    else:
+        assert False
+
+
+    dl = DataLoader(
+        dataset=ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch_factor,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(seed),
+    )
+    return dl
 
 def get_alignment_dataloaders(
     batch_size,
@@ -47,7 +126,7 @@ def get_alignment_dataloaders(
     utils.set_seeds(seed)
 
     path_cc       = "res/data/conceptual-captions/validation.csv"
-    path_hm       = "res/data/hateful_memes_data/train.jsonl"
+    path_hm       = "res/data/hateful_memes_data/dev.jsonl"
     path_imdb     = "res/data/mm-imdb/images.h5"
     csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
     if config.machine == "remote":
@@ -62,10 +141,11 @@ def get_alignment_dataloaders(
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
     data_list_hm = generate_data_list(path_hm)
-    train_idx = int(len(data_list_hm) * TRAIN_TEST_RATIO)
+    print(f"len data_list_hm: {len(data_list_hm)}, num_samples: {num_samples}")
+    # train_idx = int(len(data_list_hm) * TRAIN_TEST_RATIO)
 
     # has len 1700
-    data_list_hm = data_list_hm[train_idx:]
+    # data_list_hm = data_list_hm[train_idx:]
     # random.shuffle(data_list_hm)    # validation set is shuffled
 
     assert num_samples <= len(data_list_hm)
@@ -84,6 +164,7 @@ def get_alignment_dataloaders(
         image_processor=image_processor,
         train_test_ratio=0.8,
         is_train=False,  # is ignored,
+        is_test=True,
         max_samples=num_samples
     )
 
@@ -593,8 +674,8 @@ def get_upmc_datasets(
         train_test_ratio=train_test_ratio,
     )
 
-    print(f"num of trainsamples: {len(train_dataset)}")
-    print(f"num of valsamples: {len(val_dataset)}")
+    # print(f"num of trainsamples: {len(train_dataset)}")
+    # print(f"num of valsamples: {len(val_dataset)}")
 
     train_dataloader = DataLoader(
         train_dataset,

@@ -29,7 +29,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 512
+ALIGNMENT_ANALYSIS_SIZE = 499
 SKIP_ALIGNMENT = False
 
 
@@ -1127,6 +1127,7 @@ class ExperimentTracker:
             num_samples=num_samples,
             seed=model.config.seed
         )
+        print(f"len of datasets:\n\t hm: {len(dataloader_hm.dataset)}, imdb: {len(dataloader_imdb.dataset)}, cc: {len(dataloader_cc.dataset)}, upmc: {len(dataloader_upmc.dataset)}")
 
 
         if task == "hateful_memes":
@@ -1173,8 +1174,28 @@ class ExperimentTracker:
 
 
 
-    def evaluate(self, model:ViLBERT, task:str):
+    def evaluate(self, model:ViLBERT, task:str, dataset="test"):
+        """
+        evaluates model for a given task on either test or validation set.
+
+        Args:
+            model: ViLBERT, model to evaluate
+            task: str, task to evaluate on, either "hateful_memes" or "mm_imdb"
+            dataset: str, either "test" or "val", which dataset to use for evaluation; default is "test"
+
+        """
         assert task in ["hateful_memes", "mm_imdb", "upmc_food"]
+        assert dataset in [ "test", "val" ]
+
+        dl = datasets.get_task_test_dataset(
+            task=task,
+            batch_size=BATCH_SIZE_DOWNSTREAM,
+            num_workers=NUM_WORKERS,
+            pin_memory=PIN_MEMORY,
+            prefetch_factor=PREFETCH,
+            persistent_workers=PERSISTENT_WORKERS,
+            seed=model.config.seed,
+        )
 
         if task == "hateful_memes":
             _, val_loader = datasets.get_hateful_memes_datasets(
@@ -1193,7 +1214,10 @@ class ExperimentTracker:
                 gradient_accumulation=GRADIENT_ACCUMULATION,
                 use_contrastive_loss=model.config.use_contrastive_loss,
             )
-            loss, acc = trainer.evaluate(val_loader)
+            if dataset == "test":
+                loss, acc = trainer.evaluate(dl)
+            else:
+                loss, acc = trainer.evaluate(val_loader)
 
         elif task == "mm_imdb":
             _, val_loader = datasets.get_mmimdb_datasets(
@@ -1212,7 +1236,10 @@ class ExperimentTracker:
                 gradient_accumulation=GRADIENT_ACCUMULATION,
                 use_contrastive_loss=model.config.use_contrastive_loss,
             )
-            loss, acc = trainer.evaluate(val_loader)
+            if dataset == "test":
+                loss, acc = trainer.evaluate(dl)
+            else:
+                loss, acc = trainer.evaluate(val_loader)
 
         elif task == "upmc_food":
             _, val_loader = datasets.get_upmc_datasets(
@@ -1231,7 +1258,10 @@ class ExperimentTracker:
                 gradient_accumulation=GRADIENT_ACCUMULATION,
                 use_contrastive_loss=model.config.use_contrastive_loss,
             )
-            loss, acc = trainer.evaluate(val_loader)
+            if dataset == "test":
+                loss, acc = trainer.evaluate(dl)
+            else:
+                loss, acc = trainer.evaluate(val_loader)
 
         return loss, acc
 
