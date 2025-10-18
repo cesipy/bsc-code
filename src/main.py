@@ -41,15 +41,15 @@ def randomly_generate_config():
 
 def main():
     t = experiment_tracker.ExperimentTracker()
-    test_conf = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=[3,4,6],
-        v_biattention_ids=[3,4,6],
-        use_contrastive_loss=False,
-        epochs=4,
-        seed=42,
-        learning_rate=4e-5, train_test_ratio=0.2
-    )
-    t.run_finetune(experiment_config=test_conf, tasks=["hateful_memes"], run_visualizations=True)
+    # test_conf = experiment_tracker.ExperimentConfig(
+    #     t_biattention_ids=[3,4,6],
+    #     v_biattention_ids=[3,4,6],
+    #     use_contrastive_loss=False,
+    #     epochs=4,
+    #     seed=42,
+    #     learning_rate=4e-5, train_test_ratio=0.2
+    # )
+    # t.run_finetune(experiment_config=test_conf, tasks=["hateful_memes"], run_visualizations=True)
 
 
 
@@ -132,7 +132,7 @@ def main():
                 v_biattention_ids=config["v_biattention_ids"],
                 use_contrastive_loss=False,
                 epochs=15,
-                learning_rate=3.4e-5,
+                learning_rate=3.3e-5,
                 seed=seed,
             )
 

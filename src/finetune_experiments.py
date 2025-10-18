@@ -46,12 +46,13 @@ def main():
                 t_biattention_ids=t_biattns,
                 v_biattention_ids=v_biattns,
                 epochs=15,
-                learning_rate=3e-5,seed=seed,
+                learning_rate=3.3e-5 if task == "hateful_memes" else 3.4e-5,
+                seed=seed,
                 use_contrastive_loss=False
             )
             res = t.run_finetune(experiment_config=e_conf,
-                run_alignment_analysis=True,
-                run_visualizations=True,
+                # run_alignment_analysis=True,
+                # run_visualizations=True,
                 pretrained_model_path=pretrained_path,
                 tasks=[task]
                 )

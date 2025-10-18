@@ -67,8 +67,8 @@ DOWNSTREAM_EPOCHS = 9
 DOWNSTREAM_LR     = 3.4e-5
 
 if socket.gethostname() == "c703i-gpu5":
-    BATCH_SIZE_DOWNSTREAM = 8
-    GRADIENT_ACCUMULATION_DOWNSTREAM = 64
+    BATCH_SIZE_DOWNSTREAM = 4
+    GRADIENT_ACCUMULATION_DOWNSTREAM = 128
     print("on gpu5!")
 if socket.gethostname() == "c703i-gpu10":
     BATCH_SIZE_DOWNSTREAM = 24
@@ -105,7 +105,10 @@ USE_EARLY_STOPPING = True
 ES_CONTINUE_THRESH = 0.001
 ES_PATIENCE = 3
 ES_MODE = "max"  # min for loss, max for acc
-
+# --------------------------------------------------
+# finetune checkpoints directory
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-234252_pretrained_early_fusion/"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/finetune_only/"
 
 class ViLBERTConfig:
     def __init__(
