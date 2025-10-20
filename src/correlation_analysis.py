@@ -33,7 +33,7 @@ def check_correlation(accs, losses, vals, metric:str,  corr_fn=pearsonr):
 
 def analyse_per_task(task:str, paths):
     t = experiment_tracker.ExperimentTracker()
-    num_samples = 512
+    num_samples = 500
     k=32
 
     losses = []
@@ -189,6 +189,19 @@ def main():
         # "res/checkpoints/20251009-075441_finetuned_hateful_memes.pt",
         # "res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
     ]
+
+    dir1 = "res/checkpoints/ftonly_for_correlation-analysis"
+    dir_hm_only = "res/checkpoints/finetune_only"
+    paths = []
+
+    for i in os.listdir(dir1):
+        if i.endswith(".pt"):
+            paths.append(os.path.join(dir1, i))
+
+    for i in os.listdir(dir_hm_only):
+        if i.endswith(".pt"):
+            paths.append(os.path.join(dir_hm_only, i))
+
 
 
     analyse_per_task(task="upmc_food", paths=paths)

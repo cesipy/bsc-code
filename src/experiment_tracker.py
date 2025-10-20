@@ -637,7 +637,8 @@ class ExperimentTracker:
                     dir_name=dir_name, filename_extension=filename_extension)
 
         if tmsp:
-            save_path = f"res/checkpoints/{tmsp}_finetuned_{task}.pt"
+            os.makedirs(FINETUNE_CHECKPOINTS_DIR, exist_ok=True)
+            save_path = os.path.join(FINETUNE_CHECKPOINTS_DIR, f"{tmsp}_finetuned_{task}.pt")
             training_results[task]["model_path"] = save_path
             trainer.model.save_model(save_path)
             info_str = f"Saved finetuned model to {save_path}"

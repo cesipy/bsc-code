@@ -338,15 +338,15 @@ Problem here:
 
 ## 14.10 current configurations under investigation
 
-| name        | t_biatt_id | v_biatt_id | notes |
-|-------------|------------|------------|-------|
-| baseline    | [] | [] | maybe more epochs needed, as there is  |
-| early_fusion| [3,4,5] | [3,4,5] |  |
-| middle_fusion | [6,7,8] | [6,7,8] |  |
-| late_fusion | [9,10,11] | [9,10,11] |  |
-| asymmetric_fusion | [6,7,8,9] | [3,5,7,9] |  |
-| optuna1 | [3,6] | [6,8] | good run for hm |
-| optuna2 | [7,9,10,11] | [6,7,9,10] | trade-off run for mm-imdb and hm|
+| name              | t_biatt_id | v_biatt_id | path  | notes |
+|-------------------|------------|------------|-------|-------|
+| baseline          | []         | []         |res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt           |maybe more epochs needed, as there is  |
+| early_fusion      | [3,4,5]    | [3,4,5]    |res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt       | |
+| middle_fusion     | [6,7,8]    | [6,7,8]    |res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt      | |
+| late_fusion       | [9,10,11]  | [9,10,11]  |res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt        | |
+| asymmetric_fusion | [6,7,8,9]  | [3,5,7,9]  |res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt  | |
+| optuna1           | [3,6]      | [6,8]      |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm |
+| optuna2           | [7,9,10,11]| [6,7,9,10] |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm|
 
 
 
