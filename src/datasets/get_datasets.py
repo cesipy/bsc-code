@@ -51,7 +51,10 @@ def get_task_test_dataset(
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
     if task=="hateful_memes":
-        path = "res/data/hateful_memes_data/dev.jsonl"
+        if config.machine == "remote":
+            path = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/test.jsonl"
+        else:
+            path = "res/data/hateful_memes_data/test.jsonl"
         data_list = generate_data_list(path)
 
 
@@ -126,12 +129,13 @@ def get_alignment_dataloaders(
     utils.set_seeds(seed)
 
     path_cc       = "res/data/conceptual-captions/validation.csv"
-    path_hm       = "res/data/hateful_memes_data/dev.jsonl"
+    path_hm       = "res/data/hateful_memes_data/test.jsonl"
     path_imdb     = "res/data/mm-imdb/images.h5"
     csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
     if config.machine == "remote":
         csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_test.csv"
         img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+        path_hm       = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/test.jsonl"
     else:
         csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_test.csv"
         img_path_upmc = "res/data/UPMC_Food-101/images"
@@ -466,7 +470,7 @@ def get_mmimdb_datasets(
 
 
 def get_hateful_memes_datasets(
-    train_test_ratio: float,
+    train_test_ratio: float,            # not used anymore
     batch_size: int,
     num_workers: int,
     seed:int,
@@ -479,7 +483,7 @@ def get_hateful_memes_datasets(
     """
     get the hateful memes dataset. per default enables data augmentation on testset
     parameters:
-        train_test_ratio: float
+        train_test_ratio: float, is not used anymore
         batch_size: int
         num_workers: int
         pin_memory: bool
@@ -500,12 +504,18 @@ def get_hateful_memes_datasets(
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
-    path = "res/data/hateful_memes_data/train.jsonl"
+    if config.machine == "remote":
+        path = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/train.jsonl"
+        val_path = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/validation.jsonl"
+    else:
+        path = "res/data/hateful_memes_data/train.jsonl"
+        val_path = "res/data/hateful_memes_data/validation.jsonl"
     data_list = generate_data_list(path)
+    val_data_list = generate_data_list(val_path)
 
-    train_idx = int(len(data_list) * train_test_ratio)
-    train_data = data_list[:train_idx]
-    val_data   = data_list[train_idx:]
+    # train_idx = int(len(data_list) * train_test_ratio)
+    train_data = data_list
+    val_data   = val_data_list
 
     if limit_total_dataset:
         train_data = train_data[:1000]

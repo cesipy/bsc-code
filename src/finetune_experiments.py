@@ -28,6 +28,7 @@ pt_epochs = 7
 def main():
     t = experiment_tracker.ExperimentTracker()
     pretrained_path = "res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt"
+    # pretrained_path = "res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt"
 
     modl = ViLBERT.load_model(pretrained_path)
     t_biattns = modl.config.text_cross_attention_layers
@@ -35,6 +36,7 @@ def main():
 
 
     tasks = ["upmc_food", "mm_imdb", "hateful_memes",]
+    # tasks = ["hateful_memes"]
     paths = []
     c = 1
 
@@ -46,7 +48,7 @@ def main():
                 t_biattention_ids=t_biattns,
                 v_biattention_ids=v_biattns,
                 epochs=15,
-                learning_rate=3.3e-5 if task == "hateful_memes" else 4e-5,
+                learning_rate=3.2e-5 if task == "hateful_memes" else 4e-5,
                 seed=seed,
                 use_contrastive_loss=False
             )

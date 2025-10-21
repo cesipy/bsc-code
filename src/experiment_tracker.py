@@ -29,7 +29,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 499
+ALIGNMENT_ANALYSIS_SIZE = 1024
 SKIP_ALIGNMENT = False
 
 
@@ -620,6 +620,10 @@ class ExperimentTracker:
                         trainer.model.load_state_dict(best_model_state)
                         info_str = f"restord model from epoch {early_stopper.best_epoch}"
                         print(info_str);logger.info(info_str)
+                    else:
+                        info_str = f"No best model state found to restore."
+                        print(info_str);logger.info(info_str)
+                        assert False
 
                     break
 
@@ -635,6 +639,11 @@ class ExperimentTracker:
                 filename_extension = f"{tmsp}_e{i+1}"
                 analysis.run_alignment_visualization(dataloader=alignment_dataloader, model=model,
                     dir_name=dir_name, filename_extension=filename_extension)
+
+
+        l, acc = self.evaluate(model=trainer.model, dataset="test")
+        info_str = f"Final Test Loss: {l:.4f}, Test Acc: {acc:.4f}"
+        print(info_str); logger.info(info_str)
 
         if tmsp:
             os.makedirs(FINETUNE_CHECKPOINTS_DIR, exist_ok=True)
