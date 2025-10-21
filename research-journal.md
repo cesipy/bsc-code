@@ -5,6 +5,16 @@ This file contains all kinds of results and observations during my thesis work.
 
 ---
 
+## 21.10
+
+found imbalances in the hm dataset:
+train data: class balance: 0.3551764705882353
+Positive samples: 3019, Negative samples: 5481
+
+validation data: class balance: 0.42980769230769234
+Positive samples: 447, Negative samples: 593
+
+
 ## 17.10
 
 This comparision is on the two tasks `mm_imdb` and `upmc_food`, each with 15 finetune-only models. this pools the models here for one task and evaluates it for the test and train set. Here different architectures where used. This is a analysis of predictability of performance from alignment measures in general.

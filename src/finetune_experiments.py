@@ -27,8 +27,9 @@ pt_epochs = 7
 
 def main():
     t = experiment_tracker.ExperimentTracker()
-    pretrained_path = "res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt"
+    # pretrained_path = "res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt"
     # pretrained_path = "res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt"
+    pretrained_path = "res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt"
 
     modl = ViLBERT.load_model(pretrained_path)
     t_biattns = modl.config.text_cross_attention_layers

@@ -33,11 +33,13 @@ class HatefulMemesTrainer(BaseTrainer):
         )
         assert (use_contrastive_loss and use_cosine_loss) == False, "can only use one of the two losses at once"
 
-        self.loss_fn = torch.nn.BCEWithLogitsLoss()
-        self.info_nce = InfoNCE()
-        self.cosine_loss = alignment_loss_cosine
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = self.model.to(self.device)
+        pos_weight = torch.tensor([NEG_COUNT_HM / POS_COUNT_HM], device=self.device)
+        self.loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        self.eval_loss_fn = torch.nn.BCEWithLogitsLoss()
+        self.info_nce = InfoNCE()
+        self.cosine_loss = alignment_loss_cosine
 
         self.use_contrastive_loss = use_contrastive_loss
         self.use_cosine_loss = use_cosine_loss
@@ -296,6 +298,9 @@ class HatefulMemesTrainer(BaseTrainer):
     def evaluate(self, dataloader: DataLoader):
         self.model.eval()
 
+        all_probs = []
+        all_labels = []
+
         total_loss = 0
         num_batches = 0
 
@@ -335,12 +340,15 @@ class HatefulMemesTrainer(BaseTrainer):
                 preds = preds.squeeze()
                 label = label.float()
 
-                loss = self.loss_fn(preds, label)
+                loss = self.eval_loss_fn(preds, label)
                 total_loss += loss.item()
                 num_batches += 1
 
-                preds = torch.sigmoid(preds)
-                preds = (preds > 0.5).float()  # convert to binary
+                probs = torch.sigmoid(preds)
+                all_probs.extend(probs.cpu().numpy())
+                all_labels.extend(label.cpu().numpy())
+
+                preds = (probs > 0.5).float()  # convert to binary
                 correct_preds += (preds == label).sum().item()
                 total_preds   += label.size(0)
 
@@ -351,4 +359,7 @@ class HatefulMemesTrainer(BaseTrainer):
         else:
             acc = correct_preds / total_preds
 
-        return total_loss / num_batches, acc
+        from sklearn.metrics import roc_auc_score
+        auc = roc_auc_score(all_labels, all_probs)
+
+        return total_loss / num_batches, acc, auc

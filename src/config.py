@@ -61,6 +61,11 @@ NUM_WORKERS = 4
 PREFETCH = 3
 PERSISTENT_WORKERS = False
 PIN_MEMORY = False
+
+
+#hateful memes specific, for the weighted loss; hardcoded as this is easier to do!
+POS_COUNT_HM = 3019
+NEG_COUNT_HM = 5481
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
 DOWNSTREAM_EPOCHS = 9
@@ -109,6 +114,7 @@ ES_MODE = "max"  # min for loss, max for acc
 # finetune checkpoints directory
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-234252_pretrained_early_fusion/"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251011-234349_pretrained_middle_fusion"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251013-010227_pretrained_late_fusion"
 FINETUNE_CHECKPOINTS_DIR = "res/checkpoints"
 
 class ViLBERTConfig:
