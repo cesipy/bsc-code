@@ -41,15 +41,6 @@ def randomly_generate_config():
 
 def main():
     t = experiment_tracker.ExperimentTracker()
-    # test_conf = experiment_tracker.ExperimentConfig(
-    #     t_biattention_ids=[3,4,6],
-    #     v_biattention_ids=[3,4,6],
-    #     use_contrastive_loss=False,
-    #     epochs=4,
-    #     seed=42,
-    #     learning_rate=4e-5, train_test_ratio=0.2
-    # )
-    # t.run_finetune(experiment_config=test_conf, tasks=["hateful_memes"], run_visualizations=True)
 
 
 
@@ -121,32 +112,33 @@ def main():
     c = 0
     trained_models = {}
     for config in configs:
-        for seed in seeds:
-            key = (config['name'], seed)
-            c+=1
+        # for seed in seeds:
+        seed = seeds[0]
+        key = (config['name'], seed)
+        c+=1
 
-            logger.info(f"{'-'*25}\nTraining {config['name']}, seed={seed}, run:{c}/{total_r}")
+        logger.info(f"{'-'*25}\nTraining {config['name']}, seed={seed}, run:{c}/{total_r}")
 
-            finetune_config_hm = experiment_tracker.ExperimentConfig(
-                t_biattention_ids=config["t_biattention_ids"],
-                v_biattention_ids=config["v_biattention_ids"],
-                use_contrastive_loss=False,
-                epochs=15,
-                learning_rate=3.3e-5,
-                seed=seed,
-            )
+        finetune_config_hm = experiment_tracker.ExperimentConfig(
+            t_biattention_ids=config["t_biattention_ids"],
+            v_biattention_ids=config["v_biattention_ids"],
+            use_contrastive_loss=False,
+            epochs=15,
+            learning_rate=3.2e-5,
+            seed=seed,
+        )
 
 
-            results_hm = t.run_finetune(
-                experiment_config=finetune_config_hm,
-                run_visualizations=False,
-                run_alignment_analysis=False,
-                tasks=["hateful_memes"],
-            )
+        results_hm = t.run_finetune(
+            experiment_config=finetune_config_hm,
+            run_visualizations=False,
+            run_alignment_analysis=False,
+            tasks=["hateful_memes"],
+        )
 
-            paths.append(results_hm["hateful_memes"]["model_path"])
+        paths.append(results_hm["hateful_memes"]["model_path"])
 
-            # print("completed training")
+        # print("completed training")
 
     print(paths)
 

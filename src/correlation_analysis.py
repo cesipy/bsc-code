@@ -230,10 +230,21 @@ def main():
         # "res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
     ]
 
+    paths = []
+    dir1= "res/checkpoints/20251011-234349_pretrained_middle_fusion"
+    dir2 = "res/checkpoints/20251010-234252_pretrained_early_fusion"
+    dirs = [dir1, dir2]
+    for dir in dirs:
+        for i in os.listdir(dir):
+            if i.endswith(".pt"):
+                paths.append(os.path.join(dir, i))
 
+
+
+
+    analyse_per_task(task="hateful_memes", paths=paths)
     analyse_per_task(task="mm_imdb", paths=paths)
     analyse_per_task(task="upmc_food", paths=paths)
-    analyse_per_task(task="hateful_memes", paths=paths)
 
 
 

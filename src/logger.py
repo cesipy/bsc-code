@@ -25,6 +25,10 @@ class Logger:
         today = datetime.datetime.today().strftime("%Y-%m-%d")
         if socket.gethostname() == "c703i-gpu5":
             self.filename = FILENAME_PREFIX + today+ "gpu5" + ".txt"
+        elif socket.gethostname() == "c703i-gpu10":
+            self.filename = FILENAME_PREFIX + today+ "gpu10" + ".txt"
+        elif socket.gethostname() == "c703i-gpu11":
+            self.filename = FILENAME_PREFIX + today+ "gpu11" + ".txt"
         else:
             self.filename = FILENAME_PREFIX + today + ".txt"
         Logger._initialized = True

@@ -29,7 +29,7 @@ LR_ = 3.2e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 499
+ALIGNMENT_ANALYSIS_SIZE = 1024
 SKIP_ALIGNMENT = False
 
 
@@ -455,6 +455,7 @@ class ExperimentTracker:
                 use_train_augmentation=True,
                 seed=config.seed
             )
+            print("train_loader length:", len(train_loader.dataset), "val_loader length:", len(val_loader.dataset))
         elif task == "mm_imdb":
             train_loader, val_loader = datasets.get_mmimdb_datasets(
                 train_test_ratio=config.train_test_ratio,
@@ -566,9 +567,17 @@ class ExperimentTracker:
         alignment_dataloader = self._get_task_alignment_dataloader(task=task, config=config)
 
         if USE_EARLY_STOPPING:
+            if task == "hateful_memes":
+                es_mode = "max"  # Use AUC
+                metric_name = "AUC"
+            else:
+                es_mode = ES_MODE
+                metric_name = "acc" if ES_MODE == "max" else "loss"
+
             early_stopper = utils.EarlyStopping(
-                patience=ES_PATIENCE, continue_thresh=ES_CONTINUE_THRESH, mode=ES_MODE
+                patience=ES_PATIENCE, continue_thresh=ES_CONTINUE_THRESH, mode=es_mode
             )
+            best_model_state = None
 
         trainer.setup_scheduler(epochs=epochs, train_dataloader=train_loader,
                                 lr=config.learning_rate)
@@ -582,37 +591,49 @@ class ExperimentTracker:
             analysis.run_alignment_visualization(dataloader=alignment_dataloader, model=model,
                                                  dir_name=dir_name, filename_extension=filename_extension)
 
+        print(f"len(train_loader))={len(train_loader)}, len(val_loader)={len(val_loader)}")
         for i in range(epochs):
             train_loss = self.train_model_step(
                 trainer=trainer,
                 train_dataloader=train_loader,
             )
-            test_loss, acc = self.evaluate_model(
+            val_dict = self.evaluate_model(
                 trainer=trainer,
                 dataloader=val_loader,
             )
+            test_dict = self.evaluate(model=trainer.model, dataset="test", task=task)
             info_str = (
                 f"Epoch {i+1}/{epochs}, Train Loss: {train_loss:.4f}"
-                f", Val Loss: {test_loss:.4f}, Val Acc: {acc:.4f}"
+                f", V_Loss: {val_dict['loss']:.4f}, V_Acc: {val_dict['acc']:.4f}"
+                f", T_Loss: {test_dict['loss']:.4f}, T_Acc: {test_dict['acc']:.4f}"
             )
+            if test_dict["auc"] is not None:
+                info_str += f", V_AUC: {val_dict.get('auc', 0.0):.4f}, T_AUC: {test_dict['auc']:.4f}"
             print(info_str)
             logger.info(info_str)
 
             training_results[task]["training"][i+1]["train_loss"] = train_loss
-            training_results[task]["training"][i+1]["val_loss"] = test_loss
-            training_results[task]["training"][i+1]["val_acc"] = acc
+            training_results[task]["training"][i+1]["val_loss"] = val_dict["loss"]
+            training_results[task]["training"][i+1]["val_acc"] = val_dict["acc"]
+            if val_dict.get("auc") is not None:
+                training_results[task]["training"][i+1]["val_auc"] = val_dict["auc"]
 
             if USE_EARLY_STOPPING:
-                val = acc if ES_MODE == "max" else test_loss
+                if task == "hateful_memes" and val_dict.get("auc") is not None:
+                    val = val_dict["auc"]
+                else:
+                    val = val_dict["acc"] if ES_MODE == "max" else val_dict["loss"]
 
-                if (ES_MODE == "max" and (val >= early_stopper.best_score)) or \
-                (ES_MODE == "min" and (val <= early_stopper.best_score)):
+
+                if early_stopper.best_score is None or \
+                (es_mode == "max" and val > early_stopper.best_score) or \
+                (es_mode == "min" and val < early_stopper.best_score):
                     best_model_state = copy.deepcopy(trainer.model.state_dict())
 
                 should_stop = early_stopper(val, i+1)
 
                 if should_stop:
-                    info_str = f"Early stopping at epoch {i+1}. Best {ES_MODE}: {early_stopper.best_score:.4f} at epoch {early_stopper.best_epoch}"
+                    info_str = f"Early stopping at epoch {i+1}. Best {metric_name}: {early_stopper.best_score:.4f} at epoch {early_stopper.best_epoch}"
                     print(info_str)
                     logger.info(info_str)
 
@@ -620,6 +641,10 @@ class ExperimentTracker:
                         trainer.model.load_state_dict(best_model_state)
                         info_str = f"restord model from epoch {early_stopper.best_epoch}"
                         print(info_str);logger.info(info_str)
+                    else:
+                        info_str = f"No best model state found to restore."
+                        print(info_str);logger.info(info_str)
+                        assert False
 
                     break
 
@@ -636,8 +661,16 @@ class ExperimentTracker:
                 analysis.run_alignment_visualization(dataloader=alignment_dataloader, model=model,
                     dir_name=dir_name, filename_extension=filename_extension)
 
+
+        final_test_dict = self.evaluate(model=trainer.model, dataset="test", task=task)
+        info_str = f"Final T_Loss: {final_test_dict['loss']:.4f}, T_Acc: {final_test_dict['acc']:.4f}"
+        if final_test_dict.get("auc") is not None:
+            info_str += f", Test AUC: {final_test_dict['auc']:.4f}"
+        print(info_str); logger.info(info_str)
+
         if tmsp:
-            save_path = f"res/checkpoints/{tmsp}_finetuned_{task}.pt"
+            os.makedirs(FINETUNE_CHECKPOINTS_DIR, exist_ok=True)
+            save_path = os.path.join(FINETUNE_CHECKPOINTS_DIR, f"{tmsp}_finetuned_{task}.pt")
             training_results[task]["model_path"] = save_path
             trainer.model.save_model(save_path)
             info_str = f"Saved finetuned model to {save_path}"
@@ -781,10 +814,15 @@ class ExperimentTracker:
         self,
         trainer: HatefulMemesTrainer,
         dataloader: datasets.DataLoader,
-        ) -> Tuple[float, float]:
+    ) -> dict:
+        result = trainer.evaluate(dataloader=dataloader)
 
-        return trainer.evaluate(dataloader=dataloader)
-
+        if len(result) == 3:  # (loss, acc, auc) for hateful_memes
+            loss, acc, auc = result
+            return {"loss": loss, "acc": acc, "auc": auc}
+        elif len(result) == 2:  # (loss, acc) for other tasks
+            loss, acc = result
+            return {"loss": loss, "acc": acc, "auc": None}
 
 
     def _analyse_alignment(
@@ -1215,9 +1253,11 @@ class ExperimentTracker:
                 use_contrastive_loss=model.config.use_contrastive_loss,
             )
             if dataset == "test":
-                loss, acc = trainer.evaluate(dl)
+                loss, acc, auc = trainer.evaluate(dl)
             else:
-                loss, acc = trainer.evaluate(val_loader)
+                loss, acc, auc = trainer.evaluate(val_loader)
+
+
 
         elif task == "mm_imdb":
             _, val_loader = datasets.get_mmimdb_datasets(
@@ -1263,7 +1303,11 @@ class ExperimentTracker:
             else:
                 loss, acc = trainer.evaluate(val_loader)
 
-        return loss, acc
+        return {
+            "loss": loss,
+            "acc": acc,
+            "auc": auc if task == "hateful_memes" else None
+        }
 
 
 
