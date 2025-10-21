@@ -108,7 +108,7 @@ ES_MODE = "max"  # min for loss, max for acc
 # --------------------------------------------------
 # finetune checkpoints directory
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-234252_pretrained_early_fusion/"
-FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/finetune_only/"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
 
 class ViLBERTConfig:
     def __init__(

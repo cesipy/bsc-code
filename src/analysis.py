@@ -387,17 +387,27 @@ def calculate_metrics(text_embeddings, vision_embeddings, knn_k):
 
 def get_additional_metrics(text_embeddings, vision_embeddings, knn_k):
     # really big differences
-    procrustes = metrics_llmrepsim.orthogonal_procrustes(R=text_embeddings, Rp=vision_embeddings)
+    norm_t = F.normalize(text_embeddings, dim=-1)
+    norm_v = F.normalize(vision_embeddings, dim=-1)
+    meanc_t = text_embeddings - text_embeddings.mean(dim=0, keepdim=True)
+    meanc_v = vision_embeddings - vision_embeddings.mean(dim=0, keepdim=True)
+    procrustes = metrics_llmrepsim.orthogonal_procrustes(R=norm_t, Rp=norm_v)
 
     # they are pretty similar,
     jaccard = metrics_llmrepsim.jaccard_similarity(R=text_embeddings, Rp=vision_embeddings, k=knn_k)
 
     # moderate diffs
     rsa= metrics_llmrepsim.representational_similarity_analysis(R=text_embeddings, Rp=vision_embeddings)
+
+    cos_sim=measures.cosine_similarity_batch(text_embeddings, vision_embeddings).mean().item()
+
+    mc_aligned_cos_sim=metrics_llmrepsim.aligned_cossim(R=meanc_t, Rp=meanc_v)
     return {
         "procrustes": procrustes,
         "jaccard": jaccard,
-        "rsa": rsa
+        "rsa": rsa,
+        "cosine_similarity": cos_sim,
+        "aligned_cosine_similarity": mc_aligned_cos_sim
     }
 
 
@@ -438,10 +448,11 @@ def analyse_alignment(
         info_str2 = (f"layer {i:2}: mknn = {metrics_new['mknn']:4.2f}, "
                 f"cka(lin)= {metrics_new['cka']:5.2f}, "
                 f"svcca= {metrics_new['svcca']:4.2f}, "
-                f"cka(rbf)= {metrics_new['cka_rbf']:5.2f}, "
-                f"cka(unb)= {metrics_new['unbiased_cka']:5.2f}, "
-                f"cknn-a= {metrics_new['cknna']:4.2f}, "
-                f"cycleknn= {metrics_new['cycle_knn']:4.2f}")
+                f"procr: {metrics_add['procrustes']:4.2f}, "
+                # f"cycleknn= {metrics_new['cycle_knn']:4.2f}"
+                f"cos_sim= {metrics_add['cosine_similarity']:5.2f} "
+                f"mc_acs= {metrics_add['aligned_cosine_similarity']:4.2f} "
+        )
 
         # print(info_str)
         if verbose:
@@ -461,6 +472,7 @@ def analyse_alignment(
             "jaccard": metric_adds[i]["jaccard"],
             "rsa": metric_adds[i]["rsa"],
             "r2": metric_olds[i]["linear_r2"],
+            "aligned_cosine_similarity": metric_adds[i]["aligned_cosine_similarity"],
         }
     return return_dict
 

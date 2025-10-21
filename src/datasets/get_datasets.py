@@ -125,16 +125,30 @@ def get_alignment_dataloaders(
     """
     utils.set_seeds(seed)
 
+    # test paths here, except for concap - but here it does not matter
+    # path_cc       = "res/data/conceptual-captions/validation.csv"
+    # path_hm       = "res/data/hateful_memes_data/dev.jsonl"
+    # path_imdb     = "res/data/mm-imdb/images.h5"
+    # csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
+    # if config.machine == "remote":
+    #     csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_test.csv"
+    #     img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+    # else:
+    #     csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_test.csv"
+    #     img_path_upmc = "res/data/UPMC_Food-101/images"
+
+    # validation sets that are bigger, used fr metric-analysis
     path_cc       = "res/data/conceptual-captions/validation.csv"
-    path_hm       = "res/data/hateful_memes_data/dev.jsonl"
+    path_hm       = "res/data/hateful_memes_data/train.jsonl"
     path_imdb     = "res/data/mm-imdb/images.h5"
-    csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
+    csv_path_imdb = "res/data/mm-imdb/mmimdb_trainval.csv"
     if config.machine == "remote":
-        csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_test.csv"
+        csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_trainval.csv"
         img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
     else:
-        csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_test.csv"
+        csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_trainval.csv"
         img_path_upmc = "res/data/UPMC_Food-101/images"
+
 
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")

@@ -152,7 +152,15 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 ## TODO
+**today**:
+- [ ] differences in alignment metrics for different num_samples
+- [ ] differences in alignment metrics for differen K_KNN
+- [ ] aligned sim & cosine sim implementation + correlations
+
+
 **immediate:**
+- [ ] still optuna 3 needed! good archicture for mm_imdb alone!
+- [ ] correlation analysis of metrics on all new architectures
 - [ ] is finetuned good performance indicator for pretraining good performance?
 - [ ] convert all torchvision to albuminations + seeding
 
