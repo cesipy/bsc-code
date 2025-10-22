@@ -16,6 +16,7 @@ import warnings     # should ignore all warnings,
 warnings.filterwarnings("ignore")
 
 logger = Logger()
+ANALYSIS_SIZE = 1024
 
 
 def was_task_analysed(task, content):
@@ -33,7 +34,7 @@ def check_correlation(accs, losses, vals, metric:str,  corr_fn=pearsonr):
 
 def analyse_per_task(task:str, paths):
     t = experiment_tracker.ExperimentTracker()
-    num_samples = 500
+    num_samples = ANALYSIS_SIZE
     k=32
 
     losses = []
@@ -58,7 +59,9 @@ def analyse_per_task(task:str, paths):
 
         # print(alignment_metrics_h)
         metrics_last_layer = alignment_metrics[11]      # we only want to have them for the last layer compute correlation between them and acc/loss
-        loss, acc = t.evaluate(model=model, task=task,)
+        dict= t.evaluate(model=model, task=task,)
+        loss = dict["loss"]
+        acc  = dict["acc"]
 
         info_str = f"model {path}: \n\t{task}: val_loss={loss:.4f}, val_acc={acc:.4f}"
         losses.append(-loss)
@@ -193,7 +196,9 @@ def main():
     paths = []
     dir1= "res/checkpoints/20251011-234349_pretrained_middle_fusion"
     dir2 = "res/checkpoints/20251010-234252_pretrained_early_fusion"
-    dirs = [dir1, dir2]
+    dir3 = "res/checkpoints/20251013-010227_pretrained_late_fusion"
+    dir4 = "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion"
+    dirs = [dir1, dir2, dir3, dir4]
     for dir in dirs:
         for i in os.listdir(dir):
             if i.endswith(".pt"):

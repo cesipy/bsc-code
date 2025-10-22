@@ -145,7 +145,7 @@ def get_alignment_dataloaders(
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
     data_list_hm = generate_data_list(path_hm)
-    print(f"len data_list_hm: {len(data_list_hm)}, num_samples: {num_samples}")
+    # print(f"len data_list_hm: {len(data_list_hm)}, num_samples: {num_samples}")
     # train_idx = int(len(data_list_hm) * TRAIN_TEST_RATIO)
 
     # has len 1700
