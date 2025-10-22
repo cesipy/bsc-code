@@ -558,6 +558,19 @@ def sanity_check_metrics():
     t1 = layer3["text_embeddings"]
     t2 = layer3["vision_embeddings"]
 
+    from metrics_llmrepsim import sim_random_baseline
+    callabls = [
+        metrics_llmrepsim.orthogonal_procrustes,
+        metrics.AlignmentMetrics.cka,
+        metrics.AlignmentMetrics.svcca,
+
+        metrics_llmrepsim.representational_similarity_analysis,
+    ]
+    for callabl in callabls:
+        baseline = sim_random_baseline(rep1=t1, rep2=t2, sim_func=callabl)
+        print(f"Random baseline similarity: {np.mean(baseline['baseline_scores']).item()} for {callabl.__name__}")
+
+
     svcca_identical = metrics.AlignmentMetrics.svcca(t1, t1, cca_dim=10)
     svcca_random = metrics.AlignmentMetrics.svcca(t1, t2, cca_dim=10)
 
@@ -613,6 +626,12 @@ def sanity_check_metrics():
 
 
 if __name__ == "__main__":
+
+    sanity_check_metrics()
+
+
+
+    print("\n\n\n"+ "-"*40)
     t1 = torch.rand((1,197, 768), )
     t2 = torch.rand((1, 197,768), )
 

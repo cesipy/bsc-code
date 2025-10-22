@@ -140,6 +140,10 @@ def sim_random_baseline(
         perm = torch.randperm(rep1.size(0))
 
         score = sim_func(rep1[perm, :], rep2)
+        try:
+            score = score.item()
+        except AttributeError:
+            score = score
         score = score if isinstance(score, float) else score["score"]
 
         scores.append(score)

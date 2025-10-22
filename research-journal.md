@@ -1,10 +1,96 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+## 21.10 - hypotheses
+
+better hateful memes dataset: https://www.kaggle.com/discussions/general/202833
+
+H1: Alignment is task dependent: some tasks benefit more from one coattention placement than others.
+
+H2: Intra-layer alignment is more important than final alignment!
+- do correlation testing here. `corr(cka[-1], accuracy` vs `corr(max(cka), accuracy)`
+
+H3: coattention placements increase metrics.
+
+
+show correlation, but not absolute values same:
+<figure>
+<img src="./res/markdown_res/alignment_metrics_comparison.png">
+</figure>
+
+
+
+
+
+## 20.10
+currently running more rigorous experiments on the correlation between num_samples in dataset and K and metrics, that I can directly report them to my thesis. also includes time findings.
+This analysis is done while the finetuning step of pretrained models is trained for three seeds a three tasks (9) per pretrained.
+
+
+results are below:
+The analysis was done for 49 models (15/15/19: mm_imdb/upmc_food/hateful_memes)
+
+- running time for num_samples= 512: 14.12s ± 5.12 (std)
+- running time for num_samples=1536: 42.64s ± 4.82 (std) on uni-gpu, on my gpu way worse as cpu has to be used. over 5 minutes for it.
+also
+
+
+for metrics of interest (cka, procrustes,svcca, mknn ), inter-model correlation was high.
+| Metric      | Mean (within-model) | Std Dev    | Mean p-value | Std Dev (p-value) |
+|-------------|---------------------|------------|--------------|-------------------|
+| mknn        | 0.9077              | 0.1240     | 0.0051       | 0.0169            |
+| procrustes  | 0.9957              | 0.0058     | 0.0000       | 0.0000            |
+| cka         | 0.9869              | 0.0284     | 0.0000       | 0.0002            |
+| svcca       | 0.9264              | 0.0869     | 0.0024       | 0.0142            |
+
+
+also the new correlation between metrics was similar to the results with fewer metrics:
+
+<figure>
+<img src="./res/markdown_res/20252010_metric_analysis/mknn_spearmanr.png">
+</figure>
+
+
+
+
+
+
+
+
 
 
 ---
 
+## 18.10 & 17.10
+**summary**:
+to sum my current thesis: Basically this thesis studies representational alignment in two-stream architectures (ViLBERT).
+
+i) How do cross-attention layer between the streams affect the representational alignment?
+
+ii) is there a corerlationbetween performance (acc) and alignment? is it task dependent?
+
+iii) Is there an correlation between representational alignment and coattention placement? (how to measure this??)
+
+iv) optimal alignment for archicture, how is the overall performance?
+
+**past ⁊ current experiments**:
+i) best performing architectures for mm_imdb and hateful memes, searched via optuna.
+
+ii) pretraining for the below architectures. (early, mid, late, asymmetric, optuna1, optuna2, [optuna3 is still todo])
+
+iii) correlation analysis of num_dataset and k (kNN mesures) and between measurements.
+
+iv) currently: finetuning on all three tasks (mmimdb, hm, upmcfood) for each three seeds ($6\cdot3\cdot3$)
+- correlation analysis for repr measures and performance
+
+
+**additional things**:
+i) is representational alignment really increasing after coattns?
+
+ii) directly optimize for alignment measures (like cka)
+
+
+---
 ## 21.10
 
 found imbalances in the hm dataset:
@@ -358,6 +444,8 @@ Problem here:
 | optuna1           | [3,6]      | [6,8]      |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm |
 | optuna2           | [7,9,10,11]| [6,7,9,10] |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm|
 
+
+still optuna 3 needed! good archicture for mm_imdb alone!
 
 
 

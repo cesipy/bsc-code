@@ -39,7 +39,10 @@ def analyse_per_task(task:str, paths):
 
     losses = []
     accs   = []
+    losses_val = []
+    accs_val = []
     metrics =   []
+    metrics_val = []
     metrics_last_layer = None
 
 
@@ -59,16 +62,18 @@ def analyse_per_task(task:str, paths):
 
         # print(alignment_metrics_h)
         metrics_last_layer = alignment_metrics[11]      # we only want to have them for the last layer compute correlation between them and acc/loss
-        dict= t.evaluate(model=model, task=task,)
-        loss = dict["loss"]
-        acc  = dict["acc"]
+        loss, acc = t.evaluate(model=model, task=task,)
+        loss_val, acc_val = t.evaluate(model=model, task=task, dataset="val")
 
-        info_str = f"model {path}: \n\t{task}: val_loss={loss:.4f}, val_acc={acc:.4f}"
-        losses.append(-loss)
-        accs.append(acc)
+        info_str = f"model {path}: \n\t{task}: test loss={loss:.4f}, test acc={acc:.4f}"
+        info_str2 = f"model {path}: \n\t{task}:  val loss={loss_val:.4f},  val acc={acc_val:.4f}"
+        losses.append(-loss); losses_val.append(-loss_val)
+        accs.append(acc); accs_val.append(acc_val)
 
-        metrics.append({**metrics_last_layer, "task": task, "val_loss": loss, "val_acc": acc, "id": path})
+        metrics.append({**metrics_last_layer, "task": task, "test_loss": loss, "test_acc": acc, "id": path})
+        metrics_val.append({**metrics_last_layer, "task": task, "val_loss": loss_val, "val_acc": acc_val, "id": path})
         print(info_str); logger.info(info_str)
+        print(info_str2); logger.info(info_str2)
 
     if metrics_last_layer is None:
         print(f"No models found for task {task} in the provided paths.")
@@ -78,9 +83,15 @@ def analyse_per_task(task:str, paths):
     losses_array = np.array(losses)
 
     all_metrics = list(metrics[0].keys())
-    exclude = ["task", "val_loss", "val_acc", "id"]
-    all_metrics = [m for m in all_metrics if m not in exclude]
+    all_metrics_val = list(metrics_val[0].keys())
+    exclude_test = ["task", "test_loss", "test_acc", "id"]
+    exclude_val = ["task", "val_loss", "val_acc", "id"]
 
+    all_metrics = [m for m in all_metrics if m not in exclude_test]
+    all_metrics_val = [m for m in all_metrics_val if m not in exclude_val]
+
+    info_str = f"\n{'='*25}test dataset"
+    print(info_str); logger.info(info_str)
     info_str = f"Pearson Correlations for task {task}:"
     print(info_str); logger.info(info_str)
     print("-" * 25)
@@ -94,7 +105,6 @@ def analyse_per_task(task:str, paths):
             vals=metric_array,
             corr_fn=pearsonr
         )
-    print(f"\n{'='*25}")
     print(f"Spearman Correlations for task {task}:")
     print("-" * 25)
     logger.info(f"\n{'='*25}");logger.info(f"Spearman Correlations for task {task}");logger.info("-" * 25)
@@ -107,6 +117,35 @@ def analyse_per_task(task:str, paths):
             vals=metric_array,
             corr_fn=spearmanr
         )
+
+    info_str = f"\n{'='*25}validation dataset"
+    print(info_str); logger.info(info_str)
+    info_str = f"Pearson Correlations for task {task}:"
+    print(info_str); logger.info(info_str)
+    print("-" * 25); logger.info("-" * 25)
+    accs_array_val = np.array(accs_val)
+    losses_array_val = np.array(losses_val)
+    for metric in all_metrics_val:
+        metric_array = np.array([m[metric] for m in metrics_val])
+        check_correlation(
+            accs=accs_array_val,
+            losses=losses_array_val,
+            metric=metric,
+            vals=metric_array,
+            corr_fn=pearsonr
+        )
+    print(f"Spearman Correlations for task {task}:");print("-" * 25)
+    logger.info(f"\n{'='*25}");logger.info(f"Spearman Correlations for task {task}");logger.info("-" * 25)
+    for metric in all_metrics_val:
+        metric_array = np.array([m[metric] for m in metrics_val])
+        check_correlation(
+            accs=accs_array_val,
+            losses=losses_array_val,
+            metric=metric,
+            vals=metric_array,
+            corr_fn=spearmanr
+        )
+
 
 def main():
 
@@ -142,8 +181,7 @@ def main():
         'res/checkpoints/20251013-finetunes-only/20251012-122323_finetuned_upmc_food.pt',
         'res/checkpoints/20251013-finetunes-only/20251012-154634_finetuned_mm_imdb.pt',
         'res/checkpoints/20251013-finetunes-only/20251012-163839_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251013-094844_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251013-094844_finetuned_upmc_food.pt',
+
 
         # "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
         # "res/checkpoints/20251007-201826_finetuned_mm_imdb.pt",
