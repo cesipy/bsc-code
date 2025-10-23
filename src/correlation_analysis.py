@@ -62,8 +62,10 @@ def analyse_per_task(task:str, paths):
 
         # print(alignment_metrics_h)
         metrics_last_layer = alignment_metrics[11]      # we only want to have them for the last layer compute correlation between them and acc/loss
-        loss, acc = t.evaluate(model=model, task=task,)
-        loss_val, acc_val = t.evaluate(model=model, task=task, dataset="val")
+        dict_v= t.evaluate(model=model, task=task,)
+        dict_t = t.evaluate(model=model, task=task, dataset="val")
+        loss, acc = dict_v["loss"], dict_v["acc"]
+        loss_val, acc_val = dict_t["loss"], dict_t["acc"]
 
         info_str = f"model {path}: \n\t{task}: test loss={loss:.4f}, test acc={acc:.4f}"
         info_str2 = f"model {path}: \n\t{task}:  val loss={loss_val:.4f},  val acc={acc_val:.4f}"
@@ -149,94 +151,11 @@ def analyse_per_task(task:str, paths):
 
 def main():
 
-    paths = [
-        # on gaming pc
-        'res/checkpoints/20251013-finetunes-only/20251010-090441_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251010-095244_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251010-130016_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251010-134820_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251010-165605_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251010-174413_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251010-205147_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251010-213953_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-004735_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-013540_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-044319_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-053123_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-083858_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-092703_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-123449_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-132257_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-163056_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-171905_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251011-202657_finetuned_mm_imdb.pt',
-        # 'res/checkpoints/20251011-211506_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-000323_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-004732_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-033945_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-042355_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-071611_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-080813_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-113121_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-122323_finetuned_upmc_food.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-154634_finetuned_mm_imdb.pt',
-        'res/checkpoints/20251013-finetunes-only/20251012-163839_finetuned_upmc_food.pt',
-
-
-        # "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251007-201826_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-141240_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-144350_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-154319_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-160257_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-170044_finetuned_hateful_memes.pt"
-
-        # ---------------------------------------------------------
-        #uni gpus
-        # "res/checkpoints/20251006-211344_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251006-211344_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251006-224233_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251006-224233_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251007-160301_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251007-160855_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251007-160855_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251007-162505_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251007-172924_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251007-173620_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-113042_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-113042_finetuned_mm_imdb.pt",
-        # #not sure about them above, could be bad runs
-        # "res/checkpoints/20251008-131105_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-143741_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-143741_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-161701_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-161701_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-174253_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-174253_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-193456_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-193456_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-211323_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-211323_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251008-223850_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251008-223850_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251009-004449_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251009-004449_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251009-023655_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251009-023655_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251009-042241_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251009-042241_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251009-060800_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251009-060800_finetuned_mm_imdb.pt",
-        # "res/checkpoints/20251009-075441_finetuned_hateful_memes.pt",
-        # "res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
-    ]
-
     paths = []
-    dir1= "res/checkpoints/20251011-234349_pretrained_middle_fusion"
-    dir2 = "res/checkpoints/20251010-234252_pretrained_early_fusion"
-    dir3 = "res/checkpoints/20251013-010227_pretrained_late_fusion"
-    dir4 = "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion"
-    dirs = [dir1, dir2, dir3, dir4]
+    dir1 = "res/checkpoints/20251022-ft-only"
+    dir2 = "res/checkpoints/imported"
+    dir3 = "res/checkpoints/20251013-finetunes-only"
+    dirs = [dir1, dir2, dir3]
     for dir in dirs:
         for i in os.listdir(dir):
             if i.endswith(".pt"):

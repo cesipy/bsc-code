@@ -441,8 +441,8 @@ Problem here:
 | middle_fusion     | [6,7,8]    | [6,7,8]    |res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt      | |
 | late_fusion       | [9,10,11]  | [9,10,11]  |res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt        | |
 | asymmetric_fusion | [6,7,8,9]  | [3,5,7,9]  |res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt  | |
-| optuna1           | [3,6]      | [6,8]      |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm |
-| optuna2           | [7,9,10,11]| [6,7,9,10] |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm|
+| optuna1           | [3,6]      | [6,8]      |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm, trial  21 |
+| optuna2           | [7,9,10,11]| [6,7,9,10] |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm, trial 11|
 
 
 still optuna 3 needed! good archicture for mm_imdb alone!

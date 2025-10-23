@@ -591,7 +591,13 @@ class ExperimentTracker:
             analysis.run_alignment_visualization(dataloader=alignment_dataloader, model=model,
                                                  dir_name=dir_name, filename_extension=filename_extension)
 
-        print(f"len(train_loader))={len(train_loader)}, len(val_loader)={len(val_loader)}")
+        info_str = f"len(train_loader))={len(train_loader.dataset)}, len(val_loader)={len(val_loader.dataset)}"
+        print(info_str); logger.info(info_str)
+
+        #TODO: debugging
+        test_dict = self.evaluate(model=trainer.model, dataset="test", task=task)
+        info_str = f"Initial test performance: {test_dict}"
+        print(info_str); logger.info(info_str)
         for i in range(epochs):
             train_loss = self.train_model_step(
                 trainer=trainer,
@@ -1234,6 +1240,7 @@ class ExperimentTracker:
             persistent_workers=PERSISTENT_WORKERS,
             seed=model.config.seed,
         )
+        # print(f"len of {dataset} dataset for {task}: {len(dl.dataset)}")
 
         if task == "hateful_memes":
             _, val_loader = datasets.get_hateful_memes_datasets(

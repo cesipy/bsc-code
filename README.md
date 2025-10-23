@@ -159,7 +159,15 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 **immediate:**
+- [ ] pretrain vs non-pretrain: run the same experiments on finetune-only!
+- [ ] update `all_finetune_logs` with new finetunes. currently includes up to late fusion
+- [ ] test acc und loss für finetunes, wo noch nicht geändert und in `all_finetune_logs.txt` inkludieren. Nur für `upmc_food, mm_imdb` Für
+    - [ ] pretrain_early_fusion
+    - [ ] pretrain_middle_fusion
+
+- [ ] pretrain für starke MM-imdb. optuna 1 ist stark für hateful_memes, optuna2 ist guter kompromiss => optuna 3 fehlt!
 - [ ] still optuna 3 needed! good archicture for mm_imdb alone!
+
 - [ ] correlation analysis of metrics on all new architectures
 - [ ] is finetuned good performance indicator for pretraining good performance?
 - [ ] convert all torchvision to albuminations + seeding

@@ -370,10 +370,15 @@ def calculate_metrics(text_embeddings, vision_embeddings, knn_k):
 
     cycle_knn = metrics.AlignmentMetrics.cycle_knn(feats_A=norm_t, feats_B=norm_v, topk=knn_k)
     mknn = metrics.AlignmentMetrics.measure("mutual_knn", norm_t, norm_v, topk=knn_k)
-    cka = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings)
-    cka_rbf = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings, kernel_metric="rbf")
-    unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(text_embeddings, vision_embeddings)
-    svcca = metrics.AlignmentMetrics.svcca(text_embeddings, vision_embeddings, cca_dim=10)
+    cka = metrics.AlignmentMetrics.cka(norm_t, norm_v)
+    cka_rbf = metrics.AlignmentMetrics.cka(norm_t, norm_v, kernel_metric="rbf")
+    unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(norm_t, norm_v)
+    svcca = metrics.AlignmentMetrics.svcca(norm_t, norm_v, cca_dim=10)
+    
+    # cka = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings)
+    # cka_rbf = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings, kernel_metric="rbf")
+    # unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(text_embeddings, vision_embeddings)
+    # svcca = metrics.AlignmentMetrics.svcca(text_embeddings, vision_embeddings, cca_dim=10)
     cknna = metrics.AlignmentMetrics.cknna(norm_t, norm_v, topk=knn_k)
     return {
         "cycle_knn": cycle_knn,

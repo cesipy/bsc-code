@@ -47,24 +47,19 @@ class MM_IMDB_Dataset(torch.utils.data.Dataset):
         self.is_train = is_train
         if is_train:
             train_test_split_idx = int(train_test_ratio * len(csv_data))
-            if max_samples != None:
-                assert max_samples < len(csv_data)
-                self.csv_data = csv_data[:max_samples]
+            split_data = csv_data[:train_test_split_idx]
+        elif is_test:
+            split_data = csv_data
+        else:  # validation
+            train_test_split_idx = int(train_test_ratio * len(csv_data))
+            split_data = csv_data[train_test_split_idx:]
 
-            elif max_samples == None and is_train:
-                self.csv_data = csv_data[:train_test_split_idx]
-            elif max_samples == None and not is_train:
-                self.csv_data = csv_data[train_test_split_idx:]
-
-            else:
-                print("smth is completely wrong! panicking!!!")
-                exit(0)
-        else:   # is_test
-            if max_samples != None:
-                assert max_samples < len(csv_data)
-                self.csv_data = csv_data[:max_samples]
-            else:
-                self.csv_data = csv_data
+        # Apply max_samples if provided (for train and test only)
+        if max_samples is not None and (is_train or is_test):
+            assert max_samples < len(split_data), f"max_samples {max_samples} >= available samples {len(split_data)}"
+            self.csv_data = split_data[:max_samples]
+        else:
+            self.csv_data = split_data
 
         self.tokenizer = tokenizer
         self.image_processor = image_processor
