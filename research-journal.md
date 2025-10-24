@@ -1,6 +1,33 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+
+## 24.10 - first results:
+| Fusion Method | UPMC Accuracy | IMDB Accuracy | HM Accuracy | HM ROC-AUC |
+|---------------|---------------|---------------|-------------|------------|
+| Early Fusion  | 0.8929 ± 0.0001 | 0.9291 ± 0.0004 | 0.6807 ± 0.0065 | 0.7226 ± 0.0033 |
+| Middle Fusion | 0.9180 ± 0.0013 | 0.9299 ± 0.0002 | 0.6970 ± 0.0050 | 0.7497 ± 0.0090 |
+| Late Fusion   | 0.9278 ± 0.0004 | 0.9308 ± 0.0002 | 0.7019 ± 0.0096 | 0.7637 ± 0.0041 |
+<details closed>
+early fusion:
+upmc accuracy: 0.8929 ± 0.0001
+imdb accuracy: 0.9291 ± 0.0004
+hm   accuracy: 0.6807 ± 0.0065
+hm rocauc    : 0.7226 ± 0.0033
+-----------------------------------
+middle fusion:
+upmc accuracy: 0.9180 ± 0.0013
+imdb accuracy: 0.9299 ± 0.0002
+hm   accuracy: 0.6970 ± 0.0050
+hm rocauc    : 0.7497 ± 0.0090
+-----------------------------------
+late fusion:
+upmc accuracy: 0.9278 ± 0.0004
+imdb accuracy: 0.9308 ± 0.0002
+hm   accuracy: 0.7019 ± 0.0096
+hm rocauc    : 0.7637 ± 0.0041
+</details>
+
 ## 21.10 - hypotheses
 
 better hateful memes dataset: https://www.kaggle.com/discussions/general/202833
