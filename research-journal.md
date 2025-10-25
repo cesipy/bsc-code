@@ -3,30 +3,45 @@ This file contains all kinds of results and observations during my thesis work.
 
 
 ## 24.10 - first results:
-| Fusion Method | UPMC Accuracy | IMDB Accuracy | HM Accuracy | HM ROC-AUC |
-|---------------|---------------|---------------|-------------|------------|
-| Early Fusion  | 0.8929 ± 0.0001 | 0.9291 ± 0.0004 | 0.6807 ± 0.0065 | 0.7226 ± 0.0033 |
-| Middle Fusion | 0.9180 ± 0.0013 | 0.9299 ± 0.0002 | 0.6970 ± 0.0050 | 0.7497 ± 0.0090 |
-| Late Fusion   | 0.9278 ± 0.0004 | 0.9308 ± 0.0002 | 0.7019 ± 0.0096 | 0.7637 ± 0.0041 |
+| Fusion Method      | UPMC Accuracy       | IMDB Accuracy       | HM Accuracy         | HM ROC-AUC          |
+|--------------------|---------------------|---------------------|---------------------|---------------------|
+| Early Fusion       | 0.8929 ± 0.0001     | 0.9291 ± 0.0004     | 0.6807 ± 0.0065     | 0.7226 ± 0.0033     |
+| Middle Fusion      | 0.9180 ± 0.0013     | 0.9299 ± 0.0002     | 0.6970 ± 0.0050     | 0.7497 ± 0.0090     |
+| Late Fusion        | 0.9278 ± 0.0004     | 0.9308 ± 0.0002     | 0.7019 ± 0.0096     | 0.7637 ± 0.0041     |
+| Asymmetric Fusion  | 0.9010 ± 0.0001     | 0.9291 ± 0.0001     | 0.6786 ± 0.0066     | 0.7245 ± 0.0018     |
+| No Coattn          | 0.8870 ± 0.0012     | 0.9268 ± 0.0004     | 0.6212 ± 0.0144     | 0.6542 ± 0.0016     |
+| Optuna1            | 0.9178 ± 0.0004     | 0.9297 ± 0.0002     | 0.6921 ± 0.0049     | 0.7460 ± 0.0025     |
+
 <details closed>
-early fusion:
-upmc accuracy: 0.8929 ± 0.0001
-imdb accuracy: 0.9291 ± 0.0004
-hm   accuracy: 0.6807 ± 0.0065
-hm rocauc    : 0.7226 ± 0.0033
------------------------------------
-middle fusion:
-upmc accuracy: 0.9180 ± 0.0013
-imdb accuracy: 0.9299 ± 0.0002
-hm   accuracy: 0.6970 ± 0.0050
-hm rocauc    : 0.7497 ± 0.0090
------------------------------------
-late fusion:
-upmc accuracy: 0.9278 ± 0.0004
-imdb accuracy: 0.9308 ± 0.0002
-hm   accuracy: 0.7019 ± 0.0096
-hm rocauc    : 0.7637 ± 0.0041
+    early fusion:
+    upmc accuracy: 0.8929 ± 0.0001
+    imdb accuracy: 0.9291 ± 0.0004
+    hm   accuracy: 0.6807 ± 0.0065
+    hm rocauc    : 0.7226 ± 0.0033
+    -----------------------------------
+    middle fusion:
+    upmc accuracy: 0.9180 ± 0.0013
+    imdb accuracy: 0.9299 ± 0.0002
+    hm   accuracy: 0.6970 ± 0.0050
+    hm rocauc    : 0.7497 ± 0.0090
+    -----------------------------------
+    late fusion:
+    upmc accuracy: 0.9278 ± 0.0004
+    imdb accuracy: 0.9308 ± 0.0002
+    hm   accuracy: 0.7019 ± 0.0096
+    hm rocauc    : 0.7637 ± 0.0041
 </details>
+
+
+also running pretrain on optuna-found config for mm_imdb with the following params:
+num_coattn_layers 4
+
+- t_center 9.41235168443222
+- t_spread 2.928327618277501
+- v_center 7.845874844937789
+- v_spread 2.6834436760417772
+- t:[7, 9, 10, 11], v:[6, 7, 9, 10]
+
 
 ## 21.10 - hypotheses
 
@@ -461,15 +476,15 @@ Problem here:
 
 ## 14.10 current configurations under investigation
 
-| name              | t_biatt_id | v_biatt_id | path  | notes |
-|-------------------|------------|------------|-------|-------|
-| baseline          | []         | []         |res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt           |maybe more epochs needed, as there is  |
-| early_fusion      | [3,4,5]    | [3,4,5]    |res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt       | |
-| middle_fusion     | [6,7,8]    | [6,7,8]    |res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt      | |
-| late_fusion       | [9,10,11]  | [9,10,11]  |res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt        | |
-| asymmetric_fusion | [6,7,8,9]  | [3,5,7,9]  |res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt  | |
-| optuna1           | [3,6]      | [6,8]      |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm, trial  21 |
-| optuna2           | [7,9,10,11]| [6,7,9,10] |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm, trial 11|
+| name              | t_biatt_id | v_biatt_id   | path  | notes |
+|-------------------|-------------|-------------|-------|-------|
+| baseline          | []          | []          |res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt           |maybe more epochs needed, as there is  |
+| early_fusion      | [3,4,5]     | [3,4,5]     |res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt       | |
+| middle_fusion     | [6,7,8]     | [6,7,8]     |res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt      | |
+| late_fusion       | [9,10,11]   | [9,10,11]   |res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt        | |
+| asymmetric_fusion | [6,7,8,9]   | [3,5,7,9]   |res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt  | |
+| optuna1           | [3,6]       | [6,8]       |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm, trial  21 |
+| optuna2           | [7,9,10,11 ]| [6,7,9,10]  |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm, trial 11|
 
 
 still optuna 3 needed! good archicture for mm_imdb alone!

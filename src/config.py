@@ -116,7 +116,10 @@ ES_MODE = "max"  # min for loss, max for acc
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251011-234349_pretrained_middle_fusion"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251013-010227_pretrained_late_fusion"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion"
-FINETUNE_CHECKPOINTS_DIR = "res/checkpoints"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251015-081211_pretrained_optuna1"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251016-062038_pretrained_optuna2"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-085859_pretrained_baseline"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
 
 class ViLBERTConfig:
     def __init__(

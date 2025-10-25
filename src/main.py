@@ -46,8 +46,6 @@ def main():
 
 
 
-
-
     print("good hm")
     t1,v1 = t.get_biattentions(num_coattn_layers= 2,
         t_center= 4.204866112455652,
@@ -91,19 +89,6 @@ def main():
         }
 
     ]
-
-    # test_conf = configs[2] # late
-    # conf = experiment_tracker.ExperimentConfig(
-    #     t_biattention_ids=[5,6,9],
-    #     v_biattention_ids=[5,6,9],
-    #     use_contrastive_loss=False,
-    #     epochs=4,
-    #     seed=42,
-    #     learning_rate=4e-5
-    # )
-    # t.run_finetune(experiment_config=conf, tasks=["upmc_food"], run_alignment_analysis=True, run_visualizations=True)
-    # t.run_finetune(experiment_config=conf_contrastive, tasks=["hateful_memes"], run_alignment_analysis=True, run_visualizations=True)
-    # print("completed all finetuning")
 
     seeds = [4261, 1213, 1224]
     paths = []

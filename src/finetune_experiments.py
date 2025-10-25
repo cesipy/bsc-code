@@ -29,15 +29,19 @@ def main():
     t = experiment_tracker.ExperimentTracker()
     # pretrained_path = "res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt"
     # pretrained_path = "res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt"
-    pretrained_path = "res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt"
+    # pretrained_path = "res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt"
+    # pretrained_path = "res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt"
+    # pretrained_path = "res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt"
+    pretrained_path = "res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt"
+    # pretrained_path = "res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt"
+
 
     modl = ViLBERT.load_model(pretrained_path)
     t_biattns = modl.config.text_cross_attention_layers
     v_biattns = modl.config.vision_cross_attention_layers
 
 
-    tasks = ["upmc_food", "mm_imdb", "hateful_memes",]
-    # tasks = ["hateful_memes"]
+    tasks = ["mm_imdb", "hateful_memes", "upmc_food"]
     paths = []
     c = 1
 

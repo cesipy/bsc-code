@@ -29,6 +29,8 @@ class Logger:
             self.filename = FILENAME_PREFIX + today+ "gpu10" + ".txt"
         elif socket.gethostname() == "c703i-gpu11":
             self.filename = FILENAME_PREFIX + today+ "gpu11" + ".txt"
+        elif socket.gethostname() == "c703i-gpu1":
+            self.filename = FILENAME_PREFIX + today+ "gpu1" + ".txt"
         else:
             self.filename = FILENAME_PREFIX + today + ".txt"
         Logger._initialized = True

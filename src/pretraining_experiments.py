@@ -22,42 +22,42 @@ warnings.filterwarnings("ignore")
 logger = Logger()
 seed=1567
 ft_epochs = 4
-pt_epochs = 7
+pt_epochs = 4
 
 
 def main():
     t = experiment_tracker.ExperimentTracker()
-    info_str = f"running baseline experiments with no co-attention layers"
-    print(info_str); logger.info(info_str)
-    baseline = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=[],
-        v_biattention_ids=[],
-        use_contrastive_loss=False,
-        epochs=pt_epochs,
-        learning_rate=1e-4,
-        seed=seed,
-    )
-    baseline_ft = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=[],
-        v_biattention_ids=[],
-        use_contrastive_loss=False,
-        epochs=ft_epochs+2,
-        learning_rate=3e-5,
-        seed=seed,
-    )
+    # info_str = f"running baseline experiments with no co-attention layers"
+    # print(info_str); logger.info(info_str)
+    # baseline = experiment_tracker.ExperimentConfig(
+    #     t_biattention_ids=[],
+    #     v_biattention_ids=[],
+    #     use_contrastive_loss=False,
+    #     epochs=pt_epochs,
+    #     learning_rate=1e-4,
+    #     seed=seed,
+    # )
+    # baseline_ft = experiment_tracker.ExperimentConfig(
+    #     t_biattention_ids=[],
+    #     v_biattention_ids=[],
+    #     use_contrastive_loss=False,
+    #     epochs=ft_epochs+2,
+    #     learning_rate=3e-5,
+    #     seed=seed,
+    # )
 
-    baseline_results = t.run_pretrain(experiment_config=baseline,
-        # tiny_fraction=True,
-        num_samples=500_000,
-        run_alignment_analysis=True,
-        run_visualizations=True,
-        )
+    # baseline_results = t.run_pretrain(experiment_config=baseline,
+    #     # tiny_fraction=True,
+    #     num_samples=500_000,
+    #     run_alignment_analysis=True,
+    #     run_visualizations=True,
+    #     )
 
-    t.run_finetune(
-        experiment_config=baseline_ft,
-        tasks=["hateful_memes"],
-        pretrained_model_path=baseline_results["model_path"]
-    )
+    # t.run_finetune(
+    #     experiment_config=baseline_ft,
+    #     tasks=["hateful_memes"],
+    #     pretrained_model_path=baseline_results["model_path"]
+    # )
 
     configs = [
         {
@@ -89,8 +89,14 @@ def main():
             "name": "optuna2",
             "t_biattention_ids": [7, 9, 10, 11],
             "v_biattention_ids": [6, 7, 9, 10],
+        },
+        {
+            "name": "baseline_full",
+            "t_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
+            "v_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
         }
     ]
+
 
     paths = []
 
@@ -120,7 +126,7 @@ def main():
 
         results_pretrain = t.run_pretrain(
             experiment_config=pretrain_config,
-            run_alignment_analysis=True,
+            # run_alignment_analysis=True,
             run_visualizations=True,
             num_samples=500_000,
         )
@@ -132,13 +138,6 @@ def main():
             tasks=["hateful_memes"],
             pretrained_model_path=results_pretrain["model_path"]
         )
-        # results_mm_imdb = t.run_finetune(
-        #     experiment_config=finetune_config_mm_imdb,
-        #     run_visualizations=False,
-        #     run_alignment_analysis=False,
-        #     tasks=["mm_imdb"],
-        # )
-
         paths = paths + [results_pretrain["model_path"]]
 
 
