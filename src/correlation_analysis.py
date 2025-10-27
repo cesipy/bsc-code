@@ -152,10 +152,15 @@ def analyse_per_task(task:str, paths):
 def main():
 
     paths = []
-    dir1 = "res/checkpoints/20251022-ft-only"
-    dir2 = "res/checkpoints/imported"
-    dir3 = "res/checkpoints/20251013-finetunes-only"
-    dirs = [dir1, dir2, dir3]
+    # below are finetuned on uni gpus
+    dir1 = "res/checkpoints/20251010-085859_pretrained_baseline"
+    dir2 = "res/checkpoints/20251010-234252_pretrained_early_fusion"
+    dir3 = "res/checkpoints/20251011-234349_pretrained_middle_fusion"
+    dir4 = "res/checkpoints/20251013-010227_pretrained_late_fusion"
+    dir5 = "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion"
+    dir6 = "res/checkpoints/20251015-081211_pretrained_optuna1"
+    dir7 = "res/checkpoints/20251016-062038_pretrained_optuna2"
+    dirs = [dir1, dir2, dir3, dir4, dir5, dir6, dir7]
     for dir in dirs:
         for i in os.listdir(dir):
             if i.endswith(".pt"):

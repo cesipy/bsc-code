@@ -73,6 +73,9 @@ def main():
     op1_hm_auc_mean, op1_hm_auc_std = np.mean(hm_auc), np.std(hm_auc)
 
 
+
+    # ----------------------------------------------------------------------------------------------------
+
     print("early fusion:")
     print(f"upmc accuracy: {ef_upmc_food_mean:.4f} ± {ef_upmc_food_std:.4f}")
     print(f"imdb accuracy: {ef_mm_imdb_mean:.4f} ± {ef_mm_imdb_std:.4f}")
@@ -114,7 +117,7 @@ def main():
     print(f"imdb accuracy: {op1_mm_imdb_mean:.4f} ± {op1_mm_imdb_std:.4f}")
     print(f"hm   accuracy: {op1_hm_mean:.4f} ± {op1_hm_std:.4f}")
     print(f"hm rocauc    : {op1_hm_auc_mean:.4f} ± {op1_hm_auc_std:.4f}")
-    
+
 
 
 main()

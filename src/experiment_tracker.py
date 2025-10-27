@@ -24,8 +24,8 @@ import task as tasklib
 
 logger = Logger()
 #specific to that file
-EPOCHS_ = 9
-LR_ = 3.2e-5
+EPOCHS_ = 15
+LR_ = 4e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
@@ -250,8 +250,11 @@ class ExperimentTracker:
 
     def optimize_parameters_single(self, n_trials, optimization_objective: str = "acc", task: str = "hateful_memes"):
         """ optimize parameters for one task"""
-        assert optimization_objective in ["acc", "loss"]
         assert task in ["hateful_memes", "mm_imdb"]
+        if task == "hateful_memes":
+            assert optimization_objective in ["acc", "loss", "auc"]
+        else:
+            assert optimization_objective in ["acc", "loss"]
         import optuna
 
         def objective(trial):
@@ -287,15 +290,30 @@ class ExperimentTracker:
             )
 
             if optimization_objective == "acc":
-                val_accs = [training_results[task]["training"][i]["val_acc"] for i in range(1, config.epochs+1)]
+                val_accs = [training_results[task]["training"][i]["val_acc"] for i in range(1, config.epochs+1)
+                            if training_results[task]["training"][i]
+                            ]
 
                 # report intermediate results for dashboard. not quite sure about it
                 for epoch, acc in enumerate(val_accs):
                     trial.report(acc, epoch)
                 result =  max(val_accs)
                 # return val_accs_hm[-1], val_accs_imdb[-1]
+
+            elif optimization_objective == "auc":
+                val_aucs = [training_results[task]["training"][i]["val_auc"]
+                            for i in range(1, config.epochs+1)
+                            if training_results[task]["training"][i]
+                            ]
+
+                for epoch, auc in enumerate(val_aucs):
+                    trial.report(auc, epoch)
+                result =  max(val_aucs)
             else:
-                val_losses = [training_results[task]["training"][i]["val_loss"] for i in range(1, config.epochs+1)]
+                val_losses = [training_results[task]["training"][i]["val_loss"]
+                              for i in range(1, config.epochs+1)
+                              if training_results[task]["training"][i]
+                              ]
 
                 for epoch, loss in enumerate(val_losses):
                     trial.report(-loss, epoch)
@@ -621,6 +639,7 @@ class ExperimentTracker:
             training_results[task]["training"][i+1]["train_loss"] = train_loss
             training_results[task]["training"][i+1]["val_loss"] = val_dict["loss"]
             training_results[task]["training"][i+1]["val_acc"] = val_dict["acc"]
+
             if val_dict.get("auc") is not None:
                 training_results[task]["training"][i+1]["val_auc"] = val_dict["auc"]
 
@@ -1327,7 +1346,9 @@ class ExperimentTracker:
 def main():
 
     tracker = ExperimentTracker()
-    tracker.optimize_parameters_multi(n_trials=100, optimization_objective="acc")
+    # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="acc")
+    tracker.optimize_parameters_single(n_trials=100, optimization_objective="acc", task="mm_imdb")
+    # tracker.optimize_parameters_single(n_trials=100, optimization_objective="auc", task="hateful_memes")
     # tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
     #                                    #task="mm_imdb")
     #                                    task="hateful_memes")

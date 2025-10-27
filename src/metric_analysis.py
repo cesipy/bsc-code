@@ -212,17 +212,25 @@ def main():
 
 
     paths = []
-    dirname = "res/checkpoints/20251013-finetunes-only"
-    for i,filename in enumerate(os.listdir(dirname)):
+    dir1 = "res/checkpoints/20251010-085859_pretrained_baseline"
+    dir2 = "res/checkpoints/20251010-234252_pretrained_early_fusion"
+    dir3 = "res/checkpoints/20251011-234349_pretrained_middle_fusion"
+    dir4 = "res/checkpoints/20251013-010227_pretrained_late_fusion"
+    dir5 = "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion"
+    dir6 = "res/checkpoints/20251015-081211_pretrained_optuna1"
+    dir7 = "res/checkpoints/20251016-062038_pretrained_optuna2"
+    dirs = [dir1, dir2, dir3, dir4, dir5, dir6, dir7]
+    for dir in dirs:
+        for i,filename in enumerate(os.listdir(dir)):
 
-        if filename.endswith(".pt"):
-            paths.append(os.path.join(dirname, filename))
+            if filename.endswith(".pt"):
+                paths.append(os.path.join(dir, filename))
 
     random.shuffle(paths)
     # paths = paths[:10]
 
     seeds = [20, 33]
-    analysis_num_samples = [64, 128, 256, 512, 1024, 1536]
+    analysis_num_samples = [64, 128, 256, 512, 1024,  1536, 2048]
     result = {}
     for num_samples in analysis_num_samples:
 
@@ -238,9 +246,9 @@ def main():
             "jaccard": [],
             "rsa": [],
             "r2": [],
-            "cosine_similarity": [],
             "aligned_cosine_similarity": [],
-            "mean_centered_aligned_cosine_similarity": []
+            # "cosine_similarity": [],
+            # "mean_centered_aligned_cosine_similarity": []
         }
     times = {}
     for num_samples in analysis_num_samples:
@@ -274,9 +282,9 @@ def main():
             jaccards = [metrics[i]["jaccard"] for i in range(12)]
             rsas = [metrics[i]["rsa"] for i in range(12)]
             r2s = [metrics[i]["r2"] for i in range(12)]
-            cos_sims = [metrics[i]["cosine_similarity"] for i in range(12)]
+
             aligned_cos_sims = [metrics[i]["aligned_cosine_similarity"] for i in range(12)]
-            mc_aligned_cos_sims = [metrics[i]["mean_centered_aligned_cosine_similarity"] for i in range(12)]
+
             result[num_samples]["mknn"].extend(mknns)
             result[num_samples]["cka"].extend(ckas)
             result[num_samples]["cka_rbf"].extend(cka_rbfs)
@@ -287,9 +295,9 @@ def main():
             result[num_samples]["jaccard"].extend(jaccards)
             result[num_samples]["rsa"].extend(rsas)
             result[num_samples]["r2"].extend(r2s)
-            result[num_samples]["cosine_similarity"].extend(cos_sims)
+            # result[num_samples]["cosine_similarity"].extend(cos_sims)
             result[num_samples]["aligned_cosine_similarity"].extend(aligned_cos_sims)
-            result[num_samples]["mean_centered_aligned_cosine_similarity"].extend(mc_aligned_cos_sims)
+            # result[num_samples]["mean_centered_aligned_cosine_similarity"].extend(mc_aligned_cos_sims)
 
             t_end = time.time()
             times[num_samples].append(t_end - t_start)
@@ -317,17 +325,26 @@ def main():
     compare_sample_sizes_(result, 256, 1536)
     compare_sample_sizes_(result, 512, 1536)
     compare_sample_sizes_(result, 1024, 1536)
+
+
     for metric in metrics:
-        check_ranking_preservation(result, 64, 1536, n_models=len(paths),  metric=metric)
-        check_ranking_preservation(result, 128, 1536, n_models=len(paths), metric=metric)
-        check_ranking_preservation(result, 256, 1536, n_models=len(paths), metric=metric)
-        check_ranking_preservation(result, 512, 1536, n_models=len(paths), metric=metric)
+        compare_sample_sizes_(result, 64, 2048, metric=metric)
+        compare_sample_sizes_(result, 128, 2048, metric=metric)
+        compare_sample_sizes_(result, 256, 2048, metric=metric)
+        compare_sample_sizes_(result, 512, 2048, metric=metric)
+        compare_sample_sizes_(result, 1024, 2048, metric=metric)
+        compare_sample_sizes_(result, 1536, 2048, metric=metric)
+        check_ranking_preservation(result, 64, 2048, n_models=len(paths),  metric=metric)
+        check_ranking_preservation(result, 128, 2048, n_models=len(paths), metric=metric)
+        check_ranking_preservation(result, 256, 2048, n_models=len(paths), metric=metric)
+        check_ranking_preservation(result, 512, 2048, n_models=len(paths), metric=metric)
 
 
 
     for metric in metrics:
         check_ranking_preservation(result, 512, 1024, n_models=len(paths), metric=metric)
         check_ranking_preservation(result, 512, 1536, n_models=len(paths), metric=metric)
+        check_ranking_preservation(result, 512 ,2048, n_models=len(paths), metric=metric)
 
     for metric in metrics:
         utils.visualize_correlation_matrix(
@@ -343,17 +360,17 @@ def main():
             corr_func=spearmanr,
             save_path=f"temp/{metric}_spearmanr.png"
         )
-        compare_sample_sizes_(result, 512, 1536, metric=metric)
+        compare_sample_sizes_(result, 1024, 2048, metric=metric)
 
 
     print(f"{'-'*25}\nmetric correlation analysis:")
     logger.info(f"{'-'*25}\n\n\nmetric correlation analysis:")
 
-    compare_metrics_correlation(result, 512, metrics)
+    compare_metrics_correlation(result, 1024, metrics)
 
     utils.visualize_metric_correlation_matrix(
         result=result,
-        num_samples=512,
+        num_samples=1024,
         metrics=metrics,
         corr_func=spearmanr,
         save_path="temp/metric_correlation_spearman.png"
@@ -361,7 +378,7 @@ def main():
 
     utils.visualize_metric_correlation_matrix(
         result=result,
-        num_samples=512,
+        num_samples=1024,
         metrics=metrics,
         corr_func=pearsonr,
         save_path="temp/metric_correlation_pearson.png"
@@ -397,7 +414,7 @@ def main():
             print(info_str); logger.info(info_str)
 
             metrics = t.run_alignment_analysis(
-                model=model, num_samples=512, task="hateful_memes", device="cuda", knn_k=k, verbose=VERBOSE)
+                model=model, num_samples=1024, task="hateful_memes", device="cuda", knn_k=k, verbose=VERBOSE)
             # only need to analyse mknn
             result[k]["mknn"].extend([metrics[i]["mknn"] for i in range(12)])
 
