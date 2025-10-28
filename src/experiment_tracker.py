@@ -326,7 +326,8 @@ class ExperimentTracker:
 
         tmsp = time.strftime("%Y%m%d-%H%M%S")
         storage_path = f"sqlite:///{self.save_dir}multi_task_optim.db"
-        study_name = f"single_task_study_{task}_{tmsp}"
+        # study_name = f"single_task_study_{task}_{tmsp}"
+        study_name = "single_task_study_hateful_memes_20251026-125514"
 
 
         study = optuna.create_study(
@@ -419,7 +420,7 @@ class ExperimentTracker:
 
 
 
-    def _get_task_trainer(self, task:str, model:ViLBERT ):
+    def get_task_trainer(self, task:str, model:ViLBERT ):
         if task == "hateful_memes":
             trainer = HatefulMemesTrainer(
                 model=model,
@@ -454,7 +455,7 @@ class ExperimentTracker:
 
 
 
-    def _get_task_dataloader(
+    def get_task_dataloader(
         self,
         task:str,
         config:ViLBERTConfig,
@@ -581,9 +582,9 @@ class ExperimentTracker:
             model = pretrained_model
         else:
             model = self.create_model(config)
-        trainer = self._get_task_trainer(task=task,model=model)
+        trainer = self.get_task_trainer(task=task,model=model)
 
-        train_loader, val_loader = self._get_task_dataloader(task=task, config=config)
+        train_loader, val_loader = self.get_task_dataloader(task=task, config=config)
         alignment_dataloader = self._get_task_alignment_dataloader(task=task, config=config)
 
         if USE_EARLY_STOPPING:
@@ -690,6 +691,7 @@ class ExperimentTracker:
 
 
         final_test_dict = self.evaluate(model=trainer.model, dataset="test", task=task)
+        training_results[task]["final_test"] = final_test_dict
         info_str = f"Final T_Loss: {final_test_dict['loss']:.4f}, T_Acc: {final_test_dict['acc']:.4f}"
         if final_test_dict.get("auc") is not None:
             info_str += f", Test AUC: {final_test_dict['auc']:.4f}"
@@ -1349,8 +1351,8 @@ def main():
 
     tracker = ExperimentTracker()
     # tracker.optimize_parameters_multi(n_trials=100, optimization_objective="acc")
-    tracker.optimize_parameters_single(n_trials=100, optimization_objective="acc", task="mm_imdb")
-    # tracker.optimize_parameters_single(n_trials=100, optimization_objective="auc", task="hateful_memes")
+    # tracker.optimize_parameters_single(n_trials=100, optimization_objective="acc", task="mm_imdb")
+    tracker.optimize_parameters_single(n_trials=100, optimization_objective="auc", task="hateful_memes")
     # tracker.optimize_parameters_single(n_trials=100, optimization_objective="loss",
     #                                    #task="mm_imdb")
     #                                    task="hateful_memes")

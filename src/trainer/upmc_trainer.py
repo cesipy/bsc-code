@@ -37,6 +37,7 @@ class UPMCTrainer(BaseTrainer):
         gradient_accumulation: int = 1,
         use_contrastive_loss:bool=False,
     ):
+        super(UPMCTrainer, self).__init__()
         self.lr = config.learning_rate
         self.model = model
         self.config = config
@@ -269,3 +270,42 @@ class UPMCTrainer(BaseTrainer):
         acc = (all_preds == all_labels).float().mean().item()
 
         return avg_loss, acc
+
+    def get_performance_metric(self, dataloader, metric="accuracy"):
+        from sklearn.metrics import accuracy_score, f1_score
+
+        assert metric in self.all_metrics
+        self.model.eval()
+
+        all_preds = []
+        all_labels = []
+
+        with torch.no_grad():
+            for batch in dataloader:
+                label = batch["label"].to(self.device)
+                text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+                image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+
+                label = torch.argmax(label, dim=1)
+
+                text_embedding, image_embedding = self.model(
+                    text_input_ids=text["input_ids"],
+                    text_attention_mask=text["attention_mask"],
+                    text_token_type_ids=text.get("token_type_ids", None),
+                    image_pixel_values=image["pixel_values"],
+                    image_attention_mask=image.get("attention_mask", None),
+                )
+
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                preds = self.model.fc_upmc(fused_representation)
+
+                pred_classes = torch.argmax(preds, dim=1)
+                all_preds.extend(pred_classes.cpu().numpy())
+                all_labels.extend(label.cpu().numpy())
+
+        if metric == "accuracy":
+            return accuracy_score(all_labels, all_preds)
+        elif metric == "f1_score_macro":
+            return f1_score(all_labels, all_preds, average="macro")
+        else:
+            raise ValueError(f"unknown metric {metric} for UPMC trainer")

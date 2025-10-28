@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
+import numpy as np
 
 from vilbert import ViLBERT
 from config import *
@@ -40,6 +41,7 @@ class MM_IMDB_Trainer(BaseTrainer):
         gradient_accumulation:int=1,        # how many batches to accumulate!
         use_contrastive_loss:bool=False,
         ):
+        super(MM_IMDB_Trainer, self).__init__()
         self.lr = config.learning_rate
         self.model = model
         self.config = config
@@ -293,6 +295,56 @@ class MM_IMDB_Trainer(BaseTrainer):
 
         return avg_loss, acc
 
+    def get_performance_metric(self, dataloader, metric="accuracy"):
+        from sklearn.metrics import roc_auc_score, f1_score
+
+        assert metric in self.all_metrics
+        self.model.eval()
+
+        all_probs = []
+        all_labels = []
+
+        with torch.no_grad():
+            for batch in dataloader:
+                data_dict = batch
+
+                label = data_dict["label"].to(self.device)
+                text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
+                image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
+
+                text_embedding, image_embedding = self.model(
+                    text_input_ids=text["input_ids"],
+                    text_attention_mask=text["attention_mask"],
+                    text_token_type_ids=text.get("token_type_ids", None),
+                    image_pixel_values=image["pixel_values"],
+                    image_attention_mask=image.get("attention_mask", None),
+                )
+
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                preds = self.model.fc_imdb(fused_representation)
+
+                probs = torch.sigmoid(preds)
+                all_probs.append(probs.cpu().numpy())
+                all_labels.append(label.cpu().numpy())
+
+        all_probs = np.concatenate(all_probs, axis=0)
+        all_labels = np.concatenate(all_labels, axis=0)
+
+        if metric == "accuracy":
+            # Hamming accuracy (per-label accuracy averaged)
+            binary_preds = (all_probs > 0.5).astype(int)
+            return (binary_preds == all_labels).mean()
+
+        elif metric == "f1_score_macro":
+            binary_preds = (all_probs > 0.5).astype(int)
+            return f1_score(all_labels, binary_preds, average="macro")
+
+        elif metric == "auc":
+            # Macro-averaged AUC across all labels
+            return roc_auc_score(all_labels, all_probs, average="macro")
+
+        else:
+            raise ValueError(f"unknown metric {metric} for MM_IMDB trainer")
 
 
 def main():

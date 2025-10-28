@@ -14,6 +14,8 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader, Dataset
 
 class BaseTrainer(ABC):
+    def __init__(self):
+        self.all_metrics = ["f1_score_macro", "accuracy", "auc"]
 
 
     @abstractmethod
@@ -45,6 +47,10 @@ class BaseTrainer(ABC):
 
     @abstractmethod
     def evaluate(self, dataloader: DataLoader):
+        pass
+
+    @abstractmethod
+    def get_performance_metric(self, dataloader:DataLoader, metric:str):
         pass
 
     def get_final_representation(self, text_embedding: torch.tensor, image_embedding: torch.tensor,

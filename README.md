@@ -152,13 +152,12 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 
 ## TODO
-**today**:
-- [ ] differences in alignment metrics for different num_samples
-- [ ] differences in alignment metrics for differen K_KNN
-- [ ] aligned sim & cosine sim implementation + correlations
-
-
 **immediate:**
+- [ ] all the same architectures do finetune only, not pretrain
+- [ ] baseline where cka is optimized!
+- [ ] accuracy on each layer, similar plot to hintons paper from 2019
+
+
 - [ ] pretrain vs non-pretrain: run the same experiments on finetune-only!
 - [ ] update `all_finetune_logs` with new finetunes. currently includes up to late fusion
 - [ ] test acc und loss für finetunes, wo noch nicht geändert und in `all_finetune_logs.txt` inkludieren. Nur für `upmc_food, mm_imdb` Für
@@ -170,48 +169,9 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 - [ ] correlation analysis of metrics on all new architectures
 - [ ] is finetuned good performance indicator for pretraining good performance?
+    => no it was not!
 - [ ] convert all torchvision to albuminations + seeding
 
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
-- [ ] fix coattentions not really saved in intermediate_representations,
-	- [ ] better logic for that
-
 - [ ] analysis of pretrained models: discrepancies in end representation of streams
 
-- [ ] experiment_tracker:
-	- [ ] implement other tasks in run experiment
-- [ ] implement baseline - early concat
-- [ ] fix intermediate collection
-
-- [ ] alignment analysis:
-    - [ ] compare bs-analysis-sizes: same config, different seeds and analysis - size
-    - [ ] test set in hm instead of train: even if val -loss declines, alignment still increases (with train loss decreasing)
-    - [ ] normalize all the metrics
-- [ ] compare KNN_K
-- [ ] compare correlation of the measures
-
-
-- [ ] baselines:
-    - [ ] no coattn- is my code working?
-    - [ ] early fusion
-    - [ ] nocoattn with more layers to account for additional parameters in vilbert => vilbert #params == baseline #params
-
-- [x] implement baseline - t_biattn_id=[], v_biattn_id=[]
-- [x] larger k in mknn
-- [x] correlation analysis: not for all tasks, architectures and epochs, only focussing on one
-- [x] visualization for svvca
-- [x] visualizations with KNNK=32
-- [x] check new measures with contrastive loss ON! and directly compare.
-    - maybe also contrastive pretraining
-    - also normal pretraining!
-- [x] fix testset handling...
-- [x] try running on mm_imdb with slightly bigger lr, more epochs, when does it plateau?
-    - [x] report for hm; this is pretty known, as most of the current progress is for HM.
-    - [x] report for upmcfood
-- [x] run visualization and alignment for trained model.
-    - needs to restore model with highest acc/ lowest loss
-- [x] include test set for:
-    - [x] upmc food
-    - [x] mm imdb
-    - [x] hateful memes	- problem here, there are no labels
-- [x] seed from config, not global var

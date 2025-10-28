@@ -1,4 +1,5 @@
 from .base_trainer import *
+from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
 
 def alignment_loss_cosine(text_emb, vision_emb):
     cosine_sim = torch.nn.functional.cosine_similarity(
@@ -19,6 +20,7 @@ class HatefulMemesTrainer(BaseTrainer):
         use_cosine_loss:bool=False,
         gradient_accumulation:int=1,        # how many batches to accumulate!
         ):
+        super(HatefulMemesTrainer, self).__init__()
         self.lr = config.learning_rate
         self.model = model
         self.config = config
@@ -59,9 +61,6 @@ class HatefulMemesTrainer(BaseTrainer):
 
 
     def train_epoch(self, dataloader: DataLoader):
-
-
-
         self.model.train()
         total_loss = 0
 
@@ -88,7 +87,6 @@ class HatefulMemesTrainer(BaseTrainer):
             # #------
 
             if self.use_contrastive_loss:
-
                 text_embedding, vision_embedding = self.model(
                     text_input_ids= text["input_ids"],
                     text_attention_mask= text["attention_mask"],
@@ -359,7 +357,58 @@ class HatefulMemesTrainer(BaseTrainer):
         else:
             acc = correct_preds / total_preds
 
-        from sklearn.metrics import roc_auc_score
+
         auc = roc_auc_score(all_labels, all_probs)
 
         return total_loss / num_batches, acc, auc
+
+
+    def get_performance_metric(self, dataloader, metric="accuracy"):
+        assert metric in self.all_metrics
+        self.model.eval()
+
+        all_probs = []
+        all_labels = []
+
+        with torch.no_grad():
+            for batch in dataloader:
+                data_dict = batch
+
+                label = data_dict["label"].to(self.device)
+                # its not possible to send dicts to device, so do it for every value in dict.
+                text = {k: v.squeeze(1).to(self.device) for k, v in data_dict["text"].items()}
+                image = {k: v.squeeze(1).to(self.device) for k, v in data_dict["img"].items()}
+
+                text_embedding, image_embedding = self.model(
+                    text_input_ids= text["input_ids"],
+                    text_attention_mask= text["attention_mask"],
+                    text_token_type_ids= text.get("token_type_ids", None),
+                    image_pixel_values= image["pixel_values"],
+                    image_attention_mask= image.get("attention_mask", None),
+                )
+                fused_representation = self.get_final_representation(text_embedding, image_embedding)
+                preds = self.model.fc(fused_representation)
+
+                preds = preds.squeeze()
+                label = label.float()
+
+                probs = torch.sigmoid(preds)
+                all_probs.extend(probs.cpu().numpy())
+                all_labels.extend(label.cpu().numpy())
+
+        if metric == "accuracy":
+            binary_preds = [1 if p > 0.5 else 0 for p in all_probs]
+            acc = accuracy_score(all_labels, binary_preds)
+            return acc
+
+        elif metric == "f1_score_macro":
+            binary_preds = [1 if p > 0.5 else 0 for p in all_probs]
+            f1 = f1_score(all_labels, binary_preds, average="macro")
+            return f1
+
+        elif metric == "auc":
+            auc = roc_auc_score(all_labels, all_probs)
+            return auc
+
+        else:
+            raise ValueError(f"unknown metric {metric} for hateful memes trainer")

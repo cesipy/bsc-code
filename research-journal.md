@@ -2,7 +2,13 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
-## 27.10
+## 28.10
+
+currently running finetune only for all configs + seeds and tasks to compare if good finetune performance predicts pretrain+finetune performance.
+
+here the LR is slightly changed to hm: 3.5e-5 and others 4.2e-5.
+
+
 
 **correlation optuna run vs. parameters**:
 
@@ -14,9 +20,11 @@ This file contains all kinds of results and observations during my thesis work.
 | v_center | 0.138 | 0.279 | 0.339 | 0.006 |
 | v_spread | -0.135 | 0.287 | -0.110 | 0.385 |
 
-$\Rightarrow hm is insensible to parameters, while mm is highly correlatated in terms of t_center.
+$\Rightarrow$ hm is insensible to parameters, while mm is highly correlatated in terms of t_center.
 
 
+
+also based on results from table from 24.10, good finetune performance does not mean good pretrain+finetune performance! Optuna1 (HM) and Optuna2 (MM-IMDB) are both best pretrains, but have worse accuracy for pretraining
 
 
 

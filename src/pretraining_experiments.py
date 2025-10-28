@@ -61,6 +61,11 @@ def main():
 
     configs = [
         {
+            "name": "baseline",
+            "t_biattention_ids": [],
+            "v_biattention_ids": [],
+        },
+        {
             "name": "early_fusion",
             "t_biattention_ids": [3, 4, 5],
             "v_biattention_ids": [3, 4, 5],
