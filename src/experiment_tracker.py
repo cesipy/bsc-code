@@ -116,6 +116,8 @@ class ExperimentTracker:
             quantile = (i+ 1) / (num_coattn_layers + 1)
 
             if len(t_biattention_ids) < num_coattn_layers:
+                # norm.ppf is inverse of cdf
+                # so: for prop p, what is x so that P(X <= x) = p?
                 t_layer = int(np.clip(round(t_center + t_spread * norm.ppf(quantile)), 0, 11))
                 t_biattention_ids.add(t_layer)
 

@@ -2,6 +2,24 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
+## 27.10
+
+**correlation optuna run vs. parameters**:
+
+| **Parameter** | **Hateful Memes ρ** | **Hateful Memes p-value** | **MM-IMDB ρ** | **MM-IMDB p-value** |
+|---|---|---|---|---|
+| num_coattn_layers | -0.119 | 0.348 | -0.309 | 0.013 |
+| t_center | 0.020 | 0.874 | 0.822 | <0.001 |
+| t_spread | 0.218 | 0.084 | -0.021 | 0.869 |
+| v_center | 0.138 | 0.279 | 0.339 | 0.006 |
+| v_spread | -0.135 | 0.287 | -0.110 | 0.385 |
+
+$\Rightarrow hm is insensible to parameters, while mm is highly correlatated in terms of t_center.
+
+
+
+
+
 ## 24.10 - first results:
 | Fusion Method      | UPMC Accuracy       | IMDB Accuracy       | HM Accuracy         | HM ROC-AUC          |
 |--------------------|---------------------|---------------------|---------------------|---------------------|
@@ -11,6 +29,13 @@ This file contains all kinds of results and observations during my thesis work.
 | Asymmetric Fusion  | 0.9010 ± 0.0001     | 0.9291 ± 0.0001     | 0.6786 ± 0.0066     | 0.7245 ± 0.0018     |
 | No Coattn          | 0.8870 ± 0.0012     | 0.9268 ± 0.0004     | 0.6212 ± 0.0144     | 0.6542 ± 0.0016     |
 | Optuna1            | 0.9178 ± 0.0004     | 0.9297 ± 0.0002     | 0.6921 ± 0.0049     | 0.7460 ± 0.0025     |
+| Optuna2            | 0.9216 ± 0.0010     | 0.9290 ± 0.0004     | 0.6848 ± 0.0019     | 0.7401 ± 0.0050     |
+
+
+
+
+
+
 
 <details closed>
     early fusion:
@@ -33,14 +58,6 @@ This file contains all kinds of results and observations during my thesis work.
 </details>
 
 
-also running pretrain on optuna-found config for mm_imdb with the following params:
-num_coattn_layers 4
-
-- t_center 9.41235168443222
-- t_spread 2.928327618277501
-- v_center 7.845874844937789
-- v_spread 2.6834436760417772
-- t:[7, 9, 10, 11], v:[6, 7, 9, 10]
 
 
 ## 21.10 - hypotheses

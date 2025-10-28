@@ -75,7 +75,8 @@ if socket.gethostname() == "c703i-gpu5":
     BATCH_SIZE_DOWNSTREAM = 4
     GRADIENT_ACCUMULATION_DOWNSTREAM = 128
     print("on gpu5!")
-if socket.gethostname() == "c703i-gpu10" or socket.gethostname() == "703i-gpu11":
+if socket.gethostname() == "c703i-gpu10" or socket.gethostname() == "703i-gpu11"  \
+    or socket.gethostname()in ["c703i-gpu1", "c703i-gpu9", "c703i-gpu12"]:
     BATCH_SIZE_DOWNSTREAM = 24
     GRADIENT_ACCUMULATION_DOWNSTREAM = 22
 else:
@@ -119,8 +120,8 @@ ES_MODE = "max"  # min for loss, max for acc
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251015-081211_pretrained_optuna1"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251016-062038_pretrained_optuna2"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-085859_pretrained_baseline"
-FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
-
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251025-105249_pretrained_bl_full_coattn"
 class ViLBERTConfig:
     def __init__(
         self,
