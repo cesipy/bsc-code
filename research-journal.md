@@ -2,12 +2,132 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
+
+
+## 30.10
+Optimization for cka with $\lambda = 0.2$
+the optimization did not work for `early_fusion` and `no_coattention`, as cka vanished to 0.1.
+
+the following shows the results for late fusion.
+
+**Hateful Memes**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_late_fusion_cka | 0.6990 ± 0.0086 | 0.6727 ± 0.0133 | 0.7620 ± 0.0028 |
+
+**MM-IMDB**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.9308 ± 0.0002 | 0.5448 ± 0.0120 | 0.9153 ± 0.0005 |
+| pretrained_late_fusion_cka | 0.9292 ± 0.0001 | 0.5282 ± 0.0040 | 0.9064 ± 0.0005 |
+
+**UPMC Food-101**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_late_fusion | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_late_fusion_cka | 0.9278 ± 0.0015 | 0.9270 ± 0.0015 |
+
+---
+
+finetune != pretrain+finetune predictor:
+
+| Model | Accuracy | AUC |
+|-------|----------|-----|
+| finetune_only_baseline | 0.6384 ± 0.0086 | 0.6748 ± 0.0090 |
+| finetune_only_early_fusion | 0.6537 ± 0.0076 | 0.6930 ± 0.0064 |
+| finetune_only_middle_fusion | 0.6679 ± 0.0013 | 0.7090 ± 0.0089 |
+| finetune_only_late_fusion | 0.6556 ± 0.0082 | 0.6987 ± 0.0015 |
+| finetune_only_asymmetric_fusion | 0.6469 ± 0.0069 | 0.6801 ± 0.0055 |
+| finetune_only_optuna1 | 0.6503 ± 0.0119 | 0.7032 ± 0.0088 |
+| finetune_only_optuna2 | 0.6671 ± 0.0061 | 0.7092 ± 0.0019 |
+| finetune_only_full_coattn | 0.6279 ± 0.0090 | 0.6571 ± 0.0045 |
+
+---
+
+performance metric collection + correlation analysis on performance are planned today, results below:
+
+
+| Metric | HM Test | HM Val | MM-IMDB Test | MM-IMDB Val | UPMC Test | UPMC Val |
+|--------|---------|--------|--------------|-------------|-----------|----------|
+| mknn | 0.266 (p=0.209) | 0.334 (p=0.111) | 0.233 (p=0.216) | 0.317 (p=0.088) | **0.744** (p<0.001) | 0.334 (p=0.110) |
+| cka | 0.023 (p=0.916) | 0.089 (p=0.680) | 0.386 (p=0.035) | **0.481** (p=0.007) | **0.880** (p<0.001) | 0.446 (p=0.029) |
+| svcca | 0.263 (p=0.215) | 0.314 (p=0.134) | 0.306 (p=0.100) | 0.366 (p=0.047) | **0.935** (p<0.001) | 0.384 (p=0.064) |
+| procrustes | 0.189 (p=0.377) | 0.095 (p=0.658) | **-0.419** (p=0.021) | **-0.519** (p=0.003) | **-0.857** (p<0.001) | **-0.619** (p=0.001) |
+
+
+### Correlation
+with ideosyncratic performance metric.
+
+**hm**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.619    | 0.001     | +0.373     | 0.073      |
+| cka        | +0.444    | 0.030     | +0.130     | 0.544      |
+| svcca      | +0.697    | 0.000     | +0.298     | 0.157      |
+| procrustes | -0.054    | 0.803     | +0.063     | 0.771      |
+
+**mm-imdb**
+| Metric | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.735 | 0.00  | +0.325 | 0.121 |
+| cka        | +0.769 | 0.00  | +0.415 | 0.044 |
+| svcca      | +0.765 | 0.00  | +0.343 | 0.100 |
+| procrustes | -0.771 | 0.000 | -0.479 | 0.018 |
+
+
+**upmc-food**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.763    | 0.000     | +0.744     | 0.000      |
+| cka        | +0.904    | 0.000     | +0.880     | 0.000      |
+| svcca      | +0.925    | 0.000     | +0.935     | 0.000      |
+| procrustes | -0.811    | 0.000     | -0.857     | 0.000      |
+
+### Performance
+
+**hm**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_baseline | 0.6212 ± 0.0144 | 0.6076 ± 0.0053 | 0.6542 ± 0.0016 |
+| pretrained_early_fusion | 0.6807 ± 0.0065 | 0.6659 ± 0.0043 | 0.7226 ± 0.0034 |
+| pretrained_middle_fusion | 0.6970 ± 0.0050 | 0.6720 ± 0.0065 | 0.7497 ± 0.0090 |
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_asymmetric_fusion | 0.6786 ± 0.0066 | 0.6490 ± 0.0132 | 0.7245 ± 0.0018 |
+| pretrained_optuna1 | 0.6921 ± 0.0048 | 0.6636 ± 0.0049 | 0.7460 ± 0.0025 |
+| pretrained_optuna2 | 0.6848 ± 0.0019 | 0.6505 ± 0.0049 | 0.7401 ± 0.0050 |
+| pretrained_bl_full_coattn | 0.6668 ± 0.0025 | 0.6360 ± 0.0207 | 0.7074 ± 0.0013 |
+
+
+**mm-imdb**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_baseline | 0.9268 ± 0.0005 | 0.4825 ± 0.0084 | 0.9011 ± 0.0004 |
+| pretrained_early_fusion | 0.9291 ± 0.0004 | 0.5118 ± 0.0206 | 0.9108 ± 0.0002 |
+| pretrained_middle_fusion | 0.9299 ± 0.0002 | 0.5334 ± 0.0075 | 0.9145 ± 0.0002 |
+| pretrained_late_fusion | 0.9308 ± 0.0002 | 0.5448 ± 0.0120 | 0.9153 ± 0.0005 |
+| pretrained_asymmetric_fusion | 0.9291 ± 0.0001 | 0.5274 ± 0.0050 | 0.9103 ± 0.0001 |
+| pretrained_optuna1 | 0.9296 ± 0.0002 | 0.5339 ± 0.0081 | 0.9114 ± 0.0007 |
+| pretrained_optuna2 | 0.9290 ± 0.0004 | 0.5340 ± 0.0040 | 0.9123 ± 0.0003 |
+| pretrained_bl_full_coattn | 0.9278 ± 0.0006 | 0.5283 ± 0.0036 | 0.8990 ± 0.0024 |
+
+**upmc-food**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_baseline | 0.8871 ± 0.0012 | 0.8862 ± 0.0011 |
+| pretrained_early_fusion | 0.8930 ± 0.0001 | 0.8921 ± 0.0001 |
+| pretrained_middle_fusion | 0.9181 ± 0.0013 | 0.9174 ± 0.0014 |
+| pretrained_late_fusion | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_asymmetric_fusion | 0.9010 ± 0.0002 | 0.9001 ± 0.0001 |
+| pretrained_optuna1 | 0.9178 ± 0.0004 | 0.9170 ± 0.0003 |
+| pretrained_optuna2 | 0.9215 ± 0.0010 | 0.9209 ± 0.0010 |
+| pretrained_bl_full_coattn | 0.9094 ± 0.0010 | 0.9088 ± 0.0008 |
+
 ## 28.10
 
 currently running finetune only for all configs + seeds and tasks to compare if good finetune performance predicts pretrain+finetune performance.
 
 here the LR is slightly changed to hm: 3.5e-5 and others 4.2e-5.
-
 
 
 **correlation optuna run vs. parameters**:
@@ -29,20 +149,45 @@ also based on results from table from 24.10, good finetune performance does not 
 
 
 ## 24.10 - first results:
+
+**pretrain+finetune**:
 | Fusion Method      | UPMC Accuracy       | IMDB Accuracy       | HM Accuracy         | HM ROC-AUC          |
 |--------------------|---------------------|---------------------|---------------------|---------------------|
 | Early Fusion       | 0.8929 ± 0.0001     | 0.9291 ± 0.0004     | 0.6807 ± 0.0065     | 0.7226 ± 0.0033     |
 | Middle Fusion      | 0.9180 ± 0.0013     | 0.9299 ± 0.0002     | 0.6970 ± 0.0050     | 0.7497 ± 0.0090     |
-| Late Fusion        | 0.9278 ± 0.0004     | 0.9308 ± 0.0002     | 0.7019 ± 0.0096     | 0.7637 ± 0.0041     |
+| Late Fusion        | **0.9278 ± 0.0004** | **0.9308 ± 0.0002** | **0.7019 ± 0.0096** | **0.7637 ± 0.0041** |
 | Asymmetric Fusion  | 0.9010 ± 0.0001     | 0.9291 ± 0.0001     | 0.6786 ± 0.0066     | 0.7245 ± 0.0018     |
 | No Coattn          | 0.8870 ± 0.0012     | 0.9268 ± 0.0004     | 0.6212 ± 0.0144     | 0.6542 ± 0.0016     |
 | Optuna1            | 0.9178 ± 0.0004     | 0.9297 ± 0.0002     | 0.6921 ± 0.0049     | 0.7460 ± 0.0025     |
 | Optuna2            | 0.9216 ± 0.0010     | 0.9290 ± 0.0004     | 0.6848 ± 0.0019     | 0.7401 ± 0.0050     |
+| full coattention   | 0.9093 ± 0.0010     | 0.9278 ± 0.0007     | 0.6668 ± 0.0025     | 0.7080 ± 0.0011     |
 
 
 
 
+**finetune only:**
+| Fusion Method      | UPMC Accuracy       | IMDB Accuracy       | HM Accuracy         | HM ROC-AUC          |
+|--------------------|---------------------|---------------------|---------------------|---------------------|
+| No Coattn          |                     |                     | 0.6384 ± 0.0086     | 0.6748 ± 0.0090     |
+| Early Fusion       |                     |                     | 0.6537 ± 0.0076     | 0.6930 ± 0.0064     |
+| Middle Fusion      |                     |                     | **0.6679 ± 0.0013** | 0.7090 ± 0.0089     |
+| Late Fusion        |                     |                     | 0.6556 ± 0.0082     | 0.6987 ± 0.0015     |
+| Asymmetric Fusion  |                     |                     | 0.6469 ± 0.0069     | 0.6801 ± 0.0055     |
+| Optuna1            |                     |                     | 0.6503 ± 0.0119     | 0.7032 ± 0.0088     |
+| Optuna2            |                     |                     | 0.6671 ± 0.0061     | **0.7092 ± 0.0019** |
+| Coattn [all layers]|                     |                     | 0.6279 ± 0.0090     | 0.6571 ± 0.0045     |
 
+
+| Configuration | HM Accuracy | HM ROC-AUC |
+|--------------|-------------|------------|
+| No Coattn ([] & [])             | 0.6384 ± 0.0086 | 0.6748 ± 0.0090 |
+| Coattn [3,4,5] & [3,4,5]        | 0.6537 ± 0.0076 | 0.6930 ± 0.0064 |
+| Coattn [6,7,8] & [6,7,8]        | 0.6679 ± 0.0013 | 0.7090 ± 0.0089 |
+| Coattn [9,10,11] & [9,10,11]    | 0.6556 ± 0.0082 | 0.6987 ± 0.0015 |
+| Coattn [6,7,8,9] & [3,5,7,9]    | 0.6469 ± 0.0069 | 0.6801 ± 0.0055 |
+| Coattn [3,6] & [6,8]            | 0.6503 ± 0.0119 | 0.7032 ± 0.0088 |
+| Coattn [7,9,10,11] & [6,7,9,10] | 0.6671 ± 0.0061 | 0.7092 ± 0.0019 |
+| Coattn [all layers]             | 0.6279 ± 0.0090 | 0.6571 ± 0.0045 |
 
 
 <details closed>

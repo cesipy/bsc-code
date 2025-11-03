@@ -155,6 +155,8 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 **immediate:**
 - [ ] all the same architectures do finetune only, not pretrain
 - [ ] baseline where cka is optimized!
+    - [ ] currently with late fusion, but here the values are pretty high anyways, maybe implement with baseline no contn
+    - [ ] no coattn baseline cka optim
 - [ ] accuracy on each layer, similar plot to hintons paper from 2019
 
 
