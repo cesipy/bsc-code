@@ -23,7 +23,41 @@ from logger import Logger
 logger = Logger()
 
 
+def visualize_loss_cka(normal_losses, cka_losses):
+    """Visualize training loss alongside CKA loss"""
+    import matplotlib.pyplot as plt
+    import time
 
+    plt.figure(figsize=(12, 5))
+
+    # Plot 1: Normal losses
+    plt.subplot(1, 2, 1)
+    plt.plot(normal_losses, label='Training Loss', color='blue')
+    plt.title('Training Loss Over Time')
+    plt.xlabel('Batch (every 10)')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+
+    # Plot 2: CKA losses
+    plt.subplot(1, 2, 2)
+    plt.plot(cka_losses, label='CKA Loss', color='red')
+    plt.title('CKA Loss Over Time')
+    plt.xlabel('Batch (every 10)')
+    plt.ylabel('CKA Loss')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+
+    save_dir = "res/plots/loss-plots"
+    os.makedirs(save_dir, exist_ok=True)
+    tmsp = time.strftime("%Y%m%d-%H%M%S")
+    filename = os.path.join(save_dir, f"cka_loss_plot_{tmsp}.png")
+
+    plt.savefig(filename, dpi=150, bbox_inches='tight')
+    print(f"Saved CKA plot to {filename}")
+    plt.close()
 
 def visualize_correlation_matrix(result, metric="mknn", corr_func=pearsonr, save_path=None):
     """Create and visualize a correlation matrix heatmap."""

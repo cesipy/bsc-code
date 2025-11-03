@@ -49,6 +49,9 @@ else:
 USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
 NUM_SAMPLES_CC = 500_000
+
+OPTIMIZE_CKA = True
+OPTIMIZE_CKA_LAMBDA = 0.7
 # --------------------------------------------------
 # data specific
 IMG_SIZE = (224, 224)
@@ -120,8 +123,11 @@ ES_MODE = "max"  # min for loss, max for acc
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251015-081211_pretrained_optuna1"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251016-062038_pretrained_optuna2"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-085859_pretrained_baseline"
-# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251028_finetune_comparison"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251025-105249_pretrained_bl_full_coattn"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
+
 class ViLBERTConfig:
     def __init__(
         self,

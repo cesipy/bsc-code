@@ -13,6 +13,7 @@ from logger import Logger
 import task as tasklib
 from vilbert import *
 import utils
+import performance_metric_collection
 
 import warnings     # should ignore all warnings,
 warnings.filterwarnings("ignore")
@@ -34,7 +35,8 @@ def main():
     # pretrained_path = "res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt"
     # pretrained_path = "res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt"
     # pretrained_path = "res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt"
-    pretrained_path = "res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt"
+    # pretrained_path = "res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt"
+    pretrained_path = "res/checkpoints/pretrains/20251030-192145_pretrained_latefusion_cka.pt"
 
     modl = ViLBERT.load_model(pretrained_path)
     t_biattns = modl.config.text_cross_attention_layers
@@ -45,8 +47,8 @@ def main():
     paths = []
     c = 1
 
-    for seed in seeds:
-        for task in tasks:
+    for task in tasks:
+        for seed in seeds:
             info_str=f"{c:2}/{len(tasks)*len(seeds)}: finetuning on {task} with seed {seed}"
             print(info_str); logger.info(info_str)
             e_conf = experiment_tracker.ExperimentConfig(
@@ -58,8 +60,8 @@ def main():
                 use_contrastive_loss=False
             )
             res = t.run_finetune(experiment_config=e_conf,
-                # run_alignment_analysis=True,
-                # run_visualizations=True,
+                run_alignment_analysis=True,
+                run_visualizations=True,
                 pretrained_model_path=pretrained_path,
                 tasks=[task]
                 )
@@ -69,6 +71,8 @@ def main():
 
 
     info_str =f"finished with paths: {paths}"
+
+    performance_metric_collection.get_performance_metrics(dirs=["res/checkpoints/20251030-192145_pretrained_latefusion_cka"])
 
 
 

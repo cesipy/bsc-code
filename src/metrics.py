@@ -121,6 +121,32 @@ class AlignmentMetrics:
 
 
     @staticmethod
+    def cka_tensor(feats_A, feats_B, kernel_metric='ip', rbf_sigma=1.0, unbiased=False):
+        """Computes the unbiased Centered Kernel Alignment (CKA) between features."""
+
+        if kernel_metric == 'ip':
+            # Compute kernel matrices for the linear case
+            K = torch.mm(feats_A, feats_A.T)
+            L = torch.mm(feats_B, feats_B.T)
+        elif kernel_metric == 'rbf':
+            # COMPUTES RBF KERNEL
+            K = torch.exp(-torch.cdist(feats_A, feats_A) ** 2 / (2 * rbf_sigma ** 2))
+            L = torch.exp(-torch.cdist(feats_B, feats_B) ** 2 / (2 * rbf_sigma ** 2))
+        else:
+            raise ValueError(f"Invalid kernel metric {kernel_metric}")
+
+        # Compute HSIC values
+        hsic_fn = hsic_unbiased if unbiased else hsic_biased
+        hsic_kk = hsic_fn(K, K)
+        hsic_ll = hsic_fn(L, L)
+        hsic_kl = hsic_fn(K, L)
+
+        # Compute CKA
+        #print('hsic', hsic_kl)
+        cka_value = hsic_kl / (torch.sqrt(hsic_kk * hsic_ll) + 1e-6)
+        return cka_value
+
+    @staticmethod
     def unbiased_cka(*args, **kwargs):
         kwargs['unbiased'] = True
         return AlignmentMetrics.cka(*args, **kwargs)

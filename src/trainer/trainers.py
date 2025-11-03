@@ -1,5 +1,6 @@
 from .base_trainer import *
 from torch import nn
+from metrics import AlignmentMetrics
 
 class PretrainingTrainer:
     def __init__(
@@ -42,6 +43,8 @@ class PretrainingTrainer:
         self.total_losses = []
         self.info_losses = []
         self.normal_losses = []
+        if OPTIMIZE_CKA:
+            self.cka_losses = []
 
     def setup_scheduler(self, epochs:int, total_training_steps: DataLoader, lr=None):
         if lr is None:
@@ -286,7 +289,14 @@ class PretrainingTrainer:
                 # print(f"contrastive loss: {loss_contrastive}")
                 loss = loss + 0.3* loss_contrastive
 
-            loss /= self.gradient_accumulation
+        if OPTIMIZE_CKA:
+            # save inputs for recomputation of cka
+            self.input_buffer.append({
+                'text': {k: v.detach() for k, v in text.items()},
+                'image': {k: v.detach() for k, v in image.items()}
+            })
+
+        loss /= self.gradient_accumulation
 
         # from karpathy video,
         # https://www.youtube.com/watch?v=l8pRSuU81PU
@@ -428,7 +438,14 @@ class PretrainingTrainer:
         buffer_total_loss  = []
         buffer_normal_loss = []
         buffer_contrastive_loss = []
+        if OPTIMIZE_CKA:
+            buffer_cka_loss = []
 
+
+        # stores cls tokens for both streams in order to compute cka for larger batches
+        self.text_embedding_buffer = []
+        self.vision_embedding_buffer = []
+        self.input_buffer = []
 
 
         for batch_indx, (batch_ap, batch_mlm, batch_mim) in enumerate(
@@ -466,24 +483,40 @@ class PretrainingTrainer:
             #TODO: contrastive loss, currently same as total_loss
             buffer_contrastive_loss.append(loss_contrastive)
 
-            if (batch_indx % 10 == 0):
+            if ((batch_indx+1) % self.gradient_accumulation == 0):
                 avg_total_loss = sum(buffer_total_loss) / len(buffer_total_loss)
                 self.total_losses.append(avg_total_loss)
                 buffer_total_loss = []
 
                 self.info_losses = self.total_losses[:]
                 self.normal_losses = self.total_losses[:]
-
+                if OPTIMIZE_CKA and len(buffer_cka_loss)>0:
+                    avg_cka_loss = sum(buffer_cka_loss) / len(buffer_cka_loss)
+                    self.cka_losses.append(avg_cka_loss)
+                    buffer_cka_loss = []
 
             if (batch_indx+1) % self.gradient_accumulation == 0 or (batch_indx + 1) == total_batches:
+                if OPTIMIZE_CKA and self.input_buffer:
+                    avg_cka_loss = self.compute_cka_loss(self.input_buffer)
+                    # print(f"avg cka loss: {avg_cka_loss}")
+                    self.input_buffer = []
+
+
                 lr = self.scheduler.get_lr()
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = lr
 
-
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
                 self.optimizer.zero_grad()
+
+                if OPTIMIZE_CKA:
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()  # Wait for all operations to complete
+
+                self.text_embedding_buffer = []
+                self.vision_embedding_buffer = []
+
 
             total_loss_ap += loss_ap
             total_loss_mlm += loss_mlm
@@ -501,6 +534,11 @@ class PretrainingTrainer:
             normal_losses=self.normal_losses,
             info_losses=self.info_losses
         )
+        if OPTIMIZE_CKA:
+            utils.visualize_loss_cka(
+                normal_losses = self.normal_losses,
+                cka_losses = self.cka_losses
+            )
         # print(f"contrastive loss: {avg_loss_contrastive}")
         return avg_loss_ap, avg_loss_mlm, avg_loss_mim
 
@@ -560,7 +598,6 @@ class PretrainingTrainer:
             v_loss_ap, acc = self.evaluate_ap(test_dataloaderAP)
             v_loss_mlm = self.evaluate_mlm(test_dataloaderMLM)
             v_loss_mim = self.evaluate_mim(test_dataloaderMIM)
-
             info_str = (
                 f"Epoch {epoch+1}/{epochs}, "
                 f"\n\ttrain loss MLM: {t_loss_mlm:.4f}, "
@@ -569,10 +606,10 @@ class PretrainingTrainer:
                 f"\n\ttest loss AP: {v_loss_ap:.4f}, "
                 f"\n\taccuracy AP: {acc:.4f}"
                 f"\n\ttrain loss MIM: {t_loss_mim:.4f}, "
-                f"\n\ttest loss MIM: {v_loss_mim:.4f}"
+                f"\n\ttest loss MIM: {v_loss_mim:.4f} "
             )
-            print(info_str)
-            self.logger.info(info_str)
+
+            print(info_str);self.logger.info(info_str)
             task_string = ""
             tasks_vals = [task.value for task in self.tasks]
             tasks_vals.sort()
@@ -631,7 +668,86 @@ class PretrainingTrainer:
         self.model.save_model(save_path=filepath)
 
 
+    def compute_cka_loss(self, input_buffer, backward=True):
+        assert len(input_buffer)>0
+        # print(f"len(input): {len(self.input_buffer)}")
+        chunk_size = 4
+        total_cka = 0
+        num_chunks = 0
+        for i in range(0, len(input_buffer), chunk_size):
+            chunk_inputs = input_buffer[i:i+chunk_size]
 
+            text_embeds_list = []
+            vision_embeds_list = []
+
+            for inputs in chunk_inputs:
+                with torch.amp.autocast(device_type=self.device):
+                    text_emb, img_emb = self.model.forward_pretrain(
+                        text_input_ids=inputs['text']['input_ids'],
+                        text_attention_mask=inputs['text']['attention_mask'],
+                        text_token_type_ids=inputs['text'].get('token_type_ids'),
+                        image_pixel_values=inputs['image']['pixel_values'],
+                        image_attention_mask=inputs['image'].get('attention_mask'),
+                        tasks=["alignment_prediction"]
+                    )
+                    text_embeds_list.append(text_emb)
+                    vision_embeds_list.append(img_emb)
+
+            text_embeddings = torch.cat(text_embeds_list, dim=0)
+            vision_embeddings = torch.cat(vision_embeds_list, dim=0)
+            # print(f"dims: text_embeddings: {text_embeddings.shape}, vision_embeddings: {vision_embeddings.shape}")
+
+            cka_val = AlignmentMetrics.cka_tensor(text_embeddings, vision_embeddings)
+
+            if backward:
+                cka_loss = -OPTIMIZE_CKA_LAMBDA * cka_val
+                scaled_cka_loss = self.scaler.scale(cka_loss)
+                scaled_cka_loss.backward()
+
+
+            total_cka += cka_val.item()
+
+            num_chunks += 1
+            del text_embeds_list, vision_embeds_list, text_embeddings, vision_embeddings
+            if backward:
+                del cka_val, cka_loss, scaled_cka_loss
+            with torch.no_grad():
+                torch.cuda.empty_cache()
+
+        avg_cka = total_cka / num_chunks
+        return avg_cka
+
+    def compute_cka_value(self, dataloader: DataLoader, num_batches: int = None):
+        """Compute CKA value for validation (no backward pass)"""
+        self.model.eval()
+
+        if num_batches is None:
+            num_batches = self.gradient_accumulation
+
+        # Collect inputs same way as training
+        input_buffer = []
+        with torch.no_grad():
+            for i, batch in enumerate(dataloader):
+                if i >= num_batches:
+                    break
+
+                text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+                image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+
+                input_buffer.append({
+                    'text': {k: v.detach() for k, v in text.items()},
+                    'image': {k: v.detach() for k, v in image.items()}
+                })
+
+        if len(input_buffer) == 0:
+            return 0.0
+
+        print(f"Computing validation CKA over {len(input_buffer)} batches")
+
+        with torch.no_grad():
+            cka_val = self.compute_cka_loss(input_buffer, backward=False)
+
+        return cka_val
 
 
 

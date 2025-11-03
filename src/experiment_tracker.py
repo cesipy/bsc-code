@@ -636,8 +636,8 @@ class ExperimentTracker:
             )
             if test_dict["auc"] is not None:
                 info_str += f", V_AUC: {val_dict.get('auc', 0.0):.4f}, T_AUC: {test_dict['auc']:.4f}"
-            print(info_str)
-            logger.info(info_str)
+            
+            print(info_str);logger.info(info_str)
 
             training_results[task]["training"][i+1]["train_loss"] = train_loss
             training_results[task]["training"][i+1]["val_loss"] = val_dict["loss"]
@@ -1056,8 +1056,13 @@ class ExperimentTracker:
                 f"\n\ttrain loss MIM: {t_loss_mim:.4f}, "
                 f"\n\ttest loss MIM: {v_loss_mim:.4f}"
             )
-            print(info_str)
-            logger.info(info_str)
+            if OPTIMIZE_CKA:
+                # num_batches ==4 bc the same value is used in the train loop before hitting OOM CUDA
+                val_cka = trainer.compute_cka_value(val_loader_ap,)
+                print(f"val_cka: {val_cka}")
+                info_str += f"\n\tCKA value: {val_cka:.4f}"
+
+            print(info_str);logger.info(info_str)
 
             training_results["pretraining"]["training"][epoch+1] = {
                 "train_loss_ap": t_loss_ap,
@@ -1102,7 +1107,6 @@ class ExperimentTracker:
     ) -> dict:
         """
         run pretraining with a given config.
-
 
         Args:
             experiment_config: ExperimentConfig, configuration for the experiment

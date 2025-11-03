@@ -69,7 +69,7 @@ def analyse_per_task(task:str, paths):
 
         info_str = f"model {path}: \n\t{task}: test loss={loss:.4f}, test acc={acc:.4f}"
         info_str2 = f"model {path}: \n\t{task}:  val loss={loss_val:.4f},  val acc={acc_val:.4f}"
-        losses.append(-loss); losses_val.append(-loss_val)
+        losses.append(loss); losses_val.append(loss_val)
         accs.append(acc); accs_val.append(acc_val)
 
         metrics.append({**metrics_last_layer, "task": task, "test_loss": loss, "test_acc": acc, "id": path})
@@ -160,7 +160,8 @@ def main():
     dir5 = "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion"
     dir6 = "res/checkpoints/20251015-081211_pretrained_optuna1"
     dir7 = "res/checkpoints/20251016-062038_pretrained_optuna2"
-    dirs = [dir1, dir2, dir3, dir4, dir5, dir6, dir7]
+    dir8 = "res/checkpoints/20251025-105249_pretrained_bl_full_coattn"
+    dirs = [dir1, dir2, dir3, dir4, dir5, dir6, dir7, dir8]
     for dir in dirs:
         for i in os.listdir(dir):
             if i.endswith(".pt"):

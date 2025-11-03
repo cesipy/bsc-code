@@ -1,5 +1,6 @@
 from .base_trainer import *
 from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
+from metrics import AlignmentMetrics
 
 def alignment_loss_cosine(text_emb, vision_emb):
     cosine_sim = torch.nn.functional.cosine_similarity(
@@ -25,6 +26,8 @@ class HatefulMemesTrainer(BaseTrainer):
         self.model = model
         self.config = config
         self.logger = Logger()
+
+        self.input_buffer = []
 
         self.scheduler = None
 
@@ -186,10 +189,22 @@ class HatefulMemesTrainer(BaseTrainer):
 
                 loss = loss_normal
 
+
+            # if OPTIMIZE_CKA:
+            #     # save inputs for recomputation of cka
+            #     self.input_buffer.append({
+            #         'text': {k: v.detach() for k, v in text.items()},
+            #         'image': {k: v.detach() for k, v in image.items()}
+            #     })
             loss /= self.gradient_accumulation
             loss.backward()
 
             if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(dataloader):
+                # if OPTIMIZE_CKA and self.input_buffer:
+                #     avg_cka_loss = self.compute_cka_loss(self.input_buffer)
+                #     # print(f"avg cka loss: {avg_cka_loss}")
+                #     self.input_buffer = []
+
                 lr = self.scheduler.get_lr()
                 for param_group in self.optimizer.param_groups:
                     param_group["lr"] = lr
@@ -412,3 +427,86 @@ class HatefulMemesTrainer(BaseTrainer):
 
         else:
             raise ValueError(f"unknown metric {metric} for hateful memes trainer")
+
+
+
+    def compute_cka_loss(self, input_buffer, backward=True):
+        assert len(input_buffer)>0
+        # print(f"len(input): {len(self.input_buffer)}")
+        chunk_size = 4
+        total_cka = 0
+        num_chunks = 0
+        for i in range(0, len(input_buffer), chunk_size):
+            chunk_inputs = input_buffer[i:i+chunk_size]
+
+            text_embeds_list = []
+            vision_embeds_list = []
+
+            for inputs in chunk_inputs:
+                with torch.amp.autocast(device_type=self.device):
+                    text_emb, img_emb = self.model.forward_pretrain(
+                        text_input_ids=inputs['text']['input_ids'],
+                        text_attention_mask=inputs['text']['attention_mask'],
+                        text_token_type_ids=inputs['text'].get('token_type_ids'),
+                        image_pixel_values=inputs['image']['pixel_values'],
+                        image_attention_mask=inputs['image'].get('attention_mask'),
+                        tasks=["alignment_prediction"]
+                    )
+                    text_embeds_list.append(text_emb)
+                    vision_embeds_list.append(img_emb)
+
+            text_embeddings = torch.cat(text_embeds_list, dim=0)
+            vision_embeddings = torch.cat(vision_embeds_list, dim=0)
+            # print(f"dims: text_embeddings: {text_embeddings.shape}, vision_embeddings: {vision_embeddings.shape}")
+
+            cka_val = AlignmentMetrics.cka_tensor(text_embeddings, vision_embeddings)
+
+            if backward:
+                cka_loss = -OPTIMIZE_CKA_LAMBDA * cka_val
+                scaled_cka_loss = self.scaler.scale(cka_loss)
+                scaled_cka_loss.backward()
+
+
+            total_cka += cka_val.item()
+
+            num_chunks += 1
+            del text_embeds_list, vision_embeds_list, text_embeddings, vision_embeddings
+            if backward:
+                del cka_val, cka_loss, scaled_cka_loss
+            with torch.no_grad():
+                torch.cuda.empty_cache()
+
+        avg_cka = total_cka / num_chunks
+        return avg_cka
+
+    def compute_cka_value(self, dataloader: DataLoader, num_batches: int = None):
+        """Compute CKA value for validation (no backward pass)"""
+        self.model.eval()
+
+        if num_batches is None:
+            num_batches = self.gradient_accumulation
+
+        # Collect inputs same way as training
+        input_buffer = []
+        with torch.no_grad():
+            for i, batch in enumerate(dataloader):
+                if i >= num_batches:
+                    break
+
+                text = {k: v.squeeze(1).to(self.device) for k, v in batch["text"].items()}
+                image = {k: v.squeeze(1).to(self.device) for k, v in batch["img"].items()}
+
+                input_buffer.append({
+                    'text': {k: v.detach() for k, v in text.items()},
+                    'image': {k: v.detach() for k, v in image.items()}
+                })
+
+        if len(input_buffer) == 0:
+            return 0.0
+
+        print(f"Computing validation CKA over {len(input_buffer)} batches")
+
+        with torch.no_grad():
+            cka_val = self.compute_cka_loss(input_buffer, backward=False)
+
+        return cka_val
