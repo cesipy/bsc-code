@@ -68,3 +68,10 @@ class BaseTrainer(ABC):
 
         # TODO: problem with implementing this as the fc in the vilbert relies on the input size
 
+    @abstractmethod
+    def compute_cka_value(self, dataloader:DataLoader, num_batches:int):
+        pass
+
+    @abstractmethod
+    def compute_cka_loss(self, input_buffer, backward:bool):
+        pass

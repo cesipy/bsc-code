@@ -190,20 +190,20 @@ class HatefulMemesTrainer(BaseTrainer):
                 loss = loss_normal
 
 
-            # if OPTIMIZE_CKA:
-            #     # save inputs for recomputation of cka
-            #     self.input_buffer.append({
-            #         'text': {k: v.detach() for k, v in text.items()},
-            #         'image': {k: v.detach() for k, v in image.items()}
-            #     })
+            if OPTIMIZE_CKA:
+                # save inputs for recomputation of cka
+                self.input_buffer.append({
+                    'text': {k: v.detach() for k, v in text.items()},
+                    'image': {k: v.detach() for k, v in image.items()}
+                })
             loss /= self.gradient_accumulation
             loss.backward()
 
             if (batch_indx + 1) % self.gradient_accumulation == 0 or (batch_indx + 1) == len(dataloader):
-                # if OPTIMIZE_CKA and self.input_buffer:
-                #     avg_cka_loss = self.compute_cka_loss(self.input_buffer)
-                #     # print(f"avg cka loss: {avg_cka_loss}")
-                #     self.input_buffer = []
+                if OPTIMIZE_CKA and self.input_buffer:
+                    avg_cka_loss = self.compute_cka_loss(self.input_buffer)
+                    # print(f"avg cka loss: {avg_cka_loss}")
+                    self.input_buffer = []
 
                 lr = self.scheduler.get_lr()
                 for param_group in self.optimizer.param_groups:
@@ -433,7 +433,7 @@ class HatefulMemesTrainer(BaseTrainer):
     def compute_cka_loss(self, input_buffer, backward=True):
         assert len(input_buffer)>0
         # print(f"len(input): {len(self.input_buffer)}")
-        chunk_size = 4
+        chunk_size = 2
         total_cka = 0
         num_chunks = 0
         for i in range(0, len(input_buffer), chunk_size):
@@ -443,17 +443,17 @@ class HatefulMemesTrainer(BaseTrainer):
             vision_embeds_list = []
 
             for inputs in chunk_inputs:
-                with torch.amp.autocast(device_type=self.device):
-                    text_emb, img_emb = self.model.forward_pretrain(
-                        text_input_ids=inputs['text']['input_ids'],
-                        text_attention_mask=inputs['text']['attention_mask'],
-                        text_token_type_ids=inputs['text'].get('token_type_ids'),
-                        image_pixel_values=inputs['image']['pixel_values'],
-                        image_attention_mask=inputs['image'].get('attention_mask'),
-                        tasks=["alignment_prediction"]
-                    )
-                    text_embeds_list.append(text_emb)
-                    vision_embeds_list.append(img_emb)
+
+                text_emb, img_emb = self.model.forward_pretrain(
+                    text_input_ids=inputs['text']['input_ids'],
+                    text_attention_mask=inputs['text']['attention_mask'],
+                    text_token_type_ids=inputs['text'].get('token_type_ids'),
+                    image_pixel_values=inputs['image']['pixel_values'],
+                    image_attention_mask=inputs['image'].get('attention_mask'),
+                    tasks=["alignment_prediction"]
+                )
+                text_embeds_list.append(text_emb)
+                vision_embeds_list.append(img_emb)
 
             text_embeddings = torch.cat(text_embeds_list, dim=0)
             vision_embeddings = torch.cat(vision_embeds_list, dim=0)
@@ -463,8 +463,7 @@ class HatefulMemesTrainer(BaseTrainer):
 
             if backward:
                 cka_loss = -OPTIMIZE_CKA_LAMBDA * cka_val
-                scaled_cka_loss = self.scaler.scale(cka_loss)
-                scaled_cka_loss.backward()
+                cka_loss.backward()
 
 
             total_cka += cka_val.item()
@@ -472,7 +471,7 @@ class HatefulMemesTrainer(BaseTrainer):
             num_chunks += 1
             del text_embeds_list, vision_embeds_list, text_embeddings, vision_embeddings
             if backward:
-                del cka_val, cka_loss, scaled_cka_loss
+                del cka_val, cka_loss
             with torch.no_grad():
                 torch.cuda.empty_cache()
 

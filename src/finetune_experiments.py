@@ -43,34 +43,34 @@ def main():
     v_biattns = modl.config.vision_cross_attention_layers
 
 
-    tasks = ["mm_imdb", "hateful_memes", "upmc_food"]
-    paths = []
-    c = 1
+    # tasks = ["hateful_memes",]
+    # paths = []
+    # c = 1
 
-    for task in tasks:
-        for seed in seeds:
-            info_str=f"{c:2}/{len(tasks)*len(seeds)}: finetuning on {task} with seed {seed}"
-            print(info_str); logger.info(info_str)
-            e_conf = experiment_tracker.ExperimentConfig(
-                t_biattention_ids=t_biattns,
-                v_biattention_ids=v_biattns,
-                epochs=15,
-                learning_rate=3.2e-5 if task == "hateful_memes" else 4e-5,
-                seed=seed,
-                use_contrastive_loss=False
-            )
-            res = t.run_finetune(experiment_config=e_conf,
-                run_alignment_analysis=True,
-                run_visualizations=True,
-                pretrained_model_path=pretrained_path,
-                tasks=[task]
-                )
-            path = res[task]["model_path"]
-            paths.append(path)
-            c+=1
+    # for task in tasks:
+    #     for seed in seeds:
+    #         info_str=f"{c:2}/{len(tasks)*len(seeds)}: finetuning on {task} with seed {seed}"
+    #         print(info_str); logger.info(info_str)
+    #         e_conf = experiment_tracker.ExperimentConfig(
+    #             t_biattention_ids=t_biattns,
+    #             v_biattention_ids=v_biattns,
+    #             epochs=15,
+    #             learning_rate=3.2e-5 if task == "hateful_memes" else 4e-5,
+    #             seed=seed,
+    #             use_contrastive_loss=False
+    #         )
+    #         res = t.run_finetune(experiment_config=e_conf,
+    #             run_alignment_analysis=True,
+    #             run_visualizations=True,
+    #             pretrained_model_path=pretrained_path,
+    #             tasks=[task]
+    #             )
+    #         path = res[task]["model_path"]
+    #         paths.append(path)
+    #         c+=1
 
 
-    info_str =f"finished with paths: {paths}"
+    # info_str =f"finished with paths: {paths}"
 
     performance_metric_collection.get_performance_metrics(dirs=["res/checkpoints/20251030-192145_pretrained_latefusion_cka"])
 

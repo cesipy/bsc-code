@@ -50,8 +50,8 @@ USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
 NUM_SAMPLES_CC = 500_000
 
-OPTIMIZE_CKA = True
-OPTIMIZE_CKA_LAMBDA = 0.7
+OPTIMIZE_CKA = False
+OPTIMIZE_CKA_LAMBDA = 0.2
 # --------------------------------------------------
 # data specific
 IMG_SIZE = (224, 224)

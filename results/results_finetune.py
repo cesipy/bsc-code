@@ -83,7 +83,16 @@ def main():
     op2_hm_mean, op2_hm_std = np.mean(op2_hm), np.std(op2_hm)
     op2_hm_auc_mean, op2_hm_auc_std = np.mean(op2_hm_auc), np.std(op2_hm_auc)
 
+    #baseline fullcoattn:
+    fc_upmc_food = np.array([0.9099, 0.9079, 0.9102])
+    fc_mm_imdb = np.array([0.9287,0.9275, 0.9271])
+    fc_hm = np.array([0.6677, 0.6693, 0.6633])
+    fc_hm_auc = np.array([0.7092, 0.7066, 0.7081])
 
+    fc_upmc_food_mean, fc_upmc_food_std = np.mean(fc_upmc_food), np.std(fc_upmc_food)
+    fc_mm_imdb_mean, fc_mm_imdb_std = np.mean(fc_mm_imdb), np.std(fc_mm_imdb)
+    fc_hm_mean, fc_hm_std = np.mean(fc_hm), np.std(fc_hm)
+    fc_hm_auc_mean, fc_hm_auc_std = np.mean(fc_hm_auc), np.std(fc_hm_auc)
 
     # ----------------------------------------------------------------------------------------------------
 
@@ -136,6 +145,14 @@ def main():
     print(f"imdb accuracy: {op2_mm_imdb_mean:.4f} ± {op2_mm_imdb_std:.4f}")
     print(f"hm   accuracy: {op2_hm_mean:.4f} ± {op2_hm_std:.4f}")
     print(f"hm rocauc    : {op2_hm_auc_mean:.4f} ± {op2_hm_auc_std:.4f}")
+    print("-"*35)
+
+
+    print("full coattn baseline:")
+    print(f"upmc accuracy: {fc_upmc_food_mean:.4f} ± {fc_upmc_food_std:.4f}")
+    print(f"imdb accuracy: {fc_mm_imdb_mean:.4f} ± {fc_mm_imdb_std:.4f}")
+    print(f"hm   accuracy: {fc_hm_mean:.4f} ± {fc_hm_std:.4f}")
+    print(f"hm rocauc    : {fc_hm_auc_mean:.4f} ± {fc_hm_auc_std:.4f}")
 
 
 

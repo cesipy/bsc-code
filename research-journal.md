@@ -2,6 +2,25 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
+## 06.11
+what to do next?
+Let me go through your thesis and identify **specific gaps** that will either stop you getting published or significantly weaken your publication potential:
+
+
+| Gap | Effort | Impact | Do First? |
+|-----|--------|--------|-----------|
+| Why late fusion works (mechanistic) | 2-3 days | **CRITICAL** | YES |
+| Metrics replacement (SVCCA/mkNN → Wasserstein) | 1-2 days | High | YES |
+| MBT engagement (Related Work + Discussion) | 1-2 hours | High | YES |
+| Cosine similarity baseline | 2-3 hours | Medium | YES |
+| Task-level analysis | 1-2 hours | Medium | YES |
+| Alignment asymmetries (concrete numbers) | 3-4 hours | Medium | MAYBE |
+| Optuna resolution | 1-2 days OR delete | Low | SKIP/DELETE |
+| Attention visualization | 3-4 hours | Medium | MAYBE |
+| Pretraining vs finetuning ablation | 1-2 days | Medium | SKIP (note gap) |
+| Platonic hypothesis connection | 2 hours | Low | NICE |
+
+why does late fusion work? just discussion that late fusion has longer time to develop more sbstract representations before fusing them together. largest differences in performance for hateful memes (?)
 
 
 ## 30.10
@@ -10,6 +29,29 @@ the optimization did not work for `early_fusion` and `no_coattention`, as cka va
 
 the following shows the results for late fusion.
 
+**Hateful Memes**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_late_fusion_cka | 0.7003 ± 0.0060 | 0.6697 ± 0.0111 | 0.7568 ± 0.0036 |
+
+**MM-IMDB**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.9308 ± 0.0002 | 0.5448 ± 0.0120 | 0.9153 ± 0.0005 |
+| pretrained_late_fusion_cka | 0.9256 ± 0.0009 | 0.4586 ± 0.0113 | 0.8903 ± 0.0029 |
+
+**UPMC Food-101**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_late_fusion | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_late_fusion_cka | 0.9262 ± 0.0015 | 0.9256 ± 0.0016 |
+
+
+
+<details closed>
+
+those values are from a run where cka was not optimized.
 **Hateful Memes**
 | Model | Accuracy | F1-Score (Macro) | AUC |
 |-------|----------|------------------|-----|
@@ -28,6 +70,7 @@ the following shows the results for late fusion.
 | pretrained_late_fusion | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
 | pretrained_late_fusion_cka | 0.9278 ± 0.0015 | 0.9270 ± 0.0015 |
 
+</details>
 ---
 
 finetune != pretrain+finetune predictor:

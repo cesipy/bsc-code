@@ -636,7 +636,11 @@ class ExperimentTracker:
             )
             if test_dict["auc"] is not None:
                 info_str += f", V_AUC: {val_dict.get('auc', 0.0):.4f}, T_AUC: {test_dict['auc']:.4f}"
-            
+
+            if OPTIMIZE_CKA:
+                val_cka = trainer.compute_cka_value(val_loader,)
+                print(f"val_cka: {val_cka}")
+                info_str += f"\n\tCKA value: {val_cka:.4f}"
             print(info_str);logger.info(info_str)
 
             training_results[task]["training"][i+1]["train_loss"] = train_loss
