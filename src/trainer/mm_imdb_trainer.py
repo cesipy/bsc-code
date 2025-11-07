@@ -26,10 +26,8 @@ from .base_trainer import BaseTrainer
 
 import analysis
 from datasets import HM_Dataset, PretrainDatasetAP, MM_IMDB_Dataset; import datasets
-
 import augments_transforms
-
-from info_nce import InfoNCE, info_nce
+from info_nce import InfoNCE
 
 
 

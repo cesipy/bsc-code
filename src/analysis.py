@@ -263,6 +263,39 @@ def run_alignment_visualization(
             dir_name=dir_name, filename_extension=filename_extension)
 
 
+# def get_align
+def get_alignment_data_layer_n(dataloader: DataLoader, model:ViLBERT, layer_n: int,device="cuda" if torch.cuda.is_available() else "cpu"):
+    model.eval()
+    model = model.to(device)
+    text_embeddings = []
+    image_embeddings = []
+
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+
+    for i, batch in enumerate(dataloader):
+        text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
+        image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
+        label = batch["label"].to(device)
+
+        with torch.no_grad():
+            text_embedding, image_embedding = model.forward_until_layer(
+                layer_n=layer_n,
+                text_input_ids=text["input_ids"],
+                text_attention_mask=text["attention_mask"],
+                text_token_type_ids=text.get("token_type_ids", None),
+                image_pixel_values=image["pixel_values"],
+                image_attention_mask=image.get("attention_mask", None),
+            )
+            # print(f"txt_shape: {text_embedding.shape}, img_shape: {image_embedding.shape}")
+            text_embeddings.append(text_embedding.detach().cpu())
+            image_embeddings.append(image_embedding.detach().cpu())
+
+
+    catted_t = torch.cat(text_embeddings, dim=0)
+    catted_v = torch.cat(image_embeddings, dim=0)
+    return catted_t, catted_v
+
 def get_alignment_data(dataloader: DataLoader, model:ViLBERT, device="cuda" if torch.cuda.is_available() else "cpu"):
     model.eval()
     model = model.to(device)
@@ -280,10 +313,6 @@ def get_alignment_data(dataloader: DataLoader, model:ViLBERT, device="cuda" if t
             "is_cross_attention": True,#i in model.cross_attention_layers,
             "layer": i
         }
-
-
-
-
     for i, batch in enumerate(dataloader):
         text = {k: v.squeeze(1).to(device) for k, v in batch["text"].items()}
         image = {k: v.squeeze(1).to(device) for k, v in batch["img"].items()}
@@ -374,7 +403,7 @@ def calculate_metrics(text_embeddings, vision_embeddings, knn_k):
     cka_rbf = metrics.AlignmentMetrics.cka(norm_t, norm_v, kernel_metric="rbf")
     unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(norm_t, norm_v)
     svcca = metrics.AlignmentMetrics.svcca(norm_t, norm_v, cca_dim=10)
-    
+
     # cka = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings)
     # cka_rbf = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings, kernel_metric="rbf")
     # unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(text_embeddings, vision_embeddings)
@@ -389,6 +418,40 @@ def calculate_metrics(text_embeddings, vision_embeddings, knn_k):
         "svcca": svcca,
         "cknna": cknna
     }
+
+def calculate_main_metrics(text_embeddings, vision_embeddings, k=KNN_K) -> dict:
+    """
+    calculates the representational alignment metrics used for my paper:
+    - mkNN: local alignment    - cosine similarity in nearest neighbors
+    - cka: global alignment    - structural similarity
+    - svcca: global alignmnent - dim. red + correlation
+    - procrustes               - dissimilarity measure
+
+    Args:
+        text_embeddings (torch.Tensor): text embeddings of shape [num_samples, dim]
+        vision_embeddings (torch.Tensor): vision embeddings of shape [num_samples, dim]
+        k (int, optional): number of neighbors for knn-based metrics. Defaults to KNN_K.
+
+    Returns:
+        dict: dictionary with metric names as keys and metric values as values
+    """
+    norm_t = F.normalize(text_embeddings,   dim=-1)
+    norm_v = F.normalize(vision_embeddings, dim=-1)
+    procrustes = metrics_llmrepsim.orthogonal_procrustes(R=norm_t, Rp=norm_v)
+    cka = metrics.AlignmentMetrics.cka(norm_t, norm_v)
+    svcca = metrics.AlignmentMetrics.svcca(norm_t, norm_v, cca_dim=10)
+    mknn = metrics.AlignmentMetrics.measure("mutual_knn", norm_t, norm_v, topk=k)
+
+    return {
+        "procrustes": procrustes,
+        "cka": cka,
+        "svcca": svcca,
+        "mknn": mknn
+    }
+
+
+
+
 
 def get_additional_metrics(text_embeddings, vision_embeddings, knn_k):
     # really big differences

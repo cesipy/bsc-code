@@ -270,7 +270,7 @@ class ViLBERT(nn.Module):
             #         )[0]
             #         t_start = self.fixed_t_layer
             #         print(f"Text only layer {idx} done")
-
+            # print(f"v_layer_id: {v_layer_id, t_layer_id}")
             for i in range(t_start, t_layer_id):
                 text_embedding = self.bert_layers[i](
                     text_embedding,
@@ -364,6 +364,104 @@ class ViLBERT(nn.Module):
                 intermediate_representations.append(dict_entry)
             return text_embedding, vision_embeddings, intermediate_representations
         return text_embedding, vision_embeddings
+
+    def forward_until_layer(
+        self,
+        layer_n:int,            # until what layer to run the model
+        text_input_ids,
+        text_attention_mask=None,
+        text_token_type_ids=None,
+        image_pixel_values=None,
+        image_attention_mask=None,
+        output_attentions=False,
+        output_hidden_states=False,
+    ):
+         # TODO: rethink
+        # if not extract_cls:
+        #     assert save_intermediate_representations == False, "not working"
+        extended_attention_mask = self.get_extended_attention_mask(
+            text_attention_mask,
+            dtype=next(self.bert.parameters()).dtype
+        )
+
+        text_embedding = self.bert_embeddings(
+            input_ids=text_input_ids,
+            token_type_ids=text_token_type_ids,
+        )
+
+        # #this is wrong, according to the sourcecode, this simply skips the head
+        # and skips the pooling stage in the transformer:
+        # https://github.com/huggingface/pytorch-image-models/blob/0645384b3a68d0ddf4657400125bb2c68c42bc60/timm/models/vision_transformer.py#L935
+        # vit_outputs = self.vit.forward_features(
+        #     image_pixel_values,
+        # )
+
+        #applies conv2d to image with kernel_sz=16 and stride = 16
+        #=> 14x14 patches = 196
+        #https://huggingface.co/spaces/Roll20/pet_score/blame/main/lib/timm/models/layers/patch_embed.py
+        x = self.vit.patch_embed(image_pixel_values)    #[bs, 196, dim]
+        cls = self.vit.cls_token.expand(x.shape[0], -1, -1)  # [bs, 1, dim] stole cls token impl from timm
+        x = torch.cat((cls, x), dim=1)  # [bs, 197, dim]
+
+        # apply positional dropout + positional embedding
+        x = self.vit.pos_drop(x + self.vit.pos_embed)
+
+        # no need to droput anymore
+        #vision_embeddings = self.vision_embeddings(x)
+        vision_embeddings = x
+
+        v_start = 0
+        t_start = 0
+        count   = 0
+
+        tmp_t = []
+        tmp_v = []
+
+        # print(f"len bertlayers: {len(self.bert_layers)}")
+
+        for v_layer_id, t_layer_id in zip(self.v_biattention_ids, self.t_biattention_ids):
+            # print(f"v_layer_id: {v_layer_id, t_layer_id}")
+
+            bound_t = min(t_layer_id, layer_n)
+            bound_v = min(v_layer_id, layer_n)
+            for i in range(t_start, bound_t):
+                # print(f"\trunning inside layer {i}")
+                text_embedding = self.bert_layers[i](
+                    text_embedding,
+                    attention_mask=extended_attention_mask,
+                )[0]
+
+            for i in range(v_start, bound_v):
+                vision_embeddings = self.vit.blocks[i](
+                    vision_embeddings,
+                )
+            if bound_v == layer_n or bound_t == layer_n:
+                t_start = bound_t
+                v_start = bound_v
+                break
+            text_embedding, vision_embeddings = self.c_layers[count](
+                text_embedding,
+                vision_embeddings,
+                text_mask=extended_attention_mask,
+            )
+
+
+            # print(f"\trunning cross attention in layer {count}")
+
+            t_start = t_layer_id
+            v_start = v_layer_id
+            count  += 1
+        #remains
+        for i in range(t_start, layer_n):
+
+            # print(f"\trunning remains layer {i}")
+
+            text_embedding = self.bert_layers[i](text_embedding, attention_mask=extended_attention_mask)[0]
+
+        for i in range(v_start, layer_n):
+            vision_embeddings = self.vit.blocks[i](vision_embeddings)
+
+        return text_embedding[:, 0, :], vision_embeddings[:,0,:]
 
 
     def forward(self,
