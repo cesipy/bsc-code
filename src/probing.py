@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 
+import task as tasklib
 import vilbert
 import datasets
 import trainer
@@ -14,7 +15,9 @@ from logger import Logger
 import analysis
 import utils_plotting
 
-PROBE_EPOCHS = 4
+PROBE_EPOCHS = 4        # 5 is default, not sure if this is the best way of doing it, but im going for it anyways
+NUM_LAYERS   = 13        # 13 is defaul, less is used for faster debugging
+
 logger = Logger()
 
 def get_metric(task:str):
@@ -33,6 +36,14 @@ def get_loss_function(task: str):
         return torch.nn.BCEWithLogitsLoss()
     else:
         return torch.nn.CrossEntropyLoss()
+
+def get_paths_for_task(dir:str, task: str):
+    assert task in tasklib.all_task_list
+    paths = []
+    for filename in os.listdir(dir):
+        if task in filename and filename.endswith(".pt"):
+            paths.append(os.path.join(dir, filename))
+    return paths
 
 
 def get_rams(model, dl, layer_n,) -> dict:
@@ -204,7 +215,7 @@ def linear_probe(
 
 
 
-def probe_model(path: str, task:str):
+def probe_model_single(path: str, task:str, plots=True):
     info_str = f"running for model: {path}, task: {task}"; print(info_str); logger.info(info_str)
     t = ExperimentTracker()
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -240,7 +251,7 @@ def probe_model(path: str, task:str):
         assert False
 
     results = {}
-    for i in range(1, 13):
+    for i in range(1, NUM_LAYERS):
 
         rams = get_rams(model=model,layer_n=i, dl=alignment_loader)
         loss, acc = linear_probe(
@@ -263,49 +274,149 @@ def probe_model(path: str, task:str):
             "svcca"     : rams["svcca"],
             "procrustes": rams["procrustes"],
             }
+        # print(results)
 
     for layer, metrics in results.items():
         infostr = f"{layer} - Loss: {metrics['loss']}, {metric_name} {metrics['metric']}"
         print(infostr); logger.info(infostr)
 
+    if plots==True:
+        save_path_dir = os.path.join("plots_probing", pretrain_name)
+        os.makedirs(save_path_dir, exist_ok=True)
+        pretrain_name = path.split("/")[2]
+        ft_name = path.split("/")[-1].replace(".pt", "")
 
-    pretrain_name = path.copy().split("/")[2]
-    ft_name = path.split("/")[-1].replace(".pt", "")
+        utils_plotting.plot_cka_vs_performance(results, metric_name, task,
+            save_path=os.path.join(save_path_dir, f"cka_vs_{metric_name}_{task}.png")
+        )
+        utils_plotting.plot_all_metrics_vs_performance(results, metric_name, task,
+            save_path=os.path.join(save_path_dir, f"all_metrics_vs_{metric_name}_{task}.png")
+        )
+        utils_plotting.plot_procrustes_vs_performance(results, metric_name, task,
+            save_path=os.path.join(save_path_dir, f"procrustes_vs_{metric_name}_{task}.png")
+        )
 
-    save_path_dir = os.path.join("plots_probing", pretrain_name)
-    os.makedirs(save_path_dir, exist_ok=True)
-    utils_plotting.plot_cka_vs_performance(results, metric_name, task,
-        save_path=os.path.join(save_path_dir, f"cka_vs_{metric_name}_{task}.png")
-    )
-    utils_plotting.plot_all_metrics_vs_performance(results, metric_name, task,
-        save_path=os.path.join(save_path_dir, f"all_metrics_vs_{metric_name}_{task}.png")
-    )
-    utils_plotting.plot_procrustes_vs_performance(results, metric_name, task,
-        save_path=os.path.join(save_path_dir, f"procrustes_vs_{metric_name}_{task}.png")
-    )
+        save_path = os.path.join(save_path_dir, f"results_{task}.json")
+        with open(save_path, 'w') as f:
+            json.dump(results, f, indent=2)
+    return results
 
+def probe_model(paths: list[str], task:str):
+
+    results = []
+    for path in paths:
+        single_model_results = probe_model_single(path=path, task=task, plots=False)
+        results.append(single_model_results)
+
+    assert len(results)== 3
+    temp_data = {}
+    for i in range(1,NUM_LAYERS):
+        temp_data[f"layer_{i}"] = {
+            "losses": [],
+            "metrics": [],
+            "ckas": [],
+            "mknns": [],
+            "svccas": [],
+            "procrustes": [],
+        }
+    for single_result in results:
+        for i in range(1,NUM_LAYERS):
+            layer_key = f"layer_{i}"
+            temp_data[layer_key]["losses"].append(single_result[layer_key]["loss"])
+            temp_data[layer_key]["metrics"].append(single_result[layer_key]["metric"])
+            temp_data[layer_key]["ckas"].append(single_result[layer_key]["cka"])
+            temp_data[layer_key]["mknns"].append(single_result[layer_key]["mknn"])
+            temp_data[layer_key]["svccas"].append(single_result[layer_key]["svcca"])
+            temp_data[layer_key]["procrustes"].append(single_result[layer_key]["procrustes"])
+
+    final_results = {}
+    for i in range(1,NUM_LAYERS):
+        final_results[f"layer_{i}"] =  {
+            "loss": float(np.mean(temp_data[f"layer_{i}"]["losses"])),  # Added float()
+            "loss_std": float(np.std(temp_data[f"layer_{i}"]["losses"])),  # Added float()
+            "metric": float(np.mean(temp_data[f"layer_{i}"]["metrics"])),  # Added float()
+            "metric_std": float(np.std(temp_data[f"layer_{i}"]["metrics"])),  # Added float()
+            "cka": float(np.mean(temp_data[f"layer_{i}"]["ckas"])),  # Added float()
+            "cka_std": float(np.std(temp_data[f"layer_{i}"]["ckas"])),  # Added float()
+            "mknn": float(np.mean(temp_data[f"layer_{i}"]["mknns"])),  # Added float()
+            "mknn_std": float(np.std(temp_data[f"layer_{i}"]["mknns"])),  # Added float()
+            "svcca": float(np.mean(temp_data[f"layer_{i}"]["svccas"])),  # Added float()
+            "svcca_std": float(np.std(temp_data[f"layer_{i}"]["svccas"])),  # Added float()
+            "procrustes": float(np.mean(temp_data[f"layer_{i}"]["procrustes"])),  # Added float()
+            "procrustes_std": float(np.std(temp_data[f"layer_{i}"]["procrustes"])),  # Added float()
+        }
+        metric_name = get_metric(task)
+        pretrain_name = paths[0].split("/")[2]  # Changed: path → paths[0]
+        save_path_dir = os.path.join("plots_probing", pretrain_name)
+        os.makedirs(save_path_dir, exist_ok=True)
+        utils_plotting.plot_cka_vs_performance(final_results, metric_name, task,
+            save_path=os.path.join(save_path_dir, f"cka_vs_{metric_name}_{task}.png")
+        )
+        utils_plotting.plot_all_metrics_vs_performance(final_results, metric_name, task,
+            save_path=os.path.join(save_path_dir, f"all_metrics_vs_{metric_name}_{task}.png")
+        )
+        utils_plotting.plot_procrustes_vs_performance(final_results, metric_name, task,
+            save_path=os.path.join(save_path_dir, f"procrustes_vs_{metric_name}_{task}.png")
+        )
     save_path = os.path.join(save_path_dir, f"results_{task}.json")
     with open(save_path, 'w') as f:
-        json.dump(results, f, indent=2)
+        json.dump(final_results, f, indent=2)
+
+    return final_results
+
 
 
 
 def main():
-    path = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-222808_finetuned_hateful_memes.pt"
-    task = "hateful_memes"
-    probe_model(path=path, task=task)
+    dirs = [
+        "res/checkpoints/20251010-085859_pretrained_baseline",
+        "res/checkpoints/20251010-234252_pretrained_early_fusion",
+        "res/checkpoints/20251011-234349_pretrained_middle_fusion",
+        "res/checkpoints/20251013-010227_pretrained_late_fusion",
+        "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion",
+        "res/checkpoints/20251015-081211_pretrained_optuna1",
+        "res/checkpoints/20251016-062038_pretrained_optuna2",
+        "res/checkpoints/20251025-105249_pretrained_bl_full_coattn",
+        "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
+    ]
+    # checl beforehand that there are 3 seeds per task
+    for dir in dirs:
+        paths_hm = get_paths_for_task(dir, "hateful_memes")
+        paths_mm = get_paths_for_task(dir, "mm_imdb")
+        paths_upmc = get_paths_for_task(dir, "upmc_food")
+        assert len(paths_hm) == len(paths_mm) == len(paths_upmc) == 3
 
-    path = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251023-221117_finetuned_mm_imdb.pt"
-    task = "mm_imdb"
-    probe_model(path=path, task=task)
 
-    path = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-153419_finetuned_upmc_food.pt"
-    task = "upmc_food"
-    probe_model(path=path, task=task)
 
-    path = "res/checkpoints/20251030-192145_pretrained_latefusion_cka/20251104-073222_finetuned_hateful_memes.pt"
-    task = "hateful_memes"
-    probe_model(path=path, task=task)
+
+    for dir in dirs:
+        paths = get_paths_for_task(dir, "hateful_memes")
+        assert len(paths) == 3
+
+        probe_model(paths=paths, task="hateful_memes")
+        paths = get_paths_for_task(dir, "mm_imdb")
+        assert len(paths) == 3
+        probe_model(paths=paths, task="mm_imdb")
+        paths = get_paths_for_task(dir, "upmc_food")
+        assert len(paths) == 3
+        probe_model(paths=paths, task="upmc_food")
+
+
+    # path = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-222808_finetuned_hateful_memes.pt"
+    # task = "hateful_memes"
+    # probe_model_single(path=path, task=task)
+
+    # path = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251023-221117_finetuned_mm_imdb.pt"
+    # task = "mm_imdb"
+    # probe_model_single(path=path, task=task)
+
+    # path = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-153419_finetuned_upmc_food.pt"
+    # task = "upmc_food"
+    # probe_model_single(path=path, task=task)
+
+    # path = "res/checkpoints/20251030-192145_pretrained_latefusion_cka/20251104-073222_finetuned_hateful_memes.pt"
+    # task = "hateful_memes"
+    # probe_model_single(path=path, task=task)
 
 
 

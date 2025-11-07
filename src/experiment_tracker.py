@@ -514,7 +514,7 @@ class ExperimentTracker:
         return train_loader, val_loader
 
 
-    def _get_task_alignment_dataloader(
+    def get_task_alignment_dataloader(
         self,
         task: str,
         config: ViLBERTConfig,
@@ -585,7 +585,7 @@ class ExperimentTracker:
         trainer = self.get_task_trainer(task=task,model=model)
 
         train_loader, val_loader = self.get_task_dataloader(task=task, config=config)
-        alignment_dataloader = self._get_task_alignment_dataloader(task=task, config=config)
+        alignment_dataloader = self.get_task_alignment_dataloader(task=task, config=config)
 
         if USE_EARLY_STOPPING:
             if task == "hateful_memes":
