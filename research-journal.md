@@ -2,10 +2,66 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
-## 06.11
-what to do next?
-Let me go through your thesis and identify **specific gaps** that will either stop you getting published or significantly weaken your publication potential:
+## 07.11
+computed performance vs alignment correlation for n=8 (avg per architecture), max metrics layer:
+**hateful_memes**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.499    | 0.209     | +0.381     | 0.352      |
+| cka        | +0.480    | 0.229     | +0.381     | 0.352      |
+| svcca      | +0.723    | 0.043     | +0.333     | 0.420      |
+| procrustes | +0.072    | 0.865     | +0.000     | 1.000      |
 
+**mm_imdb**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.934    | 0.001     | +0.643     | 0.086      |
+| cka        | +0.913    | 0.002     | +0.405     | 0.320      |
+| svcca      | +0.907    | 0.002     | +0.619     | 0.102      |
+| procrustes | -0.929    | 0.001     | -0.881     | 0.004      |
+
+**upmc_food**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.697    | 0.055     | +0.452     | 0.260      |
+| cka        | +0.664    | 0.072     | +0.452     | 0.260      |
+| svcca      | +0.620    | 0.101     | +0.476     | 0.233      |
+| procrustes | -0.791    | 0.019     | -0.857     | 0.007      |
+
+## 06.11
+
+computed performance vs alignment correlations for n=8 (averaged per architecture), last metrics layer:
+
+**hateful_memes**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.634    | 0.091     | +0.381     | 0.352      |
+| cka        | +0.456    | 0.256     | +0.071     | 0.867      |
+| svcca      | +0.709    | 0.049     | +0.405     | 0.320      |
+| procrustes | -0.075    | 0.860     | +0.071     | 0.867      |
+
+**mm_imdb**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.867    | 0.005     | +0.524     | 0.183      |
+| cka        | +0.916    | 0.001     | +0.762     | 0.028      |
+| svcca      | +0.914    | 0.001     | +0.619     | 0.102      |
+| procrustes | -0.915    | 0.001     | -0.881     | 0.004      |
+
+**upmc_food**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.766    | 0.027     | +0.857     | 0.007      |
+| cka        | +0.908    | 0.002     | +0.929     | 0.001      |
+| svcca      | +0.939    | 0.001     | +0.976     | 0.000      |
+| procrustes | -0.813    | 0.014     | -0.905     | 0.002      |
+
+
+
+---
+
+
+what to do next?
 
 | Gap | Effort | Impact | Do First? |
 |-----|--------|--------|-----------|

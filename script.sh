@@ -10,7 +10,8 @@ source venv310/bin/activate
 # python src/metric_analysis.py
 # python src/correlation_analysis2.py
 # python src/pretraining_experiments.py
-python src/main.py
+# python src/main.py
 # python src/finetune_experiments.py
 # python src/finetune_only_baseline.py
 # python src/performance_metric_collection.py
+python src/correlation_analysis3.py
