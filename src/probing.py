@@ -15,7 +15,7 @@ from logger import Logger
 import analysis
 import utils_plotting
 
-PROBE_EPOCHS = 4        # 5 is default, not sure if this is the best way of doing it, but im going for it anyways
+PROBE_EPOCHS = 3        # 5 is default, not sure if this is the best way of doing it, but im going for it anyways
 NUM_LAYERS   = 13        # 13 is defaul, less is used for faster debugging
 
 logger = Logger()
@@ -301,11 +301,33 @@ def probe_model_single(path: str, task:str, plots=True):
             json.dump(results, f, indent=2)
     return results
 
-def probe_model(paths: list[str], task:str):
+def save_single_model_results(results: dict, dir_path, filename:str):
+    dir_path = os.path.join(dir_path, "individual_results")
+    os.makedirs(dir_path, exist_ok=True)
+    for i in range(1, NUM_LAYERS):
+        results[f"layer_{i}"]["loss"] = float(results[f"layer_{i}"]["loss"])
+        results[f"layer_{i}"]["metric"] = float(results[f"layer_{i}"]["metric"])
+        results[f"layer_{i}"]["cka"] = float(results[f"layer_{i}"]["cka"])
+        results[f"layer_{i}"]["mknn"] = float(results[f"layer_{i}"]["mknn"])
+        results[f"layer_{i}"]["svcca"] = float(results[f"layer_{i}"]["svcca"])
+        results[f"layer_{i}"]["procrustes"] = float(results[f"layer_{i}"]["procrustes"])
 
+    with open(os.path.join(dir_path, filename), "w") as f:
+        json.dump(results, f, indent=2)
+
+
+def probe_model(paths: list[str], task:str):
     results = []
-    for path in paths:
+    pretrain_name = paths[0].split("/")[2]
+    save_path_dir = os.path.join("plots_probing", pretrain_name)
+    os.makedirs(save_path_dir, exist_ok=True)
+    for i,path in enumerate(paths):
         single_model_results = probe_model_single(path=path, task=task, plots=False)
+        save_single_model_results(
+            results=single_model_results,
+            dir_path=save_path_dir,
+            filename=f"results_{task}_seed{i+1}.json"
+        )
         results.append(single_model_results)
 
     assert len(results)== 3
@@ -332,30 +354,38 @@ def probe_model(paths: list[str], task:str):
     final_results = {}
     for i in range(1,NUM_LAYERS):
         final_results[f"layer_{i}"] =  {
-            "loss": float(np.mean(temp_data[f"layer_{i}"]["losses"])),  # Added float()
-            "loss_std": float(np.std(temp_data[f"layer_{i}"]["losses"])),  # Added float()
-            "metric": float(np.mean(temp_data[f"layer_{i}"]["metrics"])),  # Added float()
-            "metric_std": float(np.std(temp_data[f"layer_{i}"]["metrics"])),  # Added float()
-            "cka": float(np.mean(temp_data[f"layer_{i}"]["ckas"])),  # Added float()
-            "cka_std": float(np.std(temp_data[f"layer_{i}"]["ckas"])),  # Added float()
-            "mknn": float(np.mean(temp_data[f"layer_{i}"]["mknns"])),  # Added float()
-            "mknn_std": float(np.std(temp_data[f"layer_{i}"]["mknns"])),  # Added float()
-            "svcca": float(np.mean(temp_data[f"layer_{i}"]["svccas"])),  # Added float()
-            "svcca_std": float(np.std(temp_data[f"layer_{i}"]["svccas"])),  # Added float()
-            "procrustes": float(np.mean(temp_data[f"layer_{i}"]["procrustes"])),  # Added float()
-            "procrustes_std": float(np.std(temp_data[f"layer_{i}"]["procrustes"])),  # Added float()
+            "loss": float(np.mean(temp_data[f"layer_{i}"]["losses"])),
+            "loss_std": float(np.std(temp_data[f"layer_{i}"]["losses"])),
+            "metric": float(np.mean(temp_data[f"layer_{i}"]["metrics"])),
+            "metric_std": float(np.std(temp_data[f"layer_{i}"]["metrics"])),
+            "cka": float(np.mean(temp_data[f"layer_{i}"]["ckas"])),
+            "cka_std": float(np.std(temp_data[f"layer_{i}"]["ckas"])),
+            "mknn": float(np.mean(temp_data[f"layer_{i}"]["mknns"])),
+            "mknn_std": float(np.std(temp_data[f"layer_{i}"]["mknns"])),
+            "svcca": float(np.mean(temp_data[f"layer_{i}"]["svccas"])),
+            "svcca_std": float(np.std(temp_data[f"layer_{i}"]["svccas"])),
+            "procrustes": float(np.mean(temp_data[f"layer_{i}"]["procrustes"])),
+            "procrustes_std": float(np.std(temp_data[f"layer_{i}"]["procrustes"])),
         }
         metric_name = get_metric(task)
-        pretrain_name = paths[0].split("/")[2]  # Changed: path → paths[0]
-        save_path_dir = os.path.join("plots_probing", pretrain_name)
-        os.makedirs(save_path_dir, exist_ok=True)
+        model = vilbert.ViLBERT.load_model(load_path=paths[0], device="cuda" if torch.cuda.is_available() else "cpu")
+        t_biattn_ids = model.t_biattention_ids
+        v_biattn_ids = model.v_biattention_ids
+        t_biattn_ids = [t+1 for t in t_biattn_ids]  # adjust for different indexing
+        v_biattn_ids = [v+1 for v in v_biattn_ids]
         utils_plotting.plot_cka_vs_performance(final_results, metric_name, task,
+            t_biattn_ids=t_biattn_ids,
+            v_biattn_ids=v_biattn_ids,
             save_path=os.path.join(save_path_dir, f"cka_vs_{metric_name}_{task}.png")
         )
         utils_plotting.plot_all_metrics_vs_performance(final_results, metric_name, task,
+            t_biattn_ids=t_biattn_ids,
+            v_biattn_ids=v_biattn_ids,
             save_path=os.path.join(save_path_dir, f"all_metrics_vs_{metric_name}_{task}.png")
         )
         utils_plotting.plot_procrustes_vs_performance(final_results, metric_name, task,
+            t_biattn_ids=t_biattn_ids,
+            v_biattn_ids=v_biattn_ids,
             save_path=os.path.join(save_path_dir, f"procrustes_vs_{metric_name}_{task}.png")
         )
     save_path = os.path.join(save_path_dir, f"results_{task}.json")
@@ -369,12 +399,12 @@ def probe_model(paths: list[str], task:str):
 
 def main():
     dirs = [
-        "res/checkpoints/20251010-085859_pretrained_baseline",
-        "res/checkpoints/20251010-234252_pretrained_early_fusion",
-        "res/checkpoints/20251011-234349_pretrained_middle_fusion",
-        "res/checkpoints/20251013-010227_pretrained_late_fusion",
-        "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion",
-        "res/checkpoints/20251015-081211_pretrained_optuna1",
+        # "res/checkpoints/20251010-085859_pretrained_baseline",
+        # "res/checkpoints/20251010-234252_pretrained_early_fusion",
+        # "res/checkpoints/20251011-234349_pretrained_middle_fusion",
+        # "res/checkpoints/20251013-010227_pretrained_late_fusion",
+        # "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion",
+        # "res/checkpoints/20251015-081211_pretrained_optuna1",
         "res/checkpoints/20251016-062038_pretrained_optuna2",
         "res/checkpoints/20251025-105249_pretrained_bl_full_coattn",
         "res/checkpoints/20251030-192145_pretrained_latefusion_cka"

@@ -31,7 +31,7 @@ def extract_differences(values):
 
 def main():
     paths = [
-        "plots_probing/20251010-085859_pretrained_baseline",
+        # "plots_probing/20251010-085859_pretrained_baseline",
         "plots_probing/20251010-234252_pretrained_early_fusion",
         "plots_probing/20251011-234349_pretrained_middle_fusion",
         "plots_probing/20251013-010227_pretrained_late_fusion",
@@ -40,7 +40,8 @@ def main():
 
     paths = [os.path.join(path, "individual_results") for path in paths]
     tasks = ["hateful_memes", "mm_imdb", "upmc_food"]
-    metrics = ["cka", "mknn", "svcca", "procrustes"]
+    metrics = ["cka", "mknn", "svcca", "procrustes", "performance"]
+    # metrics = ["performance"]
 
 
     for metric in metrics:
@@ -68,15 +69,15 @@ def main():
                         content = json.load(f)
 
                     if metric == "cka":
-                        values = [content[key]["cka"] for key in sorted(content.keys())]
+                        values = [content[key]["cka"] for key in content.keys()]
                     elif metric == "mknn":
-                        values = [content[key]["mknn"] for key in sorted(content.keys())]
+                        values = [content[key]["mknn"] for key in content.keys()]
                     elif metric == "svcca":
-                        values = [content[key]["svcca"] for key in sorted(content.keys())]
+                        values = [content[key]["svcca"] for key in content.keys()]
                     elif metric == "procrustes":
-                        values = [content[key]["procrustes"] for key in sorted(content.keys())]
+                        values = [content[key]["procrustes"] for key in content.keys()]
                     elif metric == "performance":
-                        values = [content[key]["performance"] for key in sorted(content.keys())]
+                        values = [content[key]["metric"] for key in content.keys()]
 
                     no_coattn_vals, coattn_vals = extract_coattentions(values, t_ids, v_ids)
 
@@ -85,6 +86,7 @@ def main():
 
                     diffs_no_coattn.extend(extract_differences(no_coattn_vals))
                     diffs_coattn.extend(extract_differences(coattn_vals))
+                    c=1
 
             print(f"{'No Coattn':<12} {np.mean(vals_no_coattn):<15.6f} {np.mean(diffs_no_coattn):<15.6f} {len(vals_no_coattn):<8} {'---':<20} {'---':<15}")
             print(f"{'Coattn':<12} {np.mean(vals_coattn):<15.6f} {np.mean(diffs_coattn):<15.6f} {len(vals_coattn):<8} {'---':<20} {'---':<15}")
