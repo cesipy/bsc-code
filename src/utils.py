@@ -22,6 +22,33 @@ from logger import Logger
 
 logger = Logger()
 
+def get_all_configs():
+    return [
+        "baseline", "bl_full_coattn", "early_fusion", "middle_fusion",
+        "late_fusion", "asymmetric_fusion", "optuna1", "optuna2"
+    ]
+
+def get_coattention_placements(config: str):
+    assert config in get_all_configs()
+    if config == "baseline":
+        return [], []
+    elif config == "bl_full_coattn":
+        return list(range(12)), list(range(12))
+    elif config == "early_fusion":
+        return [3, 4, 5], [3, 4, 5]
+    elif config == "middle_fusion":
+        return [6, 7, 8], [6, 7, 8]
+    elif config == "late_fusion":
+        return [9, 10, 11], [9, 10, 11]
+    elif config == "asymmetric_fusion":
+        return [6, 7, 8, 9], [3, 5, 7, 9]
+    elif config == "optuna1":
+        return [3, 6], [6, 8]
+    elif config == "optuna2":
+        return [7, 9, 10, 11], [6, 7, 9, 10]
+    else:
+        raise ValueError(f"Unknown config: {config}")
+
 
 def visualize_loss_cka(normal_losses, cka_losses):
     """Visualize training loss alongside CKA loss"""

@@ -2,6 +2,221 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
+## 13.11 early fusion cka optimization
+
+early fusion cka optimization is really bad.
+its even worse than baseline....
+so this lossterm significantly limits learning.
+
+**Hateful Memes**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| early_fusion_cka | 0.6095 ± 0.0096 | 0.5525 ± 0.0379 | 0.6122 ± 0.0170 |
+| early_fusion     | 0.6807 ± 0.0065 | 0.6659 ± 0.0043 | 0.7226 ± 0.0034 |
+
+
+
+
+also, new models are pretrained, based on the new findings of layerwise probing.
+
+| name              | t_biatt_id | v_biatt_id   | path  | notes |
+|-------------------|-------------|-------------|-------|-------|
+| baseline          | []          | []          |res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt           |maybe more epochs needed, as there is  |
+| early_fusion      | [3,4,5]     | [3,4,5]     |res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt       | |
+| middle_fusion     | [6,7,8]     | [6,7,8]     |res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt      | |
+| late_fusion       | [9,10,11]   | [9,10,11]   |res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt        | |
+| asymmetric_fusion | [6,7,8,9]   | [3,5,7,9]   |res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt  | |
+| optuna1           | [3,6]       | [6,8]       |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm, trial  21 |
+| optuna2           | [7,9,10,11 ]| [6,7,9,10]  |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm, trial 11|
+| ealy_early        | [0,1,2]     |  [0,1,2]   |res/checkpoints/pretrains/20251112-102745_pretrained_early_early_fusion.pt  | new |
+| hybrid 1          | [3,4, 10]   | [3,4,10]   |res/checkpoints/pretrains/20251111-222754_pretrained_hybrid1.pt             | new |
+
+
+
+
+
+## 10.11 linear probing
+## Baseline
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Early Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Middle Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Late Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Asymmetric Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Optuna1
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Optuna2
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## BL Full Coattn
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Latefusion CKA
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+
 ## 07.11
 computed performance vs alignment correlation for n=8 (avg per architecture), max metrics layer:
 **hateful_memes**

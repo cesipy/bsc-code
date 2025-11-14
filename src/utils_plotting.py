@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+# got the plotting functions from ai, im not that good at matplotlib
 
 # def plot_cka_vs_performance(results: dict, metric_name: str, task: str, save_path: str = None):
 #     """
@@ -164,7 +165,10 @@ import numpy as np
 
 #     plt.close()
 
-def plot_cka_vs_performance(results: dict, metric_name: str, task: str, save_path: str = None):
+def plot_cka_vs_performance(results: dict, metric_name: str, task: str,
+    t_biattn_ids:list[int],
+    v_biattn_ids:list[int],
+    save_path: str = None,):
     layers = []
     cka_values = []
     cka_stds = []
@@ -199,6 +203,17 @@ def plot_cka_vs_performance(results: dict, metric_name: str, task: str, save_pat
                      cka_values + cka_stds,
                      color='tab:red', alpha=0.3)
 
+    t_only = set(t_biattn_ids) - set(v_biattn_ids)
+    v_only = set(v_biattn_ids) - set(t_biattn_ids)
+    both = set(t_biattn_ids) & set(v_biattn_ids)
+
+    # Draw bands
+    for layer_id in t_only:
+        ax.axvspan(layer_id - 0.3, layer_id + 0.3, color='purple', alpha=0.15)
+    for layer_id in v_only:
+        ax.axvspan(layer_id - 0.3, layer_id + 0.3, color='green', alpha=0.15)
+    for layer_id in both:
+        ax.axvspan(layer_id - 0.3, layer_id + 0.3, color='orange', alpha=0.15)
     ax.set_xlabel('Layer', fontsize=12)
     ax.set_ylabel('Score', fontsize=12)
     ax.set_ylim([0, 1.0])
@@ -217,7 +232,10 @@ def plot_cka_vs_performance(results: dict, metric_name: str, task: str, save_pat
     plt.close()
 
 
-def plot_all_metrics_vs_performance(results: dict, metric_name: str, task: str, save_path: str = None):
+def plot_all_metrics_vs_performance(results: dict, metric_name: str, task: str,
+    t_biattn_ids:list[int],
+    v_biattn_ids:list[int],
+    save_path: str = None):
     layers = []
     cka_values = []
     cka_stds = []
@@ -276,6 +294,18 @@ def plot_all_metrics_vs_performance(results: dict, metric_name: str, task: str, 
     ax.fill_between(layers, mknn_values - mknn_stds, mknn_values + mknn_stds,
                      color='tab:orange', alpha=0.2)
 
+    t_only = set(t_biattn_ids) - set(v_biattn_ids)
+    v_only = set(v_biattn_ids) - set(t_biattn_ids)
+    both = set(t_biattn_ids) & set(v_biattn_ids)
+
+    # Draw bands
+    for layer_id in t_only:
+        ax.axvspan(layer_id - 0.3, layer_id + 0.3, color='purple', alpha=0.15)
+    for layer_id in v_only:
+        ax.axvspan(layer_id - 0.3, layer_id + 0.3, color='green', alpha=0.15)
+    for layer_id in both:
+        ax.axvspan(layer_id - 0.3, layer_id + 0.3, color='orange', alpha=0.15)
+
     ax.set_xlabel('Layer', fontsize=13)
     ax.set_ylabel('Score', fontsize=13)
     ax.set_ylim([0, 1.0])
@@ -295,7 +325,10 @@ def plot_all_metrics_vs_performance(results: dict, metric_name: str, task: str, 
     plt.close()
 
 
-def plot_procrustes_vs_performance(results: dict, metric_name: str, task: str, save_path: str = None):
+def plot_procrustes_vs_performance(results: dict, metric_name: str, task: str,
+    t_biattn_ids:list[int],
+    v_biattn_ids:list[int],
+    save_path: str = None):
     layers = []
     procrustes_values = []
     procrustes_stds = []
@@ -340,6 +373,16 @@ def plot_procrustes_vs_performance(results: dict, metric_name: str, task: str, s
                       procrustes_values + procrustes_stds,
                       color=color, alpha=0.2)
     ax2.tick_params(axis='y', labelcolor=color)
+
+    t_only = set(t_biattn_ids) - set(v_biattn_ids)
+    v_only = set(v_biattn_ids) - set(t_biattn_ids)
+    both = set(t_biattn_ids) & set(v_biattn_ids)
+    for layer_id in t_only:
+        ax1.axvspan(layer_id - 0.3, layer_id + 0.3, color='purple', alpha=0.15)
+    for layer_id in v_only:
+        ax1.axvspan(layer_id - 0.3, layer_id + 0.3, color='green', alpha=0.15)
+    for layer_id in both:
+        ax1.axvspan(layer_id - 0.3, layer_id + 0.3, color='orange', alpha=0.15)
 
     plt.title(f'Procrustes vs {metric_name} - {task}', fontsize=14, pad=20)
     fig.tight_layout()
