@@ -23,16 +23,10 @@ class Logger:
 
         os.makedirs("logs", exist_ok=True)
         today = datetime.datetime.today().strftime("%Y-%m-%d")
-        if socket.gethostname() == "c703i-gpu5":
-            self.filename = FILENAME_PREFIX + today+ "gpu5" + ".txt"
-        elif  socket.gethostname() == "c703i-gpu9":
-            self.filename = FILENAME_PREFIX + today+ "gpu9" + ".txt"
-        elif socket.gethostname() == "c703i-gpu10":
-            self.filename = FILENAME_PREFIX + today+ "gpu10" + ".txt"
-        elif socket.gethostname() == "c703i-gpu1":
-            self.filename = FILENAME_PREFIX + today+ "gpu1" + ".txt"
-        elif socket.gethostname() == "c703i-gpu11":
-            self.filename = FILENAME_PREFIX + today+ "gpu11" + ".txt"
+        if socket.gethostname().startswith("c703i-"):
+            gpu_name = socket.gethostname().replace("c703i-", "")
+            self.filename = FILENAME_PREFIX + today+ gpu_name  + ".txt"
+
         else:
             self.filename = FILENAME_PREFIX + today + ".txt"
         Logger._initialized = True

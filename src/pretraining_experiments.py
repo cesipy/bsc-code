@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore")
 logger = Logger()
 seed=1567
 ft_epochs = 4
-pt_epochs = 4
+pt_epochs = 7
 
 
 def main():
@@ -61,45 +61,60 @@ def main():
 
     configs = [
         {
-            "name": "baseline",
-            "t_biattention_ids": [],
-            "v_biattention_ids": [],
-        },
-        {
-            "name": "early_fusion",
-            "t_biattention_ids": [3, 4, 5],
-            "v_biattention_ids": [3, 4, 5],
-        },
-        {
-            "name": "middle_fusion",
-            "t_biattention_ids": [6, 7, 8],
-            "v_biattention_ids": [6, 7, 8],
-        },
-        {
-            "name": "late_fusion",
-            "t_biattention_ids": [9, 10, 11],
-            "v_biattention_ids": [9, 10, 11],
-        },
-        {
-            "name": "asymmetric_fusion",
-            "t_biattention_ids": [6, 7, 8, 9],
-            "v_biattention_ids": [3, 5, 7, 9],
-        },
-        {
-            "name": "optuna1",
-            "t_biattention_ids": [3,6],
-            "v_biattention_ids": [6,8],
-        },
-        {
-            "name": "optuna2",
-            "t_biattention_ids": [7, 9, 10, 11],
-            "v_biattention_ids": [6, 7, 9, 10],
-        },
-        {
-            "name": "baseline_full",
-            "t_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
-            "v_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
+            "name": "early_early_fusion",
+            "t_biattention_ids": [0, 1, 2],
+            "v_biattention_ids": [0, 1, 2],
         }
+        # {
+        #     "name": "hybrid-1",
+        #     "t_biattention_ids": [3, 4, 10],
+        #     "v_biattention_ids": [3, 4, 10],
+        # },
+        # {
+        #     "name":  "hybrid-2",
+        #     "t_biattention_ids": [4, 10, 11],
+        #     "v_biattention_ids": [4, 10, 11],
+        # }
+        # {
+        #     "name": "baseline",
+        #     "t_biattention_ids": [],
+        #     "v_biattention_ids": [],
+        # },
+        # {
+        #     "name": "early_fusion",
+        #     "t_biattention_ids": [3, 4, 5],
+        #     "v_biattention_ids": [3, 4, 5],
+        # },
+        # {
+        #     "name": "middle_fusion",
+        #     "t_biattention_ids": [6, 7, 8],
+        #     "v_biattention_ids": [6, 7, 8],
+        # },
+        # {
+        #     "name": "late_fusion",
+        #     "t_biattention_ids": [9, 10, 11],
+        #     "v_biattention_ids": [9, 10, 11],
+        # },
+        # {
+        #     "name": "asymmetric_fusion",
+        #     "t_biattention_ids": [6, 7, 8, 9],
+        #     "v_biattention_ids": [3, 5, 7, 9],
+        # },
+        # {
+        #     "name": "optuna1",
+        #     "t_biattention_ids": [3,6],
+        #     "v_biattention_ids": [6,8],
+        # },
+        # {
+        #     "name": "optuna2",
+        #     "t_biattention_ids": [7, 9, 10, 11],
+        #     "v_biattention_ids": [6, 7, 9, 10],
+        # },
+        # {
+        #     "name": "baseline_full",
+        #     "t_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
+        #     "v_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
+        # }
     ]
 
 

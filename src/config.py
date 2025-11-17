@@ -74,14 +74,17 @@ NEG_COUNT_HM = 5481
 DOWNSTREAM_EPOCHS = 9
 DOWNSTREAM_LR     = 3.4e-5
 
+good_gpus = [0,1,9,10,11,12]  # gpus with 24gb vram
+gpu_prefix = "c703i-gpu"
 if socket.gethostname() == "c703i-gpu5":
     BATCH_SIZE_DOWNSTREAM = 4
     GRADIENT_ACCUMULATION_DOWNSTREAM = 128
     print("on gpu5!")
 if socket.gethostname() == "c703i-gpu10" or socket.gethostname() == "703i-gpu11"  \
-    or socket.gethostname()in ["c703i-gpu1", "c703i-gpu9", "c703i-gpu12"]:
+    or int(socket.gethostname().replace(gpu_prefix, ""))in good_gpus:
     BATCH_SIZE_DOWNSTREAM = 24
     GRADIENT_ACCUMULATION_DOWNSTREAM = 22
+    print("on good gpu!")
 else:
     BATCH_SIZE_DOWNSTREAM = 8
     GRADIENT_ACCUMULATION_DOWNSTREAM = 64
@@ -123,10 +126,13 @@ ES_MODE = "max"  # min for loss, max for acc
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251015-081211_pretrained_optuna1"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251016-062038_pretrained_optuna2"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-085859_pretrained_baseline"
-FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251028_finetune_comparison"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251025-105249_pretrained_bl_full_coattn"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251102-122009_pretrained_early_fusion_cka"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251111-222754_pretrained_hybrid1"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251113-080744_pretrained_hybrid2"
 
 class ViLBERTConfig:
     def __init__(

@@ -28,14 +28,33 @@ def extract_coattentions(values: list, t_ids, v_ids):
 def extract_differences(values):
     return [ abs(values[i+1] - values[i]) for i in range( len(values)-1) ]
 
+def extract_differences_classified(values, t_ids):
+    """
+    Compute consecutive differences and classify them based on:
+    - coattn: if layer i+1 has coattn (includes both-have-coattn and only-latter-has-coattn)
+    - no_coattn: if layer i+1 doesn't have coattn
+    """
+    no_coattn_diffs = []
+    coattn_diffs = []
+
+    for i in range(len(values) - 1):
+        diff = abs(values[i+1] - values[i])
+
+        if (i+1) in t_ids:  # layer i+1 has coattn
+            coattn_diffs.append(diff)
+        else:  # layer i+1 doesn't have coattn
+            no_coattn_diffs.append(diff)
+
+    return no_coattn_diffs, coattn_diffs
+
 
 def main():
     paths = [
-        # "plots_probing/20251010-085859_pretrained_baseline",
+        "plots_probing/20251010-085859_pretrained_baseline",
         "plots_probing/20251010-234252_pretrained_early_fusion",
         "plots_probing/20251011-234349_pretrained_middle_fusion",
         "plots_probing/20251013-010227_pretrained_late_fusion",
-        "plots_probing/20251025-105249_pretrained_bl_full_coattn",
+        # "plots_probing/20251025-105249_pretrained_bl_full_coattn",
     ]
 
     paths = [os.path.join(path, "individual_results") for path in paths]
@@ -79,13 +98,19 @@ def main():
                     elif metric == "performance":
                         values = [content[key]["metric"] for key in content.keys()]
 
-                    no_coattn_vals, coattn_vals = extract_coattentions(values, t_ids, v_ids)
+
+                    # values_diff = extract_differences(values)
+                    # no_coattn_diffs, coattn_diffs = extract_coattentions(values_diff, t_ids, v_ids)
+
+                    no_coattn_diffs, coattn_diffs = extract_differences_classified(values, t_ids)
+                    no_coattn_vals, coattn_vals   = extract_coattentions(values, t_ids, v_ids)
 
                     vals_no_coattn.extend(no_coattn_vals)
                     vals_coattn.extend(coattn_vals)
 
-                    diffs_no_coattn.extend(extract_differences(no_coattn_vals))
-                    diffs_coattn.extend(extract_differences(coattn_vals))
+
+                    diffs_no_coattn.extend(no_coattn_diffs)
+                    diffs_coattn.extend(coattn_diffs)
                     c=1
 
             print(f"{'No Coattn':<12} {np.mean(vals_no_coattn):<15.6f} {np.mean(diffs_no_coattn):<15.6f} {len(vals_no_coattn):<8} {'---':<20} {'---':<15}")

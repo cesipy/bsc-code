@@ -14,6 +14,10 @@ import task as tasklib
 from vilbert import *
 import utils
 
+from analyses import metric_evolution
+
+import metrics
+
 import warnings     # should ignore all warnings,
 warnings.filterwarnings("ignore")
 
@@ -22,47 +26,46 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 logger = Logger()
 
-def randomly_generate_config():
-
-    def get_list():
-        config = []
-        for i in range(12):
-            if random.random() < 0.5:
-                config.append(i)
-        return config
-    config_t = get_list()
-    config_v = []
-    while len(config_v) != len(config_t):
-        config_v = get_list()
-
-    return config_t, config_v
-
-
-
-seed=1567
 
 
 def main():
-    t = experiment_tracker.ExperimentTracker()
+    model = ViLBERT.load_model(load_path="res/checkpoints/20251112-102745_pretrained_early_early_fusion/20251113-145942_finetuned_upmc_food.pt")
+    model.train()
+    device = "cpu"
+    dl = datasets.get_task_test_dataset("upmc_food", batch_size=4, num_workers=NUM_WORKERS, seed=1)
 
-    pt_config_late_fusion = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=[9,10,11],
-        v_biattention_ids=[9,10,11],
-        use_contrastive_loss=False,
-        seed=seed,
-        learning_rate=3.2e-5,
-        epochs=8,
-    )
+    for data_dict in dl:
+        label = data_dict["label"].to(device)
+        text = {k: v.squeeze(1).to(device) for k, v in data_dict["text"].items()}
+        image = {k: v.squeeze(1).to(device) for k, v in data_dict["img"].items()}
 
-    t.run_finetune(
-        experiment_config=pt_config_late_fusion,
-        # run_alignment_analysis=True,
-        # run_visualizations=True,
-        tasks=["hateful_memes"],
-        pretrained_model_path="res/checkpoints/pretrains/20251030-192145_pretrained_latefusion_cka.pt"
-    )
+        label = torch.argmax(label, dim=1)  # crossentropy wants class indices, not one-hot
+
+        text_embedding, image_embedding = model(
+            text_input_ids = text["input_ids"],
+            text_attention_mask = text["attention_mask"],
+            text_token_type_ids= text.get("token_type_ids", None),
+            image_pixel_values= image["pixel_values"],
+            image_attention_mask= image.get("attention_mask", None),
+        )
 
 
+        print(f"shape text_embeddings: {text_embedding.shape}")
+        cka = metrics.AlignmentMetrics.cka_tensor(text_embedding, image_embedding)
+        print(f"cka: {cka}")
+        cka_loss = -cka
+        cka_loss.backward()
+
+        weights =  model.bert.encoder.layer[4].attention.self.query.weight
+        print(weights.grad)
+        # weights = weights[0, :]
+        print(weights)
+        print(f"weight shape: {weights.shape}")
+        print(f"grad: {weights.grad}")
+
+
+
+        break
 
 
 
@@ -74,4 +77,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    metric_evolution.main()

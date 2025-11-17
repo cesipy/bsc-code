@@ -82,12 +82,12 @@ def _visualize_procrustes(
 
     for i in tqdm(range(num_layers), leave=False, desc="Computing Procrustes"):
         for j in range(num_layers):
-            text_cls = measure_per_layer[i]["text_embeddings"]
-            vision_cls = measure_per_layer[j]["vision_embeddings"]
-            text_cls_i = measure_per_layer[i]["text_embeddings"]
-            text_cls_j = measure_per_layer[j]["text_embeddings"]
-            vision_cls_i = measure_per_layer[i]["vision_embeddings"]
-            vision_cls_j = measure_per_layer[j]["vision_embeddings"]
+            text_cls     =F.normalize( measure_per_layer[i]["text_embeddings"], dim=-1)
+            vision_cls   =F.normalize( measure_per_layer[j]["vision_embeddings"], dim=-1)
+            text_cls_i   =F.normalize( measure_per_layer[i]["text_embeddings"], dim=-1)
+            text_cls_j   =F.normalize( measure_per_layer[j]["text_embeddings"], dim=-1)
+            vision_cls_i =F.normalize( measure_per_layer[i]["vision_embeddings"], dim=-1)
+            vision_cls_j =F.normalize( measure_per_layer[j]["vision_embeddings"], dim=-1)
 
             procrustes_dist_cross_modal[i, j] = metrics_llmrepsim.orthogonal_procrustes(R=text_cls, Rp=vision_cls)
             procrustes_dist_text_text[i, j] = metrics_llmrepsim.orthogonal_procrustes(R=text_cls_i, Rp=text_cls_j)
@@ -115,13 +115,13 @@ def _visualize_jaccard(
     jaccard_vision_vision = np.zeros((num_layers, num_layers))
     for i in tqdm(range(num_layers), leave=False, desc="computing neighborhood measures"):
         for j in range(num_layers):
-            text_cls_i = F.normalize(measure_per_layer[i]["text_embeddings"], dim=-1)
-            text_cls_j = F.normalize(measure_per_layer[j]["text_embeddings"], dim=-1)
+            text_cls_i   = F.normalize(measure_per_layer[i]["text_embeddings"], dim=-1)
+            text_cls_j   = F.normalize(measure_per_layer[j]["text_embeddings"], dim=-1)
             vision_cls_i = F.normalize(measure_per_layer[i]["vision_embeddings"], dim=-1)
             vision_cls_j = F.normalize(measure_per_layer[j]["vision_embeddings"], dim=-1)
             # Cross-modal (text layer i CLS vs vision layer j CLS)
-            text_cls = F.normalize(measure_per_layer[i]["text_embeddings"], dim=-1)
-            vision_cls = F.normalize(measure_per_layer[j]["vision_embeddings"], dim=-1)
+            text_cls     = F.normalize(measure_per_layer[i]["text_embeddings"], dim=-1)
+            vision_cls   = F.normalize(measure_per_layer[j]["vision_embeddings"], dim=-1)
             jaccard_cross_modal[i,j] = metrics_llmrepsim.jaccard_similarity(R=text_cls, Rp=vision_cls, k=k)
             jaccard_text_text[i,j] = metrics_llmrepsim.jaccard_similarity(
                 R=text_cls_i, Rp=text_cls_j, k=k
@@ -152,12 +152,12 @@ def _visualize_cka(
     vision_vision_matrix = np.zeros((num_layers, num_layers))
     for i in tqdm(range(num_layers), leave=False, desc="computing cka matrix"):
         for j in range(num_layers):
-            current_text = measure_per_layer[i]["text_embeddings"]
-            current_vision = measure_per_layer[j]["vision_embeddings"]
-            text_i = measure_per_layer[i]["text_embeddings"]
-            text_j = measure_per_layer[j]["text_embeddings"]
-            vision_i = measure_per_layer[i]["vision_embeddings"]
-            vision_j = measure_per_layer[j]["vision_embeddings"]
+            current_text   = F.normalize( measure_per_layer[i]["text_embeddings"], dim=-1)
+            current_vision = F.normalize( measure_per_layer[j]["vision_embeddings"], dim=-1)
+            text_i         = F.normalize( measure_per_layer[i]["text_embeddings"], dim=-1)
+            text_j         = F.normalize( measure_per_layer[j]["text_embeddings"], dim=-1)
+            vision_i       = F.normalize( measure_per_layer[i]["vision_embeddings"], dim=-1)
+            vision_j       = F.normalize( measure_per_layer[j]["vision_embeddings"], dim=-1)
 
             cross_modal_matrix[i,j] = metrics.AlignmentMetrics.cka(current_text, current_vision)
             text_text_matrix[i,j] = metrics.AlignmentMetrics.cka(text_i, text_j)
@@ -212,12 +212,12 @@ def _visualize_svcca(measures_per_layer:dict, num_layers:int, dir_name:str=None,
     vision_vision_matrix = np.zeros((num_layers, num_layers))
     for i in tqdm(range(num_layers), leave=False, desc="computing svcca matrix"):
         for j in range(num_layers):
-            current_text = measures_per_layer[i]["text_embeddings"]
-            current_vision = measures_per_layer[j]["vision_embeddings"]
-            text_i = measures_per_layer[i]["text_embeddings"]
-            text_j = measures_per_layer[j]["text_embeddings"]
-            vision_i = measures_per_layer[i]["vision_embeddings"]
-            vision_j = measures_per_layer[j]["vision_embeddings"]
+            current_text   = F.normalize( measures_per_layer[i]["text_embeddings"], dim=-1)
+            current_vision = F.normalize( measures_per_layer[j]["vision_embeddings"], dim=-1)
+            text_i         = F.normalize( measures_per_layer[i]["text_embeddings"], dim=-1)
+            text_j         = F.normalize( measures_per_layer[j]["text_embeddings"], dim=-1)
+            vision_i       = F.normalize( measures_per_layer[i]["vision_embeddings"], dim=-1)
+            vision_j       = F.normalize( measures_per_layer[j]["vision_embeddings"], dim=-1)
 
             cross_modal_matrix[i,j] = metrics.AlignmentMetrics.svcca(current_text, current_vision, cca_dim=10)
             text_text_matrix[i,j] = metrics.AlignmentMetrics.svcca(text_i, text_j, cca_dim=10)
@@ -236,7 +236,8 @@ def run_alignment_visualization(
     dataloader: DataLoader,
     model: ViLBERT,
     dir_name=None,
-    filename_extension:Optional[str]=None
+    filename_extension:Optional[str]=None,
+    k=KNN_K
     ):
     if filename_extension:
         assert dir_name is not None
@@ -245,19 +246,19 @@ def run_alignment_visualization(
     measures_per_layer_cls = get_alignment_data(dataloader=dataloader, model=model, device=device)
 
     if dir_name is None:
-        _visualize_procrustes(measures_per_layer_cls, model.depth, k=KNN_K,)
-        _visualize_jaccard(measures_per_layer_cls, model.depth, k=KNN_K)
+        _visualize_procrustes(measures_per_layer_cls, model.depth, k=k,)
+        _visualize_jaccard(measures_per_layer_cls, model.depth, k=k)
         _visualize_cka(measures_per_layer_cls, model.depth)
-        _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=KNN_K)
+        _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=k)
         _visualize_svcca(measures_per_layer_cls, model.depth)
     else:
-        _visualize_procrustes(measures_per_layer_cls, model.depth, k=KNN_K,
+        _visualize_procrustes(measures_per_layer_cls, model.depth, k=k,
             dir_name=dir_name, filename_extension=filename_extension)
-        _visualize_jaccard(measures_per_layer_cls, model.depth, k=KNN_K,
+        _visualize_jaccard(measures_per_layer_cls, model.depth, k=k,
             dir_name=dir_name, filename_extension=filename_extension)
         _visualize_cka(measures_per_layer_cls, model.depth,
             dir_name=dir_name, filename_extension=filename_extension)
-        _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=KNN_K,
+        _visualize_mutual_knn(measures_per_layer_cls, model.depth, k=k,
             dir_name=dir_name, filename_extension=filename_extension)
         _visualize_svcca(measures_per_layer_cls, model.depth,
             dir_name=dir_name, filename_extension=filename_extension)

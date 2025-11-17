@@ -52,6 +52,8 @@ def get_rams(model, dl, layer_n,) -> dict:
         model=model,
         layer_n=layer_n,
     )
+    # print(f"shape text: {text_embeddings.shape}, vision: {vision_embeddings.shape}")
+
     rams = analysis.calculate_main_metrics(
         text_embeddings=text_embeddings, vision_embeddings=vision_embeddings,
         k=32
@@ -405,9 +407,11 @@ def main():
         # "res/checkpoints/20251013-010227_pretrained_late_fusion",
         # "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion",
         # "res/checkpoints/20251015-081211_pretrained_optuna1",
-        "res/checkpoints/20251016-062038_pretrained_optuna2",
-        "res/checkpoints/20251025-105249_pretrained_bl_full_coattn",
-        "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
+        # "res/checkpoints/20251016-062038_pretrained_optuna2",
+        # "res/checkpoints/20251025-105249_pretrained_bl_full_coattn",
+        # "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
+        # "res/checkpoints/20251102-122009_pretrained_early_fusion_cka",
+        "res/checkpoints/20251112-102745_pretrained_early_early_fusion",
     ]
     # checl beforehand that there are 3 seeds per task
     for dir in dirs:

@@ -62,17 +62,17 @@ def main():
             "t_biattention_ids": [7, 9, 10, 11],
             "v_biattention_ids": [6, 7, 9, 10],
         },
-        {
-            "name": "baseline_full",
-            "t_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
-            "v_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
-        }
+        # {
+        #     "name": "baseline_full",
+        #     "t_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
+        #     "v_biattention_ids": [0,1,2,3,4,5,6,7,8,9,10,11],
+        # }
     ]
 
     results = {}
 
     # tasks = ["mm_imdb", "hateful_memes", "upmc_food"]
-    tasks = ["hateful_memes"]       # only train on hm first
+    tasks = ["upmc_food", "mm_imdb"]       # only train on hm first
     seeds = [1568, 1569, 1570]
 
     total_runs = len(configs) * len(seeds)* len(tasks)
@@ -133,18 +133,6 @@ def main():
                 info_str = f"acc_mean: {acc_mean:.4f} (std: {acc_std:.4f})"
 
             print(info_str); logger.info(info_str)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

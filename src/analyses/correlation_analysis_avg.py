@@ -257,6 +257,8 @@ def correlation_analysis_architecture(json_path):
     svcca_values       = [ content[key]["svcca"] for key in content.keys()]
     procrustes_values  = [ content[key]["procrustes"] for key in content.keys()]
 
+    print(procrustes_values)
+
     for metric in ["cka", "mknn", "svcca", "procrustes"]:
         vals_map = {
             "cka": cka_values,
@@ -293,6 +295,8 @@ def correlation_analysis_layerwise_pooled(json_paths: str):
         svcca_values.extend([curr_content[key]["svcca"] for key in curr_content.keys()])
         procrustes_values.extend([curr_content[key]["procrustes"] for key in curr_content.keys()])
 
+    print(f"len(performance_vals): {len(performance_values)}")
+
     for metric in ["cka", "mknn", "svcca", "procrustes"]:
         vals_map = {
             "cka": cka_values,
@@ -300,6 +304,7 @@ def correlation_analysis_layerwise_pooled(json_paths: str):
             "svcca": svcca_values,
             "procrustes": procrustes_values,
         }
+
         vals = np.array(vals_map[metric])
         for corr_fn in [pearsonr, spearmanr]:
             check_correlation(
@@ -321,10 +326,18 @@ def get_all_jsons_for_task(dirs: list[str], task:str):
 
 
 def main():
+
+
     paths = [
         "plots_probing/20251010-085859_pretrained_baseline",
+        "plots_probing/20251010-234252_pretrained_early_fusion",
+        "plots_probing/20251011-234349_pretrained_middle_fusion",
         "plots_probing/20251013-010227_pretrained_late_fusion",
-        "plots_probing/20251016-062038_pretrained_optuna2"
+        "plots_probing/20251014-034432_pretrained_asymmetric_fusion",
+        "plots_probing/20251015-081211_pretrained_optuna1",
+        "plots_probing/20251016-062038_pretrained_optuna2",
+        "plots_probing/20251025-105249_pretrained_bl_full_coattn",
+        # "plots_probing/20251030-192145_pretrained_latefusion_cka"
     ]
 
     # the following is pooled layerwise correlation between performance and alignment across architectures
@@ -339,6 +352,7 @@ def main():
     #     print(f"architecture: {path.split('/')[-1]}")
     #     for json_path in get_jsons_for_architecture(path):
     #         correlation_analysis_architecture(json_path)
+    #     print("-"*30, end="\n"*2)
 
 
     # paths = []
@@ -363,5 +377,5 @@ def main():
 
 
 
-
-main()
+if __name__ == "__main__":
+    main()
