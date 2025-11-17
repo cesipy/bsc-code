@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import torch
+import matplotlib.pyplot as plt; import json
 
 from  experiment_tracker import ExperimentTracker, ExperimentConfig
 
@@ -13,41 +14,53 @@ import vilbert
 import metrics
 
 
-import matplotlib.pyplot as plt
-
-def plot_intra_modal_metrics(results, save_path=None):
+def plot_intra_modal_metrics(results, t_biattn_ids, v_biattn_ids, save_path=None):
     """Plot text-text and vision-vision CKA metrics for all tasks side by side"""
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 
     tasks = ["hateful_memes", "mm_imdb", "upmc_food"]
     task_titles = ["Hateful Memes", "MM-IMDB", "UPMC Food"]
+    # magma colors, for spicy effect
+    colors = {"text": "#FCCE25", "vision": "#A52C60"}
 
     for ax, task, title in zip(axes, tasks, task_titles):
         tt_means, vv_means, tt_stds, vv_stds = results[task]
 
-        x = range(len(tt_means))
+        x = np.arange(len(tt_means)) + 1  # shift x axix by one
         tt_means = np.array(tt_means)
         vv_means = np.array(vv_means)
         tt_stds = np.array(tt_stds)
         vv_stds = np.array(vv_stds)
 
-        ax.plot(x, tt_means, marker='o', label='Text-Text CKA', linewidth=2, color='C0')
-        ax.fill_between(x, tt_means - tt_stds, tt_means + tt_stds, alpha=0.3, color='C0')
+        # coattns - assuming symmetric
+        for layer_id in t_biattn_ids:
+            ax.axvspan(layer_id +  - 0.3, layer_id +  + 0.3, color='black', alpha=0.15)
 
-        ax.plot(x, vv_means, marker='s', label='Vision-Vision CKA', linewidth=2, color='C1')
-        ax.fill_between(x, vv_means - vv_stds, vv_means + vv_stds, alpha=0.3, color='C1')
+        ax.plot(x, tt_means, marker='o', label='Text-Text CKA',
+                linewidth=2.5, color=colors["text"], markersize=6)
+        ax.fill_between(x, tt_means - tt_stds, tt_means + tt_stds,
+                        alpha=0.3, color=colors["text"])
 
-        ax.set_xlabel('Layer Transition', fontsize=12)
-        ax.set_ylabel('CKA Similarity', fontsize=12)
-        ax.set_title(title, fontsize=14)
-        ax.legend(fontsize=10)
+        ax.plot(x, vv_means, marker='o', label='Vision-Vision CKA',
+                linewidth=2.5, color=colors["vision"], markersize=6)
+        ax.fill_between(x, vv_means - vv_stds, vv_means + vv_stds,
+                        alpha=0.3, color=colors["vision"])
+
+        ax.set_xlabel('Layer', fontsize=16, fontweight='bold')
+        ax.set_ylabel('CKA Sim.', fontsize=16, fontweight='bold')
+        ax.set_title(title, fontsize=18, fontweight='bold')
+        ax.set_ylim([0, 1.05])
+        ax.legend(fontsize=13, loc='best')
         ax.grid(True, alpha=0.3)
+        ax.tick_params(labelsize=13)
 
     plt.tight_layout()
 
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Saved plot to {save_path}")
+    plt.close()
+
 
 def get_paths_per_task(dir:str, task:str):
     assert task in tasklib.all_task_list
@@ -98,21 +111,39 @@ def intra_modal_analysis(data: tuple[dict]):
 
 
 
+def save_results(results: dict, path):
+    serializable_results = {}
+    for task, (tt_means, vv_means, tt_stds, vv_stds) in results.items():
+        serializable_results[task] = {
+            "tt_means": [float(x) for x in tt_means],
+            "vv_means": [float(x) for x in vv_means],
+            "tt_stds": [float(x) for x in tt_stds],
+            "vv_stds": [float(x) for x in vv_stds]
+        }
+
+    with open(path, 'w') as f:
+        json.dump(serializable_results, f, indent=2)
+    print(f"Results saved to {path}")
 
 
+def load_results( path) -> dict:
+    with open(path, "r") as f:
+        content = json.load(f)
 
-def main():
+    results = {
+    }
+    for t, k in content.items():
+        results[t] = (
+            content[t]["tt_means"],
+            content[t]["vv_means"],
+            content[t]["tt_stds"],
+            content[t]["vv_stds"],
+        )
+    return results
+
+def main(dirs):
     t = ExperimentTracker()
-    dirs = [
-        "res/checkpoints/20251010-085859_pretrained_baseline",
-        "res/checkpoints/20251010-234252_pretrained_early_fusion",
-        "res/checkpoints/20251011-234349_pretrained_middle_fusion",
-        "res/checkpoints/20251013-010227_pretrained_late_fusion",
-        "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion",
-        "res/checkpoints/20251015-081211_pretrained_optuna1",
-        "res/checkpoints/20251016-062038_pretrained_optuna2",
-        "res/checkpoints/20251025-105249_pretrained_bl_full_coattn",
-    ]
+
 
     task = "hateful_memes"
     for dir in dirs:
@@ -125,6 +156,8 @@ def main():
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                 model = vilbert.ViLBERT.load_model(path, device=device)
                 config = model.config
+                t_biattn_ids = model.t_biattention_ids
+                v_biattn_ids = model.v_biattention_ids
 
                 dl = t.get_task_alignment_dataloader(
                     task=task,
@@ -139,19 +172,14 @@ def main():
             tt_means, vv_means, tt_stds, vv_stds = intra_modal_analysis(current_data)
             results[task] = (tt_means, vv_means, tt_stds, vv_stds)
 
-
-
+        save_results(results, os.path.join(dirname, "intra_modal_results.json"))
         plot_intra_modal_metrics(
             results,
+            t_biattn_ids,
+            v_biattn_ids,
             save_path=os.path.join(dirname, "intra_modal_cka.png")
         )
 
 
 
 
-
-
-
-
-if __name__ == "__main__":
-    main()
