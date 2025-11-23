@@ -2,6 +2,50 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
+## 18.11 maturity + dimensionality reduction
+
+**cka intermodality trajectory**
+<figure>
+<img src="res/markdown_res/cka-intra_early-vs-middle-vs-late.png" >
+</figure>
+
+
+
+
+## 16.11 hybrid
+as full coattention training showed interesting patterns with two hills, we decided to run two hybrid models.
+
+| Model | HM AUROC | MM-IMDB F1 | UPMC Accuracy |
+|-------|----------|-----------|---------------|
+| Baseline | 0.6542 ± 0.0016 | 0.4825 ± 0.0084 | 0.8871 ± 0.0012 |
+| Late Fusion | **0.7637 ± 0.0041** | **0.5448 ± 0.0120** | **0.9278 ± 0.0005** |
+| Hybrid1 | 0.7282 ± 0.0036 | 0.4985 ± 0.0066 | 0.9048 ± 0.0005 |
+| Hybrid2 | 0.7585 ± 0.0027 | 0.5230 ± 0.0050 | 0.9258 ± 0.0008 |
+
+
+***all models***
+<details closed>
+| Model | HM AUROC | MM-IMDB F1 | UPMC Accuracy |
+|-------|----------|-----------|---------------|
+| Baseline | 0.6542 ± 0.0016 | 0.4825 ± 0.0084 | 0.8871 ± 0.0012 |
+| Early Fusion | 0.7226 ± 0.0034 | 0.5118 ± 0.0206 | 0.8930 ± 0.0001 |
+| Middle Fusion | 0.7497 ± 0.0090 | 0.5334 ± 0.0075 | 0.9181 ± 0.0013 |
+| Late Fusion | **0.7637 ± 0.0041** | **0.5448 ± 0.0120** | **0.9278 ± 0.0005** |
+| Asymmetric Fusion | 0.7245 ± 0.0018 | 0.5274 ± 0.0050 | 0.9010 ± 0.0002 |
+| Optuna1 | 0.7460 ± 0.0025 | 0.5339 ± 0.0081 | 0.9178 ± 0.0004 |
+| Optuna2 | 0.7401 ± 0.0050 | 0.5340 ± 0.0040 | 0.9215 ± 0.0010 |
+| Full Coattn | 0.7074 ± 0.0013 | 0.5283 ± 0.0036 | 0.9094 ± 0.0010 |
+| Early-Early Fusion | 0.6770 ± 0.0093 | 0.5184 ± 0.0077 | 0.8998 ± 0.0006 |
+| Hybrid1 | 0.7282 ± 0.0036 | 0.4985 ± 0.0066 | 0.9048 ± 0.0005 |
+| Hybrid2 | 0.7585 ± 0.0027 | 0.5230 ± 0.0050 | 0.9258 ± 0.0008 |
+</details>
+
+
+<figure>
+<img src="./res/markdown_res/prcrustes-layerwise.png">
+</figure>
+
+
 ## 13.11 early fusion cka optimization
 
 early fusion cka optimization is really bad.
@@ -13,6 +57,19 @@ so this lossterm significantly limits learning.
 |-------|----------|------------------|-----|
 | early_fusion_cka | 0.6095 ± 0.0096 | 0.5525 ± 0.0379 | 0.6122 ± 0.0170 |
 | early_fusion     | 0.6807 ± 0.0065 | 0.6659 ± 0.0043 | 0.7226 ± 0.0034 |
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_late_fusion_cka | 0.7003 ± 0.0060 | 0.6697 ± 0.0111 | 0.7568 ± 0.0036 |
+
+Does not make that much sense to do for hateful memes as it is not correlating with cka well...
+
+
+**UPMC Food-101**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_late_fusion     | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_late_fusion_cka | 0.9262 ± 0.0015 | 0.9256 ± 0.0016 |
+| early_fusion_cka           | ...... | ...... | ...... |
+| early_fusion               | 0.8930 ± 0.0001 | 0.8921 ± 0.0001 |
 
 
 
@@ -30,7 +87,7 @@ also, new models are pretrained, based on the new findings of layerwise probing.
 | optuna2           | [7,9,10,11 ]| [6,7,9,10]  |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm, trial 11|
 | ealy_early        | [0,1,2]     |  [0,1,2]   |res/checkpoints/pretrains/20251112-102745_pretrained_early_early_fusion.pt  | new |
 | hybrid 1          | [3,4, 10]   | [3,4,10]   |res/checkpoints/pretrains/20251111-222754_pretrained_hybrid1.pt             | new |
-
+| hybrid 2          | [4, 10,11]  | [4,10,11]  |res/checkpoints/pretrains/20251113-080744_pretrained_hybrid2.pt             | new |
 
 
 

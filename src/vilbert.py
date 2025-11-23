@@ -122,8 +122,6 @@ class ViLBERT(nn.Module):
         )
         self.bert_layers = self.bert.encoder.layer
         self.bert_embeddings = self.bert.embeddings
-
-
         self.vision_embeddings = VisionEmbeddings()
 
 
@@ -245,7 +243,10 @@ class ViLBERT(nn.Module):
         x = self.vit.pos_drop(x + self.vit.pos_embed)
 
         # no need to droput anymore
-        #vision_embeddings = self.vision_embeddings(x)
+        # vision_embeddings = self.vision_embeddings(x)
+        # no dropout and no layernorm, as this could destroy
+        # pretrained weights.
+        # also not applied in timm vit: https://github.com/huggingface/pytorch-image-models/blob/ae4d1bbfefab7e4f2f49a744838a2d9c7713146d/timm/models/vision_transformer.py#L465C13-L465C36
         vision_embeddings = x
 
 
