@@ -50,7 +50,7 @@ def main():
 
 
     # tasks = ["hateful_memes", "upmc_food", "mm_imdb"]
-    tasks = [ "mm_imdb"]
+    tasks = ["upmc_food"]
     paths = []
     c = 1
     logger.info("test")
@@ -77,9 +77,7 @@ def main():
             paths.append(path)
             c+=1
 
-
     info_str =f"finished with paths: {paths}"
-
     performance_metric_collection.get_performance_metrics(dirs=[FINETUNE_CHECKPOINTS_DIR])
 
 

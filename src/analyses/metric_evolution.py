@@ -11,7 +11,51 @@ import datasets
 from config import *
 import task as tasklib
 import vilbert
-import metrics
+import metrics; import metrics_llmrepsim
+
+def plot_intra_modal_metrics_single(results, t_biattn_ids, v_biattn_ids, save_path=None):
+    """Plot text-text and vision-vision CKA metrics for hateful_memes task"""
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5))  # Changed from (1, 3, figsize=(18, 5))
+
+    task = "hateful_memes"  # Changed from list of tasks
+    title = "Hateful Memes"  # Changed from list of titles
+    colors = {"text": "#FCCE25", "vision": "#A52C60"}
+
+    # Removed loop, just plot for hateful_memes
+    tt_means, vv_means, tt_stds, vv_stds = results[task]
+
+    x = np.arange(len(tt_means)) + 1
+    tt_means = np.array(tt_means)
+    vv_means = np.array(vv_means)
+    tt_stds = np.array(tt_stds)
+    vv_stds = np.array(vv_stds)
+
+    for layer_id in t_biattn_ids:
+        ax.axvspan(layer_id + - 0.3, layer_id + + 0.3, color='black', alpha=0.15)
+
+    ax.plot(x, tt_means, marker='o', label='Text-Text CKA',
+            linewidth=2.5, color=colors["text"], markersize=6)
+    ax.fill_between(x, tt_means - tt_stds, tt_means + tt_stds,
+                    alpha=0.3, color=colors["text"])
+
+    ax.plot(x, vv_means, marker='o', label='Vision-Vision CKA',
+            linewidth=2.5, color=colors["vision"], markersize=6)
+    ax.fill_between(x, vv_means - vv_stds, vv_means + vv_stds,
+                    alpha=0.3, color=colors["vision"])
+
+    ax.set_xlabel('Layer', fontsize=16, fontweight='bold')
+    ax.set_ylabel('CKA Sim.', fontsize=16, fontweight='bold')
+    ax.set_title(title, fontsize=18, fontweight='bold')
+    ax.legend(fontsize=13, loc='best')
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(labelsize=13)
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to {save_path}")
+    plt.close()
 
 
 def plot_intra_modal_metrics(results, t_biattn_ids, v_biattn_ids, save_path=None):
@@ -49,7 +93,7 @@ def plot_intra_modal_metrics(results, t_biattn_ids, v_biattn_ids, save_path=None
         ax.set_xlabel('Layer', fontsize=16, fontweight='bold')
         ax.set_ylabel('CKA Sim.', fontsize=16, fontweight='bold')
         ax.set_title(title, fontsize=18, fontweight='bold')
-        ax.set_ylim([0, 1.05])
+        # ax.set_ylim([0, 1.05])
         ax.legend(fontsize=13, loc='best')
         ax.grid(True, alpha=0.3)
         ax.tick_params(labelsize=13)
@@ -77,13 +121,22 @@ def get_task(path) -> str:
 
 def compute_similiarity(embeds1, embeds2, metric="cka"):
     res = None
+    # shape [1024, 768]
+    embeds1 = torch.nn.functional.normalize(embeds1, dim=1)
+    embeds2 = torch.nn.functional.normalize(embeds2, dim=1)
     if metric == "cka":
         res = metrics.AlignmentMetrics.cka(embeds1, embeds2)
+    elif metric == "mknn":
+        res = metrics.AlignmentMetrics.mutual_knn(embeds1, embeds2, topk=32)
+    elif metric == "svcca":
+        res = metrics.AlignmentMetrics.svcca(embeds1, embeds2, cca_dim=10)
 
+    elif metric == "procrustes":
+        res = metrics_llmrepsim.orthogonal_procrustes(embeds1, embeds2)
     return  res
 
 
-def intra_modal_analysis(data: tuple[dict]):
+def intra_modal_analysis(data: tuple[dict], metric="cka"):
 
     tt_means = []
     tt_stds  = []
@@ -100,8 +153,9 @@ def intra_modal_analysis(data: tuple[dict]):
             text_embeds_comp = data[j][i+1]["text_embeddings"]
             vision_embeds_comp = data[j][i+1]["vision_embeddings"]
 
-            buffer_tt.append(compute_similiarity(text_embeds, text_embeds_comp, metric="cka"))
-            buffer_vv.append(compute_similiarity(vision_embeds, vision_embeds_comp, metric="cka"))
+            buffer_tt.append(compute_similiarity(text_embeds, text_embeds_comp, metric=metric))
+            buffer_vv.append(compute_similiarity(vision_embeds, vision_embeds_comp, metric=metric))
+
         tt_means.append(np.mean(buffer_tt))
         tt_stds.append(np.std(buffer_tt))
         vv_means.append(np.mean(buffer_vv))
@@ -141,11 +195,9 @@ def load_results( path) -> dict:
         )
     return results
 
-def main(dirs):
+def main(dirs, metric="cka"):
     t = ExperimentTracker()
 
-
-    task = "hateful_memes"
     for dir in dirs:
         print("_".join((dir.split("/")[-1].split("_")[2:])))
         results = {}
@@ -169,15 +221,15 @@ def main(dirs):
                 current_data.append(data)
 
 
-            tt_means, vv_means, tt_stds, vv_stds = intra_modal_analysis(current_data)
+            tt_means, vv_means, tt_stds, vv_stds = intra_modal_analysis(current_data, metric=metric)
             results[task] = (tt_means, vv_means, tt_stds, vv_stds)
 
-        save_results(results, os.path.join(dirname, "intra_modal_results.json"))
+        save_results(results, os.path.join(dirname, f"intra_modal_results_{metric}.json"))
         plot_intra_modal_metrics(
             results,
             t_biattn_ids,
             v_biattn_ids,
-            save_path=os.path.join(dirname, "intra_modal_cka.png")
+            save_path=os.path.join(dirname, f"intra_modal_{metric}.png")
         )
 
 

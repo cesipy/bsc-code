@@ -1,7 +1,7 @@
 from scipy import stats
 import numpy as np
 
-import correlation_analysis_avg
+from analyses import correlation_analysis_avg
 import utils
 import json
 import os
@@ -50,10 +50,10 @@ def extract_differences_classified(values, t_ids):
 
 def main():
     paths = [
-        "plots_probing/20251010-085859_pretrained_baseline",
-        "plots_probing/20251010-234252_pretrained_early_fusion",
-        "plots_probing/20251011-234349_pretrained_middle_fusion",
-        "plots_probing/20251013-010227_pretrained_late_fusion",
+        "archive/plots_probing/20251010-085859_pretrained_baseline",
+        "archive/plots_probing/20251010-234252_pretrained_early_fusion",
+        "archive/plots_probing/20251011-234349_pretrained_middle_fusion",
+        "archive/plots_probing/20251013-010227_pretrained_late_fusion",
         # "plots_probing/20251025-105249_pretrained_bl_full_coattn",
     ]
 

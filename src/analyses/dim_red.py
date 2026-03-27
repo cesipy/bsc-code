@@ -16,13 +16,59 @@ from sklearn.decomposition import PCA
 from skdim.id import TwoNN
 import matplotlib.pyplot as plt
 
+
+def plot_dim_reduction_single(results_dict: dict, model_name, t_biattn_ids, v_biattn_ids, save_path):
+    """
+    results_dict: {task: {modality: {layer: mean}, modality_stds: {layer: std}, ...}}
+    Creates one plot for hateful_memes with both modalities
+    Includes shaded std regions around lines
+    """
+    task = "hateful_memes"  # Changed from list
+    title = "Hateful Memes"  # Changed from list
+    fig, ax = plt.subplots(1, 1, figsize=(8, 5))
+    colors = {"text": "#FCCE25", "vision": "#A52C60"}
+    task_data = results_dict[task]
+
+    # coattentn- assumes symmetric placement
+    for layer_id in t_biattn_ids:
+        ax.axvspan(layer_id + 1 - 0.3, layer_id + 1 + 0.3, color="black", alpha=0.15)
+
+    for modality_name in ["text", "vision"]:
+        modality_means = task_data[modality_name]
+        modality_stds = task_data[f"{modality_name}_stds"]
+
+        layers = np.array(sorted(modality_means.keys())) + 1  # Shift by +1
+        dims = np.array([modality_means[l - 1] for l in layers])  # Access original keys
+        stds = np.array([modality_stds[l - 1] for l in layers])
+
+        ax.plot(layers, dims, marker='o', label=modality_name.upper(),
+               linewidth=2.5, color=colors[modality_name], markersize=6)
+        ax.fill_between(layers, dims - stds, dims + stds,
+                       alpha=0.3, color=colors[modality_name])
+
+    ax.set_xlabel("Layer", fontsize=16, fontweight='bold')
+    ax.set_ylabel("Eff. Dim.", fontsize=16, fontweight='bold')
+    ax.set_title(title, fontsize=18, fontweight='bold')  # Changed from task_titles[task_idx]
+    ax.legend(fontsize=13, loc='best')
+    ax.grid(alpha=0.3)
+    ax.tick_params(labelsize=13)
+
+    plt.tight_layout()
+
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved: {save_path}")
+    plt.close()
+
 def plot_dim_reduction(results_dict: dict, model_name, t_biattn_ids, v_biattn_ids, save_path):
     """
     results_dict: {task: {modality: {layer: mean}, modality_stds: {layer: std}, ...}}
     Creates one figure with subplots for each task, both modalities together
     Includes shaded std regions around lines
     """
-    tasks = sorted(results_dict.keys())
+    tasks = ["hateful_memes", "mm_imdb", "upmc_food"]
+    task_titles = ["Hateful Memes", "MM-IMDB", "UPMC Food"]
     fig, axes = plt.subplots(1, len(tasks), figsize=(6*len(tasks), 5))
 
     if len(tasks) == 1:
@@ -55,7 +101,7 @@ def plot_dim_reduction(results_dict: dict, model_name, t_biattn_ids, v_biattn_id
 
         ax.set_xlabel("Layer", fontsize=16, fontweight='bold')
         ax.set_ylabel("Eff. Dim.", fontsize=16, fontweight='bold')
-        ax.set_title(task.replace("_", " ").title(), fontsize=18, fontweight='bold')
+        ax.set_title(task_titles[task_idx], fontsize=18, fontweight='bold')
         ax.legend(fontsize=13, loc='best')
         ax.grid(alpha=0.3)
         ax.tick_params(labelsize=13)
@@ -134,6 +180,53 @@ def dim_red_data(data: list):
     return results
 
 
+# this function plots the singular value spectrum to analyze the tail behavior...
+def plot_spectral_decay(text_embeds, vision_embeds, layer_idx, task_name, save_path=None):
+    plt.figure(figsize=(10, 6))
+
+    # helper to process embeddings...
+    def get_spectrum(embeds):
+        # center the embeddings...
+        embeds = embeds - embeds.mean(axis=0)
+        # compute singular values using torch for speed...
+        if isinstance(embeds, np.ndarray):
+            embeds = torch.from_numpy(embeds)
+
+        _, S, _ = torch.linalg.svd(embeds, full_matrices=False)
+        return S.cpu().numpy()
+
+    s_text = get_spectrum(text_embeds)
+    s_vision = get_spectrum(vision_embeds)
+
+    # plot log singular values...
+    plt.plot(np.log(s_text), label='TEXT Spectrum', color="#FCCE25", linewidth=2)
+    plt.plot(np.log(s_vision), label='VISION Spectrum', color="#A52C60", linewidth=2)
+
+    # mark the 95% threshold to show where your previous metric cut off...
+    def get_cutoff_index(S, threshold=0.95):
+        eigenvalues = S ** 2
+        explained = eigenvalues / eigenvalues.sum()
+        cumulative = np.cumsum(explained)
+        return np.argmax(cumulative > threshold)
+
+    cut_t = get_cutoff_index(s_text)
+    cut_v = get_cutoff_index(s_vision)
+
+    plt.axvline(cut_t, color="#FCCE25", linestyle='--', alpha=0.5, label=f'Text 95% Cutoff ({cut_t})')
+    plt.axvline(cut_v, color="#A52C60", linestyle='--', alpha=0.5, label=f'Vision 95% Cutoff ({cut_v})')
+
+    plt.xlabel('Singular Value Index')
+    plt.ylabel('Log Magnitude (Singular Values)')
+    plt.title(f'Spectral Decay: {task_name} - Layer {layer_idx}')
+    plt.legend()
+    plt.grid(alpha=0.3)
+
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved spectral plot: {save_path}")
+    plt.close()
+
 def save_results(results: dict, path):
     ser_res = {}
     for task, data in results.items():
@@ -143,6 +236,18 @@ def save_results(results: dict, path):
 
     with open(path,"w")as f:
         f.write( json.dumps(ser_res, indent=2) )
+
+def load_results(path):
+    with open(path,"r")as f:
+        ser_res = json.loads(f.read())
+
+    results = {}
+    for task, data in ser_res.items():
+        results[task] = {}
+        for key, val in data.items():
+            results[task][key] = {int(k): float(v) for k, v in val.items()}
+
+    return results
 
 def main(dirs):
     t = ExperimentTracker()
@@ -168,6 +273,16 @@ def main(dirs):
 
             print(f"  {task}:")
             results[task] = dim_red_data(current_data)
+
+            if len(current_data) > 0:
+                layer_to_inspect = 6
+
+                # aggregate data from all runs for this layer...
+                text_all = np.concatenate([run[layer_to_inspect]["text_embeddings"] for run in current_data], axis=0)
+                vision_all = np.concatenate([run[layer_to_inspect]["vision_embeddings"] for run in current_data], axis=0)
+
+                spec_save_path = os.path.join("dim_red", model_name, f"spectral_decay_{task}_L{layer_to_inspect}.png")
+                plot_spectral_decay(text_all, vision_all, layer_to_inspect, task, spec_save_path)
 
 
         dirname = os.path.join("dim_red", model_name)

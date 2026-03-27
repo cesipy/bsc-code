@@ -22,3 +22,5 @@ statsmodels
 pymp-pypi
 torchaudio
 lovely-tensors
+scikit-dimension
+scikit-learn

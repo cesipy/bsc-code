@@ -231,7 +231,6 @@ def plot_cka_vs_performance(results: dict, metric_name: str, task: str,
 
     plt.close()
 
-
 def plot_all_metrics_vs_performance(results: dict, metric_name: str, task: str,
     t_biattn_ids:list[int],
     v_biattn_ids:list[int],
@@ -306,14 +305,15 @@ def plot_all_metrics_vs_performance(results: dict, metric_name: str, task: str,
     for layer_id in both:
         ax.axvspan(layer_id - 0.3, layer_id + 0.3, color='orange', alpha=0.15)
 
-    ax.set_xlabel('Layer', fontsize=13)
-    ax.set_ylabel('Score', fontsize=13)
+    ax.set_xlabel('Layer', fontsize=16)
+    ax.set_ylabel('Score', fontsize=16)
     ax.set_ylim([0, 1.0])
     ax.set_xticks(layers)
+    ax.tick_params(axis='both', which='major', labelsize=12)
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=11, loc='best', framealpha=0.9)
+    ax.legend(fontsize=14, loc='best', framealpha=0.9, markerscale=1.5, labelspacing=0.8)
 
-    plt.title(f'Alignment Metrics vs {metric_name} - {task}', fontsize=14, pad=15)
+    # plt.title(f'Alignment Metrics vs {metric_name} - {task}', fontsize=18, pad=20)
     plt.tight_layout()
 
     if save_path:

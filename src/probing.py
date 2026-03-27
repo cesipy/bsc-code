@@ -15,7 +15,7 @@ from logger import Logger
 import analysis
 import utils_plotting
 
-PROBE_EPOCHS = 3        # 5 is default, not sure if this is the best way of doing it, but im going for it anyways
+PROBE_EPOCHS = 3        # 3 is default, not sure if this is the best way of doing it, but im going for it anyways
 NUM_LAYERS   = 13        # 13 is defaul, less is used for faster debugging
 
 logger = Logger()
@@ -396,10 +396,65 @@ def probe_model(paths: list[str], task:str):
 
     return final_results
 
+def get_biattn_ids(pretrain_name:str) -> tuple[list[int], list[int]]:
+    """map to get the biattn_ids.
+    returns tuple (text_ids, vision_ids)"""
+    if "baseline" in pretrain_name:
+        return [], []
+    elif "early_fusion" in pretrain_name:
+        return [3, 4, 5], [3, 4, 5]
+    elif "middle_fusion" in pretrain_name:
+        return [6, 7, 8], [6, 7, 8]
+    elif "late_fusion" in pretrain_name:
+        return [9, 10, 11], [9, 10, 11]
+    elif "asymmetric_fusion" in pretrain_name:
+        return [6, 7, 8, 9], [3, 5, 7, 9]
+    elif "bl_full_coattn" in pretrain_name:
+        return list(range(12)), list(range(12))
+    else: return None, None
+
+
+
+def generate_plots(path="res/20251011_plots_linear_probing"):
+    for dir in os.listdir(path):
+        dir_path = os.path.join(path, dir)
+        for task in ["hateful_memes", "mm_imdb", "upmc_food"]:
+            results_path = os.path.join(dir_path, f"results_{task}.json")
+            if os.path.exists(results_path):
+                with open(results_path, "r") as f:
+                    results = json.load(f)
+                metric_name = get_metric(task)
+                pretrain_name = dir
+                save_path_dir = os.path.join("plots_probing", pretrain_name)
+                t_biattn_ids, v_biattn_ids = get_biattn_ids(pretrain_name)
+                if t_biattn_ids == None:
+                    print(f"skipping for {pretrain_name}")
+                    continue
+
+                t_biattn_ids = [t+1 for t in t_biattn_ids]; v_biattn_ids = [v+1 for v in v_biattn_ids]
+                print(pretrain_name)
+                os.makedirs(save_path_dir, exist_ok=True)
+
+                utils_plotting.plot_cka_vs_performance(results, metric_name, task,
+                    save_path=os.path.join(save_path_dir, f"cka_vs_{metric_name}_{task}.png"),
+                    t_biattn_ids=t_biattn_ids, v_biattn_ids=v_biattn_ids
+                )
+                utils_plotting.plot_all_metrics_vs_performance(results, metric_name, task,
+                    save_path=os.path.join(save_path_dir, f"all_metrics_vs_{metric_name}_{task}.png"),
+                    t_biattn_ids=t_biattn_ids, v_biattn_ids=v_biattn_ids
+                )
+                utils_plotting.plot_procrustes_vs_performance(results, metric_name, task,
+                    save_path=os.path.join(save_path_dir, f"procrustes_vs_{metric_name}_{task}.png"),
+                    t_biattn_ids=t_biattn_ids, v_biattn_ids=v_biattn_ids
+                )
+
+
 
 
 
 def main():
+    generate_plots()
+    print("done")
     dirs = [
         # "res/checkpoints/20251010-085859_pretrained_baseline",
         # "res/checkpoints/20251010-234252_pretrained_early_fusion",
@@ -423,17 +478,17 @@ def main():
 
 
 
-    for dir in dirs:
-        paths = get_paths_for_task(dir, "hateful_memes")
-        assert len(paths) == 3
+    # for dir in dirs:
+    #     paths = get_paths_for_task(dir, "hateful_memes")
+    #     assert len(paths) == 3
 
-        probe_model(paths=paths, task="hateful_memes")
-        paths = get_paths_for_task(dir, "mm_imdb")
-        assert len(paths) == 3
-        probe_model(paths=paths, task="mm_imdb")
-        paths = get_paths_for_task(dir, "upmc_food")
-        assert len(paths) == 3
-        probe_model(paths=paths, task="upmc_food")
+    #     probe_model(paths=paths, task="hateful_memes")
+    #     paths = get_paths_for_task(dir, "mm_imdb")
+    #     assert len(paths) == 3
+    #     probe_model(paths=paths, task="mm_imdb")
+    #     paths = get_paths_for_task(dir, "upmc_food")
+    #     assert len(paths) == 3
+    #     probe_model(paths=paths, task="upmc_food")
 
 
     # path = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-222808_finetuned_hateful_memes.pt"

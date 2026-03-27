@@ -518,10 +518,11 @@ class ExperimentTracker:
         self,
         task: str,
         config: ViLBERTConfig,
+        batch_size = BATCH_SIZE_ANALYSIS,
     ):
         if task == "hateful_memes":
             alignment_dataloader, _, _,_ = datasets.get_alignment_dataloaders(
-                batch_size=BATCH_SIZE_ANALYSIS,
+                batch_size=batch_size,
                 num_workers=0,
                 pin_memory=False,
                 prefetch_factor=None,
@@ -530,7 +531,7 @@ class ExperimentTracker:
             )
         elif task == "mm_imdb":
             _, _, alignment_dataloader,_ = datasets.get_alignment_dataloaders(
-                batch_size=BATCH_SIZE_ANALYSIS,
+                batch_size=batch_size,
                 num_workers=0,
                 pin_memory=False,
                 prefetch_factor=None,
@@ -540,7 +541,7 @@ class ExperimentTracker:
         # TODO: currently there is no alignment dataloader for upmc
         elif task == "upmc_food":
             _,_,_,alignment_dataloader = datasets.get_alignment_dataloaders(
-                batch_size=BATCH_SIZE_ANALYSIS,
+                batch_size=batch_size,
                 num_workers=0,
                 pin_memory=False,
                 prefetch_factor=None,
@@ -550,7 +551,7 @@ class ExperimentTracker:
         elif task == "easy_vqa":
             # TODO: also just uses cc right now, needs proper dataset!
             _, alignment_dataloader, _,_ = datasets.get_alignment_dataloaders(
-                batch_size=BATCH_SIZE_ANALYSIS,
+                batch_size=batch_size,
                 num_workers=0,
                 pin_memory=False,
                 prefetch_factor=None,
