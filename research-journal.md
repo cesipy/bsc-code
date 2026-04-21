@@ -973,7 +973,7 @@ hm hyperparam optim on lr and fusion strat in `res/experiments/multi_task_optim_
 ## 22.09
 finished run for hyperparam optim for hm and mm-imdb in `res/experiments/multi_task_optim_20250918-134352.db`.
 
-
+<!--
 
 ### Archive
 the entries below are with quite different architectures. By now (4.10.25) the code base changed quite a lot.
@@ -1703,4 +1703,4 @@ Epoch 1/4, train loss: 0.6208, test loss: 0.5848,  accuracy: 0.6935
 Epoch 2/4, train loss: 0.5514, test loss: 0.5547,  accuracy: 0.7118
 Epoch 3/4, train loss: 0.5058, test loss: 0.5308,  accuracy: 0.7335
 Epoch 4/4, train loss: 0.4704, test loss: 0.5292,  accuracy: 0.7371
-```
+``` -->
