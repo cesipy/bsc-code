@@ -1,30 +1,1477 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+
+## 18.11 maturity + dimensionality reduction
+
+**cka intermodality trajectory**
+<figure>
+<img src="res/markdown_res/cka-intra_early-vs-middle-vs-late.png" >
+</figure>
+
+
+
+
+## 16.11 hybrid
+as full coattention training showed interesting patterns with two hills, we decided to run two hybrid models.
+
+| Model | HM AUROC | MM-IMDB F1 | UPMC Accuracy |
+|-------|----------|-----------|---------------|
+| Baseline | 0.6542 ± 0.0016 | 0.4825 ± 0.0084 | 0.8871 ± 0.0012 |
+| Late Fusion | **0.7637 ± 0.0041** | **0.5448 ± 0.0120** | **0.9278 ± 0.0005** |
+| Hybrid1 | 0.7282 ± 0.0036 | 0.4985 ± 0.0066 | 0.9048 ± 0.0005 |
+| Hybrid2 | 0.7585 ± 0.0027 | 0.5230 ± 0.0050 | 0.9258 ± 0.0008 |
+
+
+***all models***
+<details closed>
+| Model | HM AUROC | MM-IMDB F1 | UPMC Accuracy |
+|-------|----------|-----------|---------------|
+| Baseline | 0.6542 ± 0.0016 | 0.4825 ± 0.0084 | 0.8871 ± 0.0012 |
+| Early Fusion | 0.7226 ± 0.0034 | 0.5118 ± 0.0206 | 0.8930 ± 0.0001 |
+| Middle Fusion | 0.7497 ± 0.0090 | 0.5334 ± 0.0075 | 0.9181 ± 0.0013 |
+| Late Fusion | **0.7637 ± 0.0041** | **0.5448 ± 0.0120** | **0.9278 ± 0.0005** |
+| Asymmetric Fusion | 0.7245 ± 0.0018 | 0.5274 ± 0.0050 | 0.9010 ± 0.0002 |
+| Optuna1 | 0.7460 ± 0.0025 | 0.5339 ± 0.0081 | 0.9178 ± 0.0004 |
+| Optuna2 | 0.7401 ± 0.0050 | 0.5340 ± 0.0040 | 0.9215 ± 0.0010 |
+| Full Coattn | 0.7074 ± 0.0013 | 0.5283 ± 0.0036 | 0.9094 ± 0.0010 |
+| Early-Early Fusion | 0.6770 ± 0.0093 | 0.5184 ± 0.0077 | 0.8998 ± 0.0006 |
+| Hybrid1 | 0.7282 ± 0.0036 | 0.4985 ± 0.0066 | 0.9048 ± 0.0005 |
+| Hybrid2 | 0.7585 ± 0.0027 | 0.5230 ± 0.0050 | 0.9258 ± 0.0008 |
+</details>
+
+
+<figure>
+<img src="./res/markdown_res/prcrustes-layerwise.png">
+</figure>
+
+
+## 13.11 early fusion cka optimization
+
+early fusion cka optimization is really bad.
+its even worse than baseline....
+so this lossterm significantly limits learning.
+
+**Hateful Memes**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| early_fusion_cka | 0.6095 ± 0.0096 | 0.5525 ± 0.0379 | 0.6122 ± 0.0170 |
+| early_fusion     | 0.6807 ± 0.0065 | 0.6659 ± 0.0043 | 0.7226 ± 0.0034 |
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_late_fusion_cka | 0.7003 ± 0.0060 | 0.6697 ± 0.0111 | 0.7568 ± 0.0036 |
+
+Does not make that much sense to do for hateful memes as it is not correlating with cka well...
+
+
+**UPMC Food-101**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_late_fusion     | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_late_fusion_cka | 0.9262 ± 0.0015 | 0.9256 ± 0.0016 |
+| early_fusion_cka           | ...... | ...... | ...... |
+| early_fusion               | 0.8930 ± 0.0001 | 0.8921 ± 0.0001 |
+
+
+
+
+also, new models are pretrained, based on the new findings of layerwise probing.
+
+| name              | t_biatt_id | v_biatt_id   | path  | notes |
+|-------------------|-------------|-------------|-------|-------|
+| baseline          | []          | []          |res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt           |maybe more epochs needed, as there is  |
+| early_fusion      | [3,4,5]     | [3,4,5]     |res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt       | |
+| middle_fusion     | [6,7,8]     | [6,7,8]     |res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt      | |
+| late_fusion       | [9,10,11]   | [9,10,11]   |res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt        | |
+| asymmetric_fusion | [6,7,8,9]   | [3,5,7,9]   |res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt  | |
+| optuna1           | [3,6]       | [6,8]       |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm, trial  21 |
+| optuna2           | [7,9,10,11 ]| [6,7,9,10]  |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm, trial 11|
+| ealy_early        | [0,1,2]     |  [0,1,2]   |res/checkpoints/pretrains/20251112-102745_pretrained_early_early_fusion.pt  | new |
+| hybrid 1          | [3,4, 10]   | [3,4,10]   |res/checkpoints/pretrains/20251111-222754_pretrained_hybrid1.pt             | new |
+| hybrid 2          | [4, 10,11]  | [4,10,11]  |res/checkpoints/pretrains/20251113-080744_pretrained_hybrid2.pt             | new |
+
+
+
+
+## 10.11 linear probing
+## Baseline
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-085859_pretrained_baseline/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Early Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251010-234252_pretrained_early_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Middle Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251011-234349_pretrained_middle_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Late Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251013-010227_pretrained_late_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Asymmetric Fusion
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251014-034432_pretrained_asymmetric_fusion/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Optuna1
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251015-081211_pretrained_optuna1/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Optuna2
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251016-062038_pretrained_optuna2/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## BL Full Coattn
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251025-105249_pretrained_bl_full_coattn/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+## Latefusion CKA
+<figure style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/all_metrics_vs_auc_hateful_memes.png" style="width:100%;">
+    <figcaption>Hateful Memes: AUROC vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/all_metrics_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM-IMDB: F1-Macro vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/all_metrics_vs_accuracy_upmc_food.png" style="width:100%;">
+    <figcaption>UPMC: Accuracy vs CKA, SVCCA and mkNN</figcaption>
+  </div>
+  <div>
+    <img src="./res/markdown_res/20251011_plots_linear_probing/20251030-192145_pretrained_latefusion_cka/procrustes_vs_f1_score_macro_mm_imdb.png" style="width:100%;">
+    <figcaption>MM IMDB: F1-Macro vs Procrustes</figcaption>
+  </div>
+</figure>
+
+
+## 07.11
+computed performance vs alignment correlation for n=8 (avg per architecture), max metrics layer:
+**hateful_memes**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.499    | 0.209     | +0.381     | 0.352      |
+| cka        | +0.480    | 0.229     | +0.381     | 0.352      |
+| svcca      | +0.723    | 0.043     | +0.333     | 0.420      |
+| procrustes | +0.072    | 0.865     | +0.000     | 1.000      |
+
+**mm_imdb**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.934    | 0.001     | +0.643     | 0.086      |
+| cka        | +0.913    | 0.002     | +0.405     | 0.320      |
+| svcca      | +0.907    | 0.002     | +0.619     | 0.102      |
+| procrustes | -0.929    | 0.001     | -0.881     | 0.004      |
+
+**upmc_food**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.697    | 0.055     | +0.452     | 0.260      |
+| cka        | +0.664    | 0.072     | +0.452     | 0.260      |
+| svcca      | +0.620    | 0.101     | +0.476     | 0.233      |
+| procrustes | -0.791    | 0.019     | -0.857     | 0.007      |
+
+## 06.11
+
+computed performance vs alignment correlations for n=8 (averaged per architecture), last metrics layer:
+
+**hateful_memes**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.634    | 0.091     | +0.381     | 0.352      |
+| cka        | +0.456    | 0.256     | +0.071     | 0.867      |
+| svcca      | +0.709    | 0.049     | +0.405     | 0.320      |
+| procrustes | -0.075    | 0.860     | +0.071     | 0.867      |
+
+**mm_imdb**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.867    | 0.005     | +0.524     | 0.183      |
+| cka        | +0.916    | 0.001     | +0.762     | 0.028      |
+| svcca      | +0.914    | 0.001     | +0.619     | 0.102      |
+| procrustes | -0.915    | 0.001     | -0.881     | 0.004      |
+
+**upmc_food**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.766    | 0.027     | +0.857     | 0.007      |
+| cka        | +0.908    | 0.002     | +0.929     | 0.001      |
+| svcca      | +0.939    | 0.001     | +0.976     | 0.000      |
+| procrustes | -0.813    | 0.014     | -0.905     | 0.002      |
+
+
+
+---
+
+
+what to do next?
+
+| Gap | Effort | Impact | Do First? |
+|-----|--------|--------|-----------|
+| Why late fusion works (mechanistic) | 2-3 days | **CRITICAL** | YES |
+| Metrics replacement (SVCCA/mkNN → Wasserstein) | 1-2 days | High | YES |
+| MBT engagement (Related Work + Discussion) | 1-2 hours | High | YES |
+| Cosine similarity baseline | 2-3 hours | Medium | YES |
+| Task-level analysis | 1-2 hours | Medium | YES |
+| Alignment asymmetries (concrete numbers) | 3-4 hours | Medium | MAYBE |
+| Optuna resolution | 1-2 days OR delete | Low | SKIP/DELETE |
+| Attention visualization | 3-4 hours | Medium | MAYBE |
+| Pretraining vs finetuning ablation | 1-2 days | Medium | SKIP (note gap) |
+| Platonic hypothesis connection | 2 hours | Low | NICE |
+
+why does late fusion work? just discussion that late fusion has longer time to develop more sbstract representations before fusing them together. largest differences in performance for hateful memes (?)
+
+
+## 30.10
+Optimization for cka with $\lambda = 0.2$
+the optimization did not work for `early_fusion` and `no_coattention`, as cka vanished to 0.1.
+
+the following shows the results for late fusion.
+
+**Hateful Memes**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_late_fusion_cka | 0.7003 ± 0.0060 | 0.6697 ± 0.0111 | 0.7568 ± 0.0036 |
+
+**MM-IMDB**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.9308 ± 0.0002 | 0.5448 ± 0.0120 | 0.9153 ± 0.0005 |
+| pretrained_late_fusion_cka | 0.9256 ± 0.0009 | 0.4586 ± 0.0113 | 0.8903 ± 0.0029 |
+
+**UPMC Food-101**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_late_fusion | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_late_fusion_cka | 0.9262 ± 0.0015 | 0.9256 ± 0.0016 |
+
+
+
+<details closed>
+
+those values are from a run where cka was not optimized.
+**Hateful Memes**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_late_fusion_cka | 0.6990 ± 0.0086 | 0.6727 ± 0.0133 | 0.7620 ± 0.0028 |
+
+**MM-IMDB**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_late_fusion | 0.9308 ± 0.0002 | 0.5448 ± 0.0120 | 0.9153 ± 0.0005 |
+| pretrained_late_fusion_cka | 0.9292 ± 0.0001 | 0.5282 ± 0.0040 | 0.9064 ± 0.0005 |
+
+**UPMC Food-101**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_late_fusion | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_late_fusion_cka | 0.9278 ± 0.0015 | 0.9270 ± 0.0015 |
+
+</details>
+---
+
+finetune != pretrain+finetune predictor:
+
+| Model | Accuracy | AUC |
+|-------|----------|-----|
+| finetune_only_baseline | 0.6384 ± 0.0086 | 0.6748 ± 0.0090 |
+| finetune_only_early_fusion | 0.6537 ± 0.0076 | 0.6930 ± 0.0064 |
+| finetune_only_middle_fusion | 0.6679 ± 0.0013 | 0.7090 ± 0.0089 |
+| finetune_only_late_fusion | 0.6556 ± 0.0082 | 0.6987 ± 0.0015 |
+| finetune_only_asymmetric_fusion | 0.6469 ± 0.0069 | 0.6801 ± 0.0055 |
+| finetune_only_optuna1 | 0.6503 ± 0.0119 | 0.7032 ± 0.0088 |
+| finetune_only_optuna2 | 0.6671 ± 0.0061 | 0.7092 ± 0.0019 |
+| finetune_only_full_coattn | 0.6279 ± 0.0090 | 0.6571 ± 0.0045 |
+
+---
+
+performance metric collection + correlation analysis on performance are planned today, results below:
+
+
+| Metric | HM Test | HM Val | MM-IMDB Test | MM-IMDB Val | UPMC Test | UPMC Val |
+|--------|---------|--------|--------------|-------------|-----------|----------|
+| mknn | 0.266 (p=0.209) | 0.334 (p=0.111) | 0.233 (p=0.216) | 0.317 (p=0.088) | **0.744** (p<0.001) | 0.334 (p=0.110) |
+| cka | 0.023 (p=0.916) | 0.089 (p=0.680) | 0.386 (p=0.035) | **0.481** (p=0.007) | **0.880** (p<0.001) | 0.446 (p=0.029) |
+| svcca | 0.263 (p=0.215) | 0.314 (p=0.134) | 0.306 (p=0.100) | 0.366 (p=0.047) | **0.935** (p<0.001) | 0.384 (p=0.064) |
+| procrustes | 0.189 (p=0.377) | 0.095 (p=0.658) | **-0.419** (p=0.021) | **-0.519** (p=0.003) | **-0.857** (p<0.001) | **-0.619** (p=0.001) |
+
+
+### Correlation
+with ideosyncratic performance metric.
+
+**hm**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.619    | 0.001     | +0.373     | 0.073      |
+| cka        | +0.444    | 0.030     | +0.130     | 0.544      |
+| svcca      | +0.697    | 0.000     | +0.298     | 0.157      |
+| procrustes | -0.054    | 0.803     | +0.063     | 0.771      |
+
+**mm-imdb**
+| Metric | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.735 | 0.00  | +0.325 | 0.121 |
+| cka        | +0.769 | 0.00  | +0.415 | 0.044 |
+| svcca      | +0.765 | 0.00  | +0.343 | 0.100 |
+| procrustes | -0.771 | 0.000 | -0.479 | 0.018 |
+
+
+**upmc-food**
+| Metric     | Pearson r | Pearson p | Spearman r | Spearman p |
+|------------|-----------|-----------|------------|------------|
+| mknn       | +0.763    | 0.000     | +0.744     | 0.000      |
+| cka        | +0.904    | 0.000     | +0.880     | 0.000      |
+| svcca      | +0.925    | 0.000     | +0.935     | 0.000      |
+| procrustes | -0.811    | 0.000     | -0.857     | 0.000      |
+
+### Performance
+
+**hm**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_baseline | 0.6212 ± 0.0144 | 0.6076 ± 0.0053 | 0.6542 ± 0.0016 |
+| pretrained_early_fusion | 0.6807 ± 0.0065 | 0.6659 ± 0.0043 | 0.7226 ± 0.0034 |
+| pretrained_middle_fusion | 0.6970 ± 0.0050 | 0.6720 ± 0.0065 | 0.7497 ± 0.0090 |
+| pretrained_late_fusion | 0.7019 ± 0.0096 | 0.6767 ± 0.0159 | 0.7637 ± 0.0041 |
+| pretrained_asymmetric_fusion | 0.6786 ± 0.0066 | 0.6490 ± 0.0132 | 0.7245 ± 0.0018 |
+| pretrained_optuna1 | 0.6921 ± 0.0048 | 0.6636 ± 0.0049 | 0.7460 ± 0.0025 |
+| pretrained_optuna2 | 0.6848 ± 0.0019 | 0.6505 ± 0.0049 | 0.7401 ± 0.0050 |
+| pretrained_bl_full_coattn | 0.6668 ± 0.0025 | 0.6360 ± 0.0207 | 0.7074 ± 0.0013 |
+
+
+**mm-imdb**
+| Model | Accuracy | F1-Score (Macro) | AUC |
+|-------|----------|------------------|-----|
+| pretrained_baseline | 0.9268 ± 0.0005 | 0.4825 ± 0.0084 | 0.9011 ± 0.0004 |
+| pretrained_early_fusion | 0.9291 ± 0.0004 | 0.5118 ± 0.0206 | 0.9108 ± 0.0002 |
+| pretrained_middle_fusion | 0.9299 ± 0.0002 | 0.5334 ± 0.0075 | 0.9145 ± 0.0002 |
+| pretrained_late_fusion | 0.9308 ± 0.0002 | 0.5448 ± 0.0120 | 0.9153 ± 0.0005 |
+| pretrained_asymmetric_fusion | 0.9291 ± 0.0001 | 0.5274 ± 0.0050 | 0.9103 ± 0.0001 |
+| pretrained_optuna1 | 0.9296 ± 0.0002 | 0.5339 ± 0.0081 | 0.9114 ± 0.0007 |
+| pretrained_optuna2 | 0.9290 ± 0.0004 | 0.5340 ± 0.0040 | 0.9123 ± 0.0003 |
+| pretrained_bl_full_coattn | 0.9278 ± 0.0006 | 0.5283 ± 0.0036 | 0.8990 ± 0.0024 |
+
+**upmc-food**
+| Model | Accuracy | F1-Score (Macro) |
+|-------|----------|------------------|
+| pretrained_baseline | 0.8871 ± 0.0012 | 0.8862 ± 0.0011 |
+| pretrained_early_fusion | 0.8930 ± 0.0001 | 0.8921 ± 0.0001 |
+| pretrained_middle_fusion | 0.9181 ± 0.0013 | 0.9174 ± 0.0014 |
+| pretrained_late_fusion | 0.9278 ± 0.0005 | 0.9272 ± 0.0006 |
+| pretrained_asymmetric_fusion | 0.9010 ± 0.0002 | 0.9001 ± 0.0001 |
+| pretrained_optuna1 | 0.9178 ± 0.0004 | 0.9170 ± 0.0003 |
+| pretrained_optuna2 | 0.9215 ± 0.0010 | 0.9209 ± 0.0010 |
+| pretrained_bl_full_coattn | 0.9094 ± 0.0010 | 0.9088 ± 0.0008 |
+
+## 28.10
+
+currently running finetune only for all configs + seeds and tasks to compare if good finetune performance predicts pretrain+finetune performance.
+
+here the LR is slightly changed to hm: 3.5e-5 and others 4.2e-5.
+
+
+**correlation optuna run vs. parameters**:
+
+| **Parameter** | **Hateful Memes ρ** | **Hateful Memes p-value** | **MM-IMDB ρ** | **MM-IMDB p-value** |
+|---|---|---|---|---|
+| num_coattn_layers | -0.119 | 0.348 | -0.309 | 0.013 |
+| t_center | 0.020 | 0.874 | 0.822 | <0.001 |
+| t_spread | 0.218 | 0.084 | -0.021 | 0.869 |
+| v_center | 0.138 | 0.279 | 0.339 | 0.006 |
+| v_spread | -0.135 | 0.287 | -0.110 | 0.385 |
+
+$\Rightarrow$ hm is insensible to parameters, while mm is highly correlatated in terms of t_center.
+
+
+
+also based on results from table from 24.10, good finetune performance does not mean good pretrain+finetune performance! Optuna1 (HM) and Optuna2 (MM-IMDB) are both best pretrains, but have worse accuracy for pretraining
+
+
+
+## 24.10 - first results:
+
+**pretrain+finetune**:
+| Fusion Method      | UPMC Accuracy       | IMDB Accuracy       | HM Accuracy         | HM ROC-AUC          |
+|--------------------|---------------------|---------------------|---------------------|---------------------|
+| Early Fusion       | 0.8929 ± 0.0001     | 0.9291 ± 0.0004     | 0.6807 ± 0.0065     | 0.7226 ± 0.0033     |
+| Middle Fusion      | 0.9180 ± 0.0013     | 0.9299 ± 0.0002     | 0.6970 ± 0.0050     | 0.7497 ± 0.0090     |
+| Late Fusion        | **0.9278 ± 0.0004** | **0.9308 ± 0.0002** | **0.7019 ± 0.0096** | **0.7637 ± 0.0041** |
+| Asymmetric Fusion  | 0.9010 ± 0.0001     | 0.9291 ± 0.0001     | 0.6786 ± 0.0066     | 0.7245 ± 0.0018     |
+| No Coattn          | 0.8870 ± 0.0012     | 0.9268 ± 0.0004     | 0.6212 ± 0.0144     | 0.6542 ± 0.0016     |
+| Optuna1            | 0.9178 ± 0.0004     | 0.9297 ± 0.0002     | 0.6921 ± 0.0049     | 0.7460 ± 0.0025     |
+| Optuna2            | 0.9216 ± 0.0010     | 0.9290 ± 0.0004     | 0.6848 ± 0.0019     | 0.7401 ± 0.0050     |
+| full coattention   | 0.9093 ± 0.0010     | 0.9278 ± 0.0007     | 0.6668 ± 0.0025     | 0.7080 ± 0.0011     |
+
+
+
+
+**finetune only:**
+| Fusion Method      | UPMC Accuracy       | IMDB Accuracy       | HM Accuracy         | HM ROC-AUC          |
+|--------------------|---------------------|---------------------|---------------------|---------------------|
+| No Coattn          |                     |                     | 0.6384 ± 0.0086     | 0.6748 ± 0.0090     |
+| Early Fusion       |                     |                     | 0.6537 ± 0.0076     | 0.6930 ± 0.0064     |
+| Middle Fusion      |                     |                     | **0.6679 ± 0.0013** | 0.7090 ± 0.0089     |
+| Late Fusion        |                     |                     | 0.6556 ± 0.0082     | 0.6987 ± 0.0015     |
+| Asymmetric Fusion  |                     |                     | 0.6469 ± 0.0069     | 0.6801 ± 0.0055     |
+| Optuna1            |                     |                     | 0.6503 ± 0.0119     | 0.7032 ± 0.0088     |
+| Optuna2            |                     |                     | 0.6671 ± 0.0061     | **0.7092 ± 0.0019** |
+| Coattn [all layers]|                     |                     | 0.6279 ± 0.0090     | 0.6571 ± 0.0045     |
+
+
+| Configuration | HM Accuracy | HM ROC-AUC |
+|--------------|-------------|------------|
+| No Coattn ([] & [])             | 0.6384 ± 0.0086 | 0.6748 ± 0.0090 |
+| Coattn [3,4,5] & [3,4,5]        | 0.6537 ± 0.0076 | 0.6930 ± 0.0064 |
+| Coattn [6,7,8] & [6,7,8]        | 0.6679 ± 0.0013 | 0.7090 ± 0.0089 |
+| Coattn [9,10,11] & [9,10,11]    | 0.6556 ± 0.0082 | 0.6987 ± 0.0015 |
+| Coattn [6,7,8,9] & [3,5,7,9]    | 0.6469 ± 0.0069 | 0.6801 ± 0.0055 |
+| Coattn [3,6] & [6,8]            | 0.6503 ± 0.0119 | 0.7032 ± 0.0088 |
+| Coattn [7,9,10,11] & [6,7,9,10] | 0.6671 ± 0.0061 | 0.7092 ± 0.0019 |
+| Coattn [all layers]             | 0.6279 ± 0.0090 | 0.6571 ± 0.0045 |
+
+
+<details closed>
+    early fusion:
+    upmc accuracy: 0.8929 ± 0.0001
+    imdb accuracy: 0.9291 ± 0.0004
+    hm   accuracy: 0.6807 ± 0.0065
+    hm rocauc    : 0.7226 ± 0.0033
+    -----------------------------------
+    middle fusion:
+    upmc accuracy: 0.9180 ± 0.0013
+    imdb accuracy: 0.9299 ± 0.0002
+    hm   accuracy: 0.6970 ± 0.0050
+    hm rocauc    : 0.7497 ± 0.0090
+    -----------------------------------
+    late fusion:
+    upmc accuracy: 0.9278 ± 0.0004
+    imdb accuracy: 0.9308 ± 0.0002
+    hm   accuracy: 0.7019 ± 0.0096
+    hm rocauc    : 0.7637 ± 0.0041
+</details>
+
+
+
+
+## 21.10 - hypotheses
+
+better hateful memes dataset: https://www.kaggle.com/discussions/general/202833
+
+H1: Alignment is task dependent: some tasks benefit more from one coattention placement than others.
+
+H2: Intra-layer alignment is more important than final alignment!
+- do correlation testing here. `corr(cka[-1], accuracy` vs `corr(max(cka), accuracy)`
+
+H3: coattention placements increase metrics.
+
+
+show correlation, but not absolute values same:
+<figure>
+<img src="./res/markdown_res/alignment_metrics_comparison.png">
+</figure>
+
+
+
+
+
+## 20.10
+currently running more rigorous experiments on the correlation between num_samples in dataset and K and metrics, that I can directly report them to my thesis. also includes time findings.
+This analysis is done while the finetuning step of pretrained models is trained for three seeds a three tasks (9) per pretrained.
+
+
+results are below:
+The analysis was done for 49 models (15/15/19: mm_imdb/upmc_food/hateful_memes)
+
+- running time for num_samples= 512: 14.12s ± 5.12 (std)
+- running time for num_samples=1536: 42.64s ± 4.82 (std) on uni-gpu, on my gpu way worse as cpu has to be used. over 5 minutes for it.
+also
+
+
+for metrics of interest (cka, procrustes,svcca, mknn ), inter-model correlation was high.
+| Metric      | Mean (within-model) | Std Dev    | Mean p-value | Std Dev (p-value) |
+|-------------|---------------------|------------|--------------|-------------------|
+| mknn        | 0.9077              | 0.1240     | 0.0051       | 0.0169            |
+| procrustes  | 0.9957              | 0.0058     | 0.0000       | 0.0000            |
+| cka         | 0.9869              | 0.0284     | 0.0000       | 0.0002            |
+| svcca       | 0.9264              | 0.0869     | 0.0024       | 0.0142            |
+
+
+also the new correlation between metrics was similar to the results with fewer metrics:
+
+<figure>
+<img src="./res/markdown_res/20252010_metric_analysis/mknn_spearmanr.png">
+</figure>
+
+
+
+
+
+
+
+
+
+
+---
+
+## 18.10 & 17.10
+**summary**:
+to sum my current thesis: Basically this thesis studies representational alignment in two-stream architectures (ViLBERT).
+
+i) How do cross-attention layer between the streams affect the representational alignment?
+
+ii) is there a corerlationbetween performance (acc) and alignment? is it task dependent?
+
+iii) Is there an correlation between representational alignment and coattention placement? (how to measure this??)
+
+iv) optimal alignment for archicture, how is the overall performance?
+
+**past ⁊ current experiments**:
+i) best performing architectures for mm_imdb and hateful memes, searched via optuna.
+
+ii) pretraining for the below architectures. (early, mid, late, asymmetric, optuna1, optuna2, [optuna3 is still todo])
+
+iii) correlation analysis of num_dataset and k (kNN mesures) and between measurements.
+
+iv) currently: finetuning on all three tasks (mmimdb, hm, upmcfood) for each three seeds ($6\cdot3\cdot3$)
+- correlation analysis for repr measures and performance
+
+
+**additional things**:
+i) is representational alignment really increasing after coattns?
+
+ii) directly optimize for alignment measures (like cka)
+
+
+---
+## 21.10
+
+found imbalances in the hm dataset:
+train data: class balance: 0.3551764705882353
+Positive samples: 3019, Negative samples: 5481
+
+validation data: class balance: 0.42980769230769234
+Positive samples: 447, Negative samples: 593
+
+
+## 17.10
+
+This comparision is on the two tasks `mm_imdb` and `upmc_food`, each with 15 finetune-only models. this pools the models here for one task and evaluates it for the test and train set. Here different architectures where used. This is a analysis of predictability of performance from alignment measures in general.
+<details closed>
+
+	mm_imdb: test loss=0.1897, test acc=0.9233
+	mm_imdb: val loss=0.1803, val acc=0.9279
+	mm_imdb: test loss=0.1897, test acc=0.9233
+	mm_imdb:  val loss=0.1803,  val acc=0.9279
+	mm_imdb: test loss=0.1887, test acc=0.9236
+	mm_imdb:  val loss=0.1783,  val acc=0.9286
+	mm_imdb: test loss=0.1880, test acc=0.9248
+	mm_imdb:  val loss=0.1775,  val acc=0.9297
+	mm_imdb: test loss=0.1854, test acc=0.9253
+	mm_imdb:  val loss=0.1743,  val acc=0.9304
+	mm_imdb: test loss=0.1836, test acc=0.9269
+	mm_imdb:  val loss=0.1710,  val acc=0.9325
+	mm_imdb: test loss=0.1853, test acc=0.9259
+	mm_imdb:  val loss=0.1748,  val acc=0.9307
+	mm_imdb: test loss=0.1814, test acc=0.9277
+	mm_imdb:  val loss=0.1686,  val acc=0.9334
+	mm_imdb: test loss=0.1858, test acc=0.9261
+	mm_imdb:  val loss=0.1741,  val acc=0.9314
+	mm_imdb: test loss=0.1795, test acc=0.9290
+	mm_imdb:  val loss=0.1685,  val acc=0.9339
+	mm_imdb: test loss=0.1874, test acc=0.9245
+	mm_imdb:  val loss=0.1777,  val acc=0.9291
+	mm_imdb: test loss=0.1866, test acc=0.9247
+	mm_imdb:  val loss=0.1749,  val acc=0.9302
+	mm_imdb: test loss=0.1880, test acc=0.9244
+	mm_imdb:  val loss=0.1777,  val acc=0.9290
+	mm_imdb: test loss=0.1805, test acc=0.9271
+	mm_imdb:  val loss=0.1675,  val acc=0.9334
+	mm_imdb: test loss=0.1843, test acc=0.9263
+	mm_imdb:  val loss=0.1721,  val acc=0.9319
+	mm_imdb: test loss=0.1787, test acc=0.9284
+	mm_imdb:  val loss=0.1644,  val acc=0.9346
+=========================
+test dataset
+corr. of mknn           with acc : r=+0.739, p=0.002
+corr. of mknn           with loss: r=+0.693, p=0.004
+corr. of cka            with acc : r=+0.704, p=0.003
+corr. of cka            with loss: r=+0.655, p=0.008
+corr. of cka_rbf        with acc : r=-0.023, p=0.935
+corr. of cka_rbf        with loss: r=-0.235, p=0.400
+corr. of unbiased_cka   with acc : r=+0.703, p=0.003
+corr. of unbiased_cka   with loss: r=+0.654, p=0.008
+corr. of svcca          with acc : r=+0.755, p=0.001
+corr. of svcca          with loss: r=+0.729, p=0.002
+corr. of cknna          with acc : r=+0.771, p=0.001
+corr. of cknna          with loss: r=+0.730, p=0.002
+corr. of cycle_knn      with acc : r=+0.052, p=0.855
+corr. of cycle_knn      with loss: r=+0.126, p=0.656
+corr. of procrustes     with acc : r=-0.263, p=0.344
+corr. of procrustes     with loss: r=-0.071, p=0.803
+corr. of jaccard        with acc : r=+0.734, p=0.002
+corr. of jaccard        with loss: r=+0.682, p=0.005
+corr. of rsa            with acc : r=+0.753, p=0.001
+corr. of rsa            with loss: r=+0.723, p=0.002
+corr. of r2             with acc : r=+0.683, p=0.005
+corr. of r2             with loss: r=+0.644, p=0.010
+=========================
+corr. of mknn           with acc : r=+0.711, p=0.003
+corr. of mknn           with loss: r=+0.671, p=0.006
+corr. of cka            with acc : r=+0.707, p=0.003
+corr. of cka            with loss: r=+0.675, p=0.006
+corr. of cka_rbf        with acc : r=+0.186, p=0.508
+corr. of cka_rbf        with loss: r=+0.004, p=0.990
+corr. of unbiased_cka   with acc : r=+0.707, p=0.003
+corr. of unbiased_cka   with loss: r=+0.675, p=0.006
+corr. of svcca          with acc : r=+0.689, p=0.004
+corr. of svcca          with loss: r=+0.579, p=0.024
+corr. of cknna          with acc : r=+0.711, p=0.003
+corr. of cknna          with loss: r=+0.664, p=0.007
+corr. of cycle_knn      with acc : r=-0.059, p=0.834
+corr. of cycle_knn      with loss: r=+0.028, p=0.922
+corr. of procrustes     with acc : r=-0.182, p=0.516
+corr. of procrustes     with loss: r=+0.014, p=0.960
+corr. of jaccard        with acc : r=+0.711, p=0.003
+corr. of jaccard        with loss: r=+0.671, p=0.006
+corr. of rsa            with acc : r=+0.732, p=0.002
+corr. of rsa            with loss: r=+0.689, p=0.004
+corr. of r2             with acc : r=+0.704, p=0.003
+corr. of r2             with loss: r=+0.632, p=0.011
+=========================
+validation dataset
+corr. of mknn           with acc : r=+0.746, p=0.001
+corr. of mknn           with loss: r=+0.696, p=0.004
+corr. of cka            with acc : r=+0.711, p=0.003
+corr. of cka            with loss: r=+0.658, p=0.008
+corr. of cka_rbf        with acc : r=-0.117, p=0.678
+corr. of cka_rbf        with loss: r=-0.258, p=0.353
+corr. of unbiased_cka   with acc : r=+0.709, p=0.003
+corr. of unbiased_cka   with loss: r=+0.656, p=0.008
+corr. of svcca          with acc : r=+0.780, p=0.001
+corr. of svcca          with loss: r=+0.736, p=0.002
+corr. of cknna          with acc : r=+0.783, p=0.001
+corr. of cknna          with loss: r=+0.735, p=0.002
+corr. of cycle_knn      with acc : r=+0.107, p=0.705
+corr. of cycle_knn      with loss: r=+0.156, p=0.579
+corr. of procrustes     with acc : r=-0.178, p=0.525
+corr. of procrustes     with loss: r=-0.040, p=0.888
+corr. of jaccard        with acc : r=+0.739, p=0.002
+corr. of jaccard        with loss: r=+0.685, p=0.005
+corr. of rsa            with acc : r=+0.774, p=0.001
+corr. of rsa            with loss: r=+0.733, p=0.002
+corr. of r2             with acc : r=+0.672, p=0.006
+corr. of r2             with loss: r=+0.626, p=0.013
+=========================
+corr. of mknn           with acc : r=+0.714, p=0.003
+corr. of mknn           with loss: r=+0.693, p=0.004
+corr. of cka            with acc : r=+0.714, p=0.003
+corr. of cka            with loss: r=+0.700, p=0.004
+corr. of cka_rbf        with acc : r=+0.139, p=0.621
+corr. of cka_rbf        with loss: r=+0.046, p=0.869
+corr. of unbiased_cka   with acc : r=+0.714, p=0.003
+corr. of unbiased_cka   with loss: r=+0.700, p=0.004
+corr. of svcca          with acc : r=+0.668, p=0.007
+corr. of svcca          with loss: r=+0.639, p=0.010
+corr. of cknna          with acc : r=+0.714, p=0.003
+corr. of cknna          with loss: r=+0.693, p=0.004
+corr. of cycle_knn      with acc : r=+0.008, p=0.978
+corr. of cycle_knn      with loss: r=-0.055, p=0.845
+corr. of procrustes     with acc : r=-0.125, p=0.657
+corr. of procrustes     with loss: r=-0.021, p=0.940
+corr. of jaccard        with acc : r=+0.714, p=0.003
+corr. of jaccard        with loss: r=+0.693, p=0.004
+corr. of rsa            with acc : r=+0.736, p=0.002
+corr. of rsa            with loss: r=+0.704, p=0.003
+corr. of r2             with acc : r=+0.689, p=0.004
+corr. of r2             with loss: r=+0.657, p=0.008
+
+
+	upmc_food: test loss=0.4185, test acc=0.9040
+	upmc_food:  val loss=0.4039,  val acc=0.9065
+	upmc_food: test loss=0.4067, test acc=0.9079
+	upmc_food:  val loss=0.4000,  val acc=0.9092
+	upmc_food: test loss=0.4244, test acc=0.9020
+	upmc_food:  val loss=0.4286,  val acc=0.9035
+	upmc_food: test loss=0.3638, test acc=0.9203
+	upmc_food:  val loss=0.3543,  val acc=0.9194
+	upmc_food: test loss=0.3651, test acc=0.9187
+	upmc_food:  val loss=0.3651,  val acc=0.9188
+	upmc_food: test loss=0.3748, test acc=0.9179
+	upmc_food:  val loss=0.3628,  val acc=0.9168
+	upmc_food: test loss=0.2812, test acc=0.9367
+	upmc_food:  val loss=0.2733,  val acc=0.9388
+	upmc_food: test loss=0.2854, test acc=0.9367
+	upmc_food:  val loss=0.2777,  val acc=0.9369
+	upmc_food: test loss=0.2879, test acc=0.9371
+	upmc_food:  val loss=0.2809,  val acc=0.9374
+	upmc_food: test loss=0.3408, test acc=0.9261
+	upmc_food:  val loss=0.3276,  val acc=0.9245
+	upmc_food: test loss=0.3326, test acc=0.9272
+	upmc_food:  val loss=0.3309,  val acc=0.9237
+	upmc_food: test loss=0.3343, test acc=0.9272
+	upmc_food:  val loss=0.3311,  val acc=0.9261
+	upmc_food: test loss=0.3362, test acc=0.9249
+	upmc_food:  val loss=0.3367,  val acc=0.9259
+	upmc_food: test loss=0.3308, test acc=0.9299
+	upmc_food:  val loss=0.3276,  val acc=0.9281
+=========================
+test dataset
+corr. of mknn           with acc : r=+0.751, p=0.002
+corr. of mknn           with loss: r=+0.798, p=0.001
+corr. of cka            with acc : r=+0.724, p=0.003
+corr. of cka            with loss: r=+0.780, p=0.001
+corr. of cka_rbf        with acc : r=+0.729, p=0.003
+corr. of cka_rbf        with loss: r=+0.703, p=0.005
+corr. of unbiased_cka   with acc : r=+0.728, p=0.003
+corr. of unbiased_cka   with loss: r=+0.784, p=0.001
+corr. of svcca          with acc : r=+0.729, p=0.003
+corr. of svcca          with loss: r=+0.751, p=0.002
+corr. of cknna          with acc : r=+0.743, p=0.002
+corr. of cknna          with loss: r=+0.784, p=0.001
+corr. of cycle_knn      with acc : r=+0.394, p=0.164
+corr. of cycle_knn      with loss: r=+0.424, p=0.131
+corr. of procrustes     with acc : r=-0.401, p=0.156
+corr. of procrustes     with loss: r=-0.485, p=0.079
+corr. of jaccard        with acc : r=+0.753, p=0.002
+corr. of jaccard        with loss: r=+0.802, p=0.001
+corr. of rsa            with acc : r=+0.718, p=0.004
+corr. of rsa            with loss: r=+0.772, p=0.001
+corr. of r2             with acc : r=+0.585, p=0.028
+corr. of r2             with loss: r=+0.644, p=0.013
+=========================
+corr. of mknn           with acc : r=+0.654, p=0.011
+corr. of mknn           with loss: r=+0.688, p=0.007
+corr. of cka            with acc : r=+0.709, p=0.005
+corr. of cka            with loss: r=+0.723, p=0.003
+corr. of cka_rbf        with acc : r=+0.760, p=0.002
+corr. of cka_rbf        with loss: r=+0.728, p=0.003
+corr. of unbiased_cka   with acc : r=+0.672, p=0.009
+corr. of unbiased_cka   with loss: r=+0.684, p=0.007
+corr. of svcca          with acc : r=+0.705, p=0.005
+corr. of svcca          with loss: r=+0.701, p=0.005
+corr. of cknna          with acc : r=+0.736, p=0.003
+corr. of cknna          with loss: r=+0.780, p=0.001
+corr. of cycle_knn      with acc : r=+0.580, p=0.030
+corr. of cycle_knn      with loss: r=+0.606, p=0.022
+corr. of procrustes     with acc : r=-0.295, p=0.306
+corr. of procrustes     with loss: r=-0.270, p=0.350
+corr. of jaccard        with acc : r=+0.654, p=0.011
+corr. of jaccard        with loss: r=+0.688, p=0.007
+corr. of rsa            with acc : r=+0.643, p=0.013
+corr. of rsa            with loss: r=+0.666, p=0.009
+corr. of r2             with acc : r=+0.623, p=0.017
+corr. of r2             with loss: r=+0.657, p=0.011
+=========================
+validation dataset
+corr. of mknn           with acc : r=+0.817, p=0.000
+corr. of mknn           with loss: r=+0.779, p=0.001
+corr. of cka            with acc : r=+0.792, p=0.001
+corr. of cka            with loss: r=+0.782, p=0.001
+corr. of cka_rbf        with acc : r=+0.698, p=0.006
+corr. of cka_rbf        with loss: r=+0.711, p=0.004
+corr. of unbiased_cka   with acc : r=+0.797, p=0.001
+corr. of unbiased_cka   with loss: r=+0.784, p=0.001
+corr. of svcca          with acc : r=+0.777, p=0.001
+corr. of svcca          with loss: r=+0.734, p=0.003
+corr. of cknna          with acc : r=+0.801, p=0.001
+corr. of cknna          with loss: r=+0.764, p=0.001
+corr. of cycle_knn      with acc : r=+0.451, p=0.106
+corr. of cycle_knn      with loss: r=+0.382, p=0.177
+corr. of procrustes     with acc : r=-0.474, p=0.087
+corr. of procrustes     with loss: r=-0.530, p=0.051
+corr. of jaccard        with acc : r=+0.820, p=0.000
+corr. of jaccard        with loss: r=+0.784, p=0.001
+corr. of rsa            with acc : r=+0.791, p=0.001
+corr. of rsa            with loss: r=+0.767, p=0.001
+corr. of r2             with acc : r=+0.673, p=0.008
+corr. of r2             with loss: r=+0.641, p=0.014
+=========================
+corr. of mknn           with acc : r=+0.754, p=0.002
+corr. of mknn           with loss: r=+0.556, p=0.039
+corr. of cka            with acc : r=+0.789, p=0.001
+corr. of cka            with loss: r=+0.697, p=0.006
+corr. of cka_rbf        with acc : r=+0.744, p=0.002
+corr. of cka_rbf        with loss: r=+0.821, p=0.000
+corr. of unbiased_cka   with acc : r=+0.763, p=0.002
+corr. of unbiased_cka   with loss: r=+0.662, p=0.010
+corr. of svcca          with acc : r=+0.776, p=0.001
+corr. of svcca          with loss: r=+0.596, p=0.025
+corr. of cknna          with acc : r=+0.780, p=0.001
+corr. of cknna          with loss: r=+0.640, p=0.014
+corr. of cycle_knn      with acc : r=+0.682, p=0.007
+corr. of cycle_knn      with loss: r=+0.455, p=0.102
+corr. of procrustes     with acc : r=-0.305, p=0.288
+corr. of procrustes     with loss: r=-0.398, p=0.159
+corr. of jaccard        with acc : r=+0.754, p=0.002
+corr. of jaccard        with loss: r=+0.556, p=0.039
+corr. of rsa            with acc : r=+0.754, p=0.002
+corr. of rsa            with loss: r=+0.596, p=0.025
+corr. of r2             with acc : r=+0.723, p=0.003
+corr. of r2             with loss: r=+0.530, p=0.051
+
+
+</details>
+$\Rightarrow$ negative correlation with procrustes, high correlation with cknna.
+Interesting really low (highly significant) values for mm_imdb, while upmc_food shows moderate correlations with high p-values (not significant).
+Seems to be task dependent.
+
+
+Here's a concise analysis you can add:
+
+
+
+The following metrics show strong, significant correlations (r > 0.7, p < 0.01) across both tasks:
+
+| Metric | MM-IMDB (test) | UPMC-Food (test) |
+|--------|----------------|------------------|
+| cknna| r=0.771, p=0.001 | r=0.743, p=0.002 |
+| mknn | r=0.739, p=0.002 | r=0.751, p=0.002 |
+| svcca | r=0.755, p=0.001 | r=0.729, p=0.003 |
+| jaccard | r=0.734, p=0.002 | r=0.753, p=0.002 |
+| rsa | r=0.753, p=0.001 | r=0.718, p=0.004 |
+| cka (linear) | r=0.704, p=0.003 | r=0.724, p=0.003 |
+
+**Conclusion**: These 6 metrics reliably predict performance across diverse architectures and tasks.
+
+**cka_rbf** shows dramatically different performance:
+- MM-IMDB: r=-0.023 (p=0.935) - **fails completely**
+- UPMC-Food: r=+0.729 (p=0.003) - **strong predictor**
+
+
+---
+
+
+is CLS in BERT even the same as CLS in ViT?
+
+implemented test sets for all datasets. now in `experimentTracker.evaluate(model, task)` the test sets are used for computing accuracies.
+
+Problem: hateful memes is too small for meaningful alignment analysis with 512, i have to adjust to 500. `dev.jsonl` contains only 500 samples
+
+implemented sanity check for the measures:
+```
+SVCCA:           identical=0.8797, random=0.1669
+CKA:             identical=1.0000, random=0.0548
+CKA normed:      identical=1.0000, random=0.0552
+CKA unbiased:    identical=1.0000, random=0.0290
+Mutual KNN:      identical=1.0000, random=0.0618
+CKNNA:           identical=1.0000, random=0.0194
+Cycle KNN:       identical=0.8848, random=0.6484
+LCS KNN:         identical=8.0000, random=0.3789
+Edit Distance:   identical=1.0000, random=0.7501
+Jaccard:         identical=1.0000, random=0.0406
+Procrustes:      identical=nan, random=82.1158
+RSA:             identical=1.0000, random=0.0286
+```
+weirdly, svcca has 0.87 even for identical measures, and 0.16 for random. Seems not to be quite in the range of $[0,1]$.
+
+Problem here:
+```
+0: v-v: 0.9742729933317914, t-t: 0.9047365303899584, c-c: 0.13146975382067233
+1: v-v: 0.9538666934372777, t-t: 0.855300764183276, c-c: 0.14771491771396944
+2: v-v: 0.9437303334795629, t-t: 0.7867630363653866, c-c: 0.1734919959929184
+3: v-v: 0.8232363334222592, t-t: 0.8860326698559919, c-c: 0.5732621813327985
+4: v-v: 0.7557494530616364, t-t: 0.8556820596575738, c-c: 0.47956998649240273
+5: v-v: 0.7959809675239169, t-t: 0.9044626923547732, c-c: 0.40650191487462395
+6: v-v: 0.920212235651318, t-t: 0.8345659617976542, c-c: 0.6030498543079044
+7: v-v: 0.8347529077031177, t-t: 0.8586370697752859, c-c: 0.49550097506102564
+8: v-v: 0.8238978509428844, t-t: 0.8547694013716522, c-c: 0.4029174003196152
+9: v-v: 0.8246623019834024, t-t: 0.8581564826585076, c-c: 0.3787406480808941
+10:v-v: 0.8131022050219533, t-t: 0.8672419515501189, c-c: 0.31508022616828846
+11:v-v: 0.8049661072054934, t-t: 0.878885846839872, c-c: 0.3102150474189421
+```
+
+`v-v`, `t-t` directly compares the embeddings of intra model matrix where `i==j` (both embedings are identical), but still only 0.87.
+
+
+
+## 14.10 current configurations under investigation
+
+| name              | t_biatt_id | v_biatt_id   | path  | notes |
+|-------------------|-------------|-------------|-------|-------|
+| baseline          | []          | []          |res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt           |maybe more epochs needed, as there is  |
+| early_fusion      | [3,4,5]     | [3,4,5]     |res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt       | |
+| middle_fusion     | [6,7,8]     | [6,7,8]     |res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt      | |
+| late_fusion       | [9,10,11]   | [9,10,11]   |res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt        | |
+| asymmetric_fusion | [6,7,8,9]   | [3,5,7,9]   |res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt  | |
+| optuna1           | [3,6]       | [6,8]       |res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt            |good run for hm, trial  21 |
+| optuna2           | [7,9,10,11 ]| [6,7,9,10]  |res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt            | trade-off run for mm-imdb and hm, trial 11|
+
+
+still optuna 3 needed! good archicture for mm_imdb alone!
+
+
+
+
+
+
+
+## 13.10
+
+---
+next steps:
+- wait for pretraining run (5 architectures) to finish and start analysis
+- correlation between representational alignment metrics and performance
+
+
+**MM-IMDB (Val Acc @ Epoch 5):**
+
+| Architecture          | Mean ± Std |
+|-----------------------|-----------|
+|**optuna2 [6,7,9,10]** | **0.9274 ± 0.0012** |
+| **late [9,10,11]**    | **0.9270 ± 0.0011** |
+| **middle [5,6,7]**    | 0.9258 ± 0.0008 |
+| optuna1 [6,8]         | 0.9248 ± 0.0006 |
+| early [3,4,6]         | 0.9242 ± 0.0006 |
+| **baseline []**       | 0.9211 (1 seed) |
+
+**UPMC Food (Val Acc @ Epoch 5):**
+
+| Architecture | Mean ± Std |
+|--------------|-----------|
+| **late [9,10,11]** | **0.9377 ± 0.0010** |
+| **baseline []** | **0.9363 (1 seed)** |
+| optuna2 [6,7,9,10] | 0.9267 ± 0.0012 |
+| optuna1 [6,8] | 0.9252 ± 0.0020 |
+| middle [5,6,7] | 0.9183 ± 0.0013 |
+| early [3,4,6] | 0.9064 ± 0.0029 |
+
+
+$\Rightarrow$ UPMC-food does not really benefit from multimodality?
+
+
+---
+
+optuna run finished in `multi_task_study_20251004-131802 (id=3)`
+
+<figure>
+<img src="res/markdown_res/optuna_study_result1-1410.png" width=800>
+<figcaption>parallel coordinate</figcaption>
+
+
+<img src="res/markdown_res/optuna_study_result2-1410.png" width=500>
+<figcaption>pareto front</figcaption>
+
+
+<img src="res/markdown_res/optuna_study_result3-1410.png" width=500>
+<figcaption>parameter importance</figcaption>
+
+
+</figure>
+
+
+
+---
+
+<details closed>
+<summary><b>Paths</b></summary>
+Those are the paths of finetuned models without pretraining. To be used for correlation analysis.
+
+```
+model saved to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
+Saved finetuned model to res/checkpoints/20251012-163839_finetuned_upmc_food.pt
+[
+'res/checkpoints/20251010-090441_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-095244_finetuned_upmc_food.pt',
+'res/checkpoints/20251010-130016_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-134820_finetuned_upmc_food.pt',
+'res/checkpoints/20251010-165605_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-174413_finetuned_upmc_food.pt',
+'res/checkpoints/20251010-205147_finetuned_mm_imdb.pt',
+'res/checkpoints/20251010-213953_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-004735_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-013540_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-044319_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-053123_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-083858_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-092703_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-123449_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-132257_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-163056_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-171905_finetuned_upmc_food.pt',
+'res/checkpoints/20251011-202657_finetuned_mm_imdb.pt',
+'res/checkpoints/20251011-211506_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-000323_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-004732_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-033945_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-042355_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-071611_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-080813_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-113121_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-122323_finetuned_upmc_food.pt',
+'res/checkpoints/20251012-154634_finetuned_mm_imdb.pt',
+'res/checkpoints/20251012-163839_finetuned_upmc_food.pt',
+'res/checkpoints/20251013-094844_finetuned_mm_imdb.pt',
+'res/checkpoints/20251013-094844_finetuned_upmc_food.pt,
+]
+```
+</details>
+
+## 09.10
+
+<details closed>
+
+need to include the new directory `res/checkpoints/ftonly_for_correlation-analysis` in the paths
+```
+# on gaming pc
+# "res/checkpoints/20251007-200007_finetuned_hateful_memes.pt",
+# "res/checkpoints/20251007-201826_finetuned_mm_imdb.pt",
+# "res/checkpoints/20251008-141240_finetuned_hateful_memes.pt",
+# "res/checkpoints/20251008-144350_finetuned_mm_imdb.pt",
+# "res/checkpoints/20251008-154319_finetuned_hateful_memes.pt",
+# "res/checkpoints/20251008-160257_finetuned_mm_imdb.pt",
+# "res/checkpoints/20251008-170044_finetuned_hateful_memes.pt"
+
+# ---------------------------------------------------------
+#uni gpus
+"res/checkpoints/20251006-211344_finetuned_hateful_memes.pt",
+"res/checkpoints/20251006-211344_finetuned_mm_imdb.pt",
+"res/checkpoints/20251006-224233_finetuned_hateful_memes.pt",
+"res/checkpoints/20251006-224233_finetuned_mm_imdb.pt",
+"res/checkpoints/20251007-160301_finetuned_hateful_memes.pt",
+"res/checkpoints/20251007-160855_finetuned_hateful_memes.pt",
+"res/checkpoints/20251007-160855_finetuned_mm_imdb.pt",
+"res/checkpoints/20251007-162505_finetuned_mm_imdb.pt",
+"res/checkpoints/20251007-172924_finetuned_hateful_memes.pt",
+"res/checkpoints/20251007-173620_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-113042_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-113042_finetuned_mm_imdb.pt",
+#not sure about them above, could be bad runs
+"res/checkpoints/20251008-131105_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-143741_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-143741_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-161701_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-161701_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-174253_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-174253_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-193456_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-193456_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-211323_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-211323_finetuned_mm_imdb.pt",
+"res/checkpoints/20251008-223850_finetuned_hateful_memes.pt",
+"res/checkpoints/20251008-223850_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-004449_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-004449_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-023655_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-023655_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-042241_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-042241_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-060800_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-060800_finetuned_mm_imdb.pt",
+"res/checkpoints/20251009-075441_finetuned_hateful_memes.pt",
+"res/checkpoints/20251009-075441_finetuned_mm_imdb.pt",
+```
+
+</details>
+
+Easy vqa has acc=1 => really good! but shows decreasing alignment metrics, but thats okay.
+```
+Epoch 1/4, Train Loss: 0.8763, Val Loss: 0.3202, Val Acc: 0.8712
+layer  0: mknn = 0.07, cka(lin)=  0.01, svcca= 0.17, cka(rbf)=  0.03, cka(unb)=  0.00, cknn-a= 0.05, cycleknn= 0.79
+layer  1: mknn = 0.07, cka(lin)=  0.02, svcca= 0.16, cka(rbf)=  0.16, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.78
+layer  2: mknn = 0.07, cka(lin)=  0.02, svcca= 0.17, cka(rbf)=  0.25, cka(unb)=  0.01, cknn-a= 0.05, cycleknn= 0.79
+layer  3: mknn = 0.08, cka(lin)=  0.04, svcca= 0.21, cka(rbf)=  0.64, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.75
+layer  4: mknn = 0.08, cka(lin)=  0.05, svcca= 0.20, cka(rbf)=  0.84, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.77
+layer  5: mknn = 0.29, cka(lin)=  0.49, svcca= 0.52, cka(rbf)=  1.00, cka(unb)=  0.44, cknn-a= 0.26, cycleknn= 0.91
+layer  6: mknn = 0.30, cka(lin)=  0.52, svcca= 0.53, cka(rbf)=  1.00, cka(unb)=  0.46, cknn-a= 0.26, cycleknn= 0.90
+layer  7: mknn = 0.27, cka(lin)=  0.50, svcca= 0.46, cka(rbf)=  1.00, cka(unb)=  0.45, cknn-a= 0.23, cycleknn= 0.86
+layer  8: mknn = 0.24, cka(lin)=  0.45, svcca= 0.43, cka(rbf)=  1.00, cka(unb)=  0.39, cknn-a= 0.20, cycleknn= 0.86
+layer  9: mknn = 0.35, cka(lin)=  0.66, svcca= 0.58, cka(rbf)=  1.00, cka(unb)=  0.62, cknn-a= 0.32, cycleknn= 0.87
+layer 10: mknn = 0.27, cka(lin)=  0.40, svcca= 0.49, cka(rbf)=  1.00, cka(unb)=  0.35, cknn-a= 0.24, cycleknn= 0.85
+layer 11: mknn = 0.23, cka(lin)=  0.32, svcca= 0.45, cka(rbf)=  1.00, cka(unb)=  0.28, cknn-a= 0.19, cycleknn= 0.84
+```
+
+```
+Epoch 3/4, Train Loss: 0.0142, Val Loss: 0.0005, Val Acc: 1.0000
+layer  0: mknn = 0.07, cka(lin)=  0.01, svcca= 0.15, cka(rbf)=  0.03, cka(unb)= -0.02, cknn-a= 0.05, cycleknn= 0.81
+layer  1: mknn = 0.07, cka(lin)=  0.02, svcca= 0.17, cka(rbf)=  0.15, cka(unb)=  0.01, cknn-a= 0.05, cycleknn= 0.79
+layer  2: mknn = 0.07, cka(lin)=  0.02, svcca= 0.18, cka(rbf)=  0.24, cka(unb)=  0.01, cknn-a= 0.05, cycleknn= 0.76
+layer  3: mknn = 0.08, cka(lin)=  0.04, svcca= 0.20, cka(rbf)=  0.62, cka(unb)=  0.02, cknn-a= 0.05, cycleknn= 0.77
+layer  4: mknn = 0.08, cka(lin)=  0.06, svcca= 0.19, cka(rbf)=  0.81, cka(unb)=  0.03, cknn-a= 0.05, cycleknn= 0.76
+layer  5: mknn = 0.31, cka(lin)=  0.52, svcca= 0.52, cka(rbf)=  1.00, cka(unb)=  0.47, cknn-a= 0.28, cycleknn= 0.91
+layer  6: mknn = 0.32, cka(lin)=  0.54, svcca= 0.55, cka(rbf)=  1.00, cka(unb)=  0.49, cknn-a= 0.29, cycleknn= 0.92
+layer  7: mknn = 0.30, cka(lin)=  0.51, svcca= 0.50, cka(rbf)=  1.00, cka(unb)=  0.45, cknn-a= 0.25, cycleknn= 0.88
+layer  8: mknn = 0.25, cka(lin)=  0.44, svcca= 0.44, cka(rbf)=  1.00, cka(unb)=  0.38, cknn-a= 0.21, cycleknn= 0.87
+layer  9: mknn = 0.32, cka(lin)=  0.58, svcca= 0.52, cka(rbf)=  1.00, cka(unb)=  0.53, cknn-a= 0.28, cycleknn= 0.89
+layer 10: mknn = 0.24, cka(lin)=  0.21, svcca= 0.48, cka(rbf)=  1.00, cka(unb)=  0.18, cknn-a= 0.19, cycleknn= 0.88
+layer 11: mknn = 0.21, cka(lin)=  0.18, svcca= 0.47, cka(rbf)=  1.00, cka(unb)=  0.15, cknn-a= 0.17, cycleknn= 0.86
+```
+---
+
+Same experiment as yesterday, but symmetric coattention placement at `[5,6,9]`.
+
+<details open>
+<summary><b>Results</b></summary>
+
+<figure>
+  <figcaption><b>CKA — Non-contrastive vs. Contrastive</b></figcaption>
+  <div align="center">
+    <img src="./res/markdown_res/no_contr_20251008-210052_experiment_coattn_5-6-9/hateful_memes/20251008-210052_e4_cka_matrices.png" width="400">
+    <img src="./res/markdown_res/contr_20251008-212534_experiment_coattn_5-6-9/hateful_memes/20251008-212534_e4_cka_matrices.png" width="400">
+  </div>
+
+  <hr>
+
+  <figcaption><b>SVCCA</b></figcaption>
+  <div align="center">
+    <img src="./res/markdown_res/no_contr_20251008-210052_experiment_coattn_5-6-9/hateful_memes/20251008-210052_e4_svcca_matrices.png" width="400">
+    <img src="./res/markdown_res/contr_20251008-212534_experiment_coattn_5-6-9/hateful_memes/20251008-212534_e4_svcca_matrices.png" width="400">
+  </div>
+
+  <small><i>Preliminary pattern: both similarity structures behave consistently across methods.</i></small>
+</figure>
+</details>
+
+---
+
+## 08.10
+Finetune: contrastive vs non-contrastive on HM with late fusion (symmetric coattns at `[9,10,11]`).
+
+<details open>
+<summary><b>Results</b></summary>
+
+<figure>
+  <figcaption><b>CKA — Non-contrastive vs. Contrastive</b></figcaption>
+
+  <div align="center">
+    <img src="./res/markdown_res/20251008-184716_experiment_coattn_9-10-11/hateful_memes/20251008-184716_e4_cka_matrices.png" width="400">
+    <img src="./res/markdown_res/20251008-191822_experiment_coattn_9-10-11/hateful_memes/20251008-191822_e3_cka_matrices.png" width="400">
+  </div>
+
+  <blockquote>
+    <b>Observation:</b> The contrastive term results in more alignment.
+    In the contrastive run, text layers 9–11 are highly similar to all vision layers (decreasing from 11→0).
+    The non-contrastive model shows the inverse pattern.
+    Vision–vision similarity is also globally higher in the contrastive case.
+  </blockquote>
+
+  <hr>
+
+  <figcaption><b>SVCCA</b></figcaption>
+
+  <div align="center">
+    <img src="./res/markdown_res/20251008-184716_experiment_coattn_9-10-11/hateful_memes/20251008-184716_e4_svcca_matrices.png" width="400">
+    <img src="./res/markdown_res/20251008-191822_experiment_coattn_9-10-11/hateful_memes/20251008-191822_e3_svcca_matrices.png" width="400">
+  </div>
+
+  <small><i>Similar outcome as for CKA — SVCCA confirms the same layer-level trends.</i></small>
+</figure>
+</details>
+
+---
+
+## KNN-K Importance
+
+<details open>
+<summary><b>Spearman correlations between different K values</b></summary>
+
+```text
+K=  5 vs K= 10: r=0.9938, p=0.0000
+...
+K=  5 vs K=256: r=0.9074, p=0.0000
+K= 10 vs K= 16: r=0.9978, p=0.0000
+...
+K=128 vs K=256: r=0.9872, p=0.0000
+
+------------------------------------------------------------
+Within-model K consistency (mean across models):
+K=  5 vs K= 10: mean r=0.9668 ± 0.0215
+...
+K=  5 vs K=128: mean r=0.9021 ± 0.0715
+...
+K=128 vs K=256: mean r=0.9694 ± 0.0313
+```
+
+<blockquote>
+  <b>Conclusion:</b> K choice is not crucial — correlations remain consistently high across values.
+</blockquote>
+</details>
+
+---
+
+## Correlation Analysis Between Metrics
+
+<figure>
+  <div align="center">
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_pearson.png" width="300">
+    <img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/metric_correlation_spearman.png" width="300">
+  </div>
+
+  <blockquote>
+    <b>Observation:</b> Many metrics appear redundant.
+    Proceeding with the following four:
+    <ul>
+      <li><b>mknn</b> – similar to cknna, jaccard</li>
+      <li><b>cka</b></li>
+      <li><b>svcca</b> – similar to rsa and cycle_knn</li>
+      <li><b>procrustes</b></li>
+    </ul>
+    <small><i>Excluding <code>r2</code> and <code>cka_rbf</code>.</i></small>
+  </blockquote>
+</figure>
+
+
+
+
+
+
+## 07.10
+
+Also adapted visualizations to the new metrics calculation with proper normalization. The following shows the resulting visualization comparing initialized to epoch 6:
+```
+Epoch 6/6, Train Loss: 0.4473, Val Loss: 0.5459, Val Acc: 0.7347
+```
+
+<figure>
+
+**cka**: untrained vs e6 <br>
+<img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_cka_matrices.png" width=400>
+<img src="./res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_cka_matrices.png" width=400>
+
+**mknn**: untrained vs e6<br>
+<img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e0_mutual_knn_matrices.png" width=400>
+<img src="res/markdown_res/20251008-084101_experiment_coattn_5-6-7/hateful_memes/20251008-084101_e6_mutual_knn_matrices.png" width=400>
+
+
+</figure>
+
+---
+
+Currently two experiments:
+- c703i-gpu10: optuna multi-objective optimization of coattn-placement (still running, but paused and resumed to collect data for correlation analysis)
+- c703i-gpu5: train 12 models (different architecture&seeds) for metric analysis.
+
+
+Experiment on dataset size for alignment representations with only two different pretrains on random architectures, it showed that:
+- r2 and cycle_knn are not statistically significant.
+    ```
+    Warning: correlation between 64 and 512 for cycle_knn is not significant (p=0.273, r=0.233)
+    Warning: correlation between 64 and 1024 for cycle_knn is not significant (p=0.708, r=0.081)
+    Warning: correlation between 256 and 64 for cycle_knn is not significant (p=0.078, r=0.367)
+    Warning: correlation between 1024 and 64 for cycle_knn is not significant (p=0.708, r=0.081)
+    ...
+    ```
+
+    ```
+    Warning: correlation between 512 and 1024 for r2 is not significant (p=0.176, r=0.286)
+    Warning: correlation between 1024 and 64 for r2 is not significant (p=0.123, r=0.323)
+    Warning: correlation between 1024 and 128 for r2 is not significant (p=0.735, r=0.073)
+    ```
+
+- really high correlation for the other metrics, but cka_rbf needs higher sample sizes like 512; all visualizations are stored in `res/markdown_res/hm_two_arch-sample_size_corr-0710`.
+<figure>
+pearsonr vs spearmanr:
+<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_pearsonr.png" width=250><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/svcca_spearmanr.png" width=250>
+
+<br>
+both show really good corerlation with pvals < 0.002
+
+<br>
+same results for *mknn*:
+<img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_pearsonr.png" width=250><img src="./res/markdown_res/hm_two_arch-sample_size_corr-0710/mknn_spearmanr.png" width=250>
+
+</figure>
+
+$\Rightarrow$ `num_samples=512` seems to be a good size!
+
+
+
+
+
+
+
+## 06.10
+
+fixed normalization for alignment metrix. All the neighborhood based metrics (mknn, rank, procrustes) are now calculated on normalized embeddings. This should give more stable results!
+
+also added new similarities:
+- linear r2 alginment: $\hat Y = WX$, how good is simple revertible transformation $W$?
+- representational similarity analysis (rsa): correlation of distance metrics
+
+also rewrote the logic for collecting data for repr. alignment with simpler steps:
+1) collect data batches from the alignment set in `get_alignment_data`
+2) caluculate metrics
+3) return them for saving
+
+in addition I found the libraries for metrics from the papers:
+- https://github.com/mklabunde/llm_repsim/blob/main/llmcomp/measures/procrustes.py  (towards understanding representational similarity in neural networks)
+- https://github.com/minyoungg/platonic-rep/ (platonic representation)
+
+Those repositories have well tested code already for this purpose. my implementations were a bit off (mknn was totally off, also cka lib I was using). As they tested their code, I'm going forward with their code for now, with a handful of metrics still relying on my implementation.
+
+
+Also worked further towards a correlation analysis of the different metrics and batchsizes
+
+
 ## 05.10 comparison with contrastive loss:
 
 
 
-### contrastive loss: alignment metrics
-the best performing epoch (loss) was chosen here.
-
-**comparison all metrics**:
+### Visualizations for the below experiments
+Analysis of ealry fusion and mid fusion in terms of all the alignment metrics collected:
 <figure>
-TODO: for one metric, all 4 different configs in one plot => better comparison
+<!-- TODO: for one metric, all 4 different configs in one plot => better comparison -->
 <img src="./res/markdown_res/early_fusion_all_metrics0510.png">
 
 <img src="./res/markdown_res/mid_fusion_all_metrics0510.png">
 </figure>
 
 
+comparison of mknn for all architectures:
 <figure>
-comparison of mknn alone: <br>
-<img src="./res/markdown_res/mknn_simple0510.png">
-
-<br>
-<img src="./res/markdown_res/fusion_comparison_finetune0510.png">
+<img src="./res/markdown_res/mknn_all_architectures0610.png">
 </figure>
 
+Interesting finding: cosine similarity increases in pretrained model (with contrastive loss in pretraining) and reaches maximum in final representation.
+But as the contrastive loss term directly optimizes cosine-sim, this is pretty clear. Anyhow, the final concattenation of `text_embedding` and `vision_embedding` directly optimizes those representations. But still the final values are different for different models. While early fusion achieves only 0.3 cosine in the last layer, the late fusion achieves 0.6 cosine similarity in the last layer. This is non-trivial
+
+<figure>
+    <img src="./res/markdown_res/cosine_all_architectures-0610.png">
+    also visible in th architecture comparison: <br>
+    <img src="./res/markdown_res/architecture_comparison_pt-0610.png">
+
+
+</figure>
+
+
+
+### contrastive loss: alignment metrics
+the best performing epoch (loss) was chosen here.
+<figure>
+    <img src="./res/markdown_res//performance_summary-0610.png">
+    in comparison to pretraining without contrastive loss: <br>
+    <img src="./res/markdown_res/performance_comparison0610.png">
+</figure>
 
 **early fusion**:
 <figure>
@@ -112,13 +1559,37 @@ layer11 (co-attn- 0): cosine= 0.5112, CKA=0.041, SVCCA=0.000, mknn=0.457, rank=0
 finetune only:
 
 ```
-
+Epoch 4/9, Train Loss: 0.4636, Val Loss: 0.5544, Val Acc: 0.7388
+layer layer0  (co-attn- 0): cosine=-0.0301, CKA=0.228, SVCCA=0.000, mknn=0.020, rank=0.029, procrustes=118.17
+layer layer1  (co-attn- 0): cosine=-0.0236, CKA=0.196, SVCCA=0.000, mknn=0.025, rank=0.034, procrustes=156.84
+layer layer2  (co-attn- 0): cosine=-0.0403, CKA=0.173, SVCCA=0.000, mknn=0.028, rank=0.037, procrustes=163.78
+layer layer3  (co-attn- 0): cosine=-0.0376, CKA=0.157, SVCCA=0.000, mknn=0.035, rank=0.036, procrustes=249.37
+layer layer4  (co-attn- 0): cosine=-0.0294, CKA=0.130, SVCCA=0.000, mknn=0.041, rank=0.042, procrustes=280.17
+layer layer5  (co-attn- 0): cosine=-0.0416, CKA=0.090, SVCCA=0.000, mknn=0.044, rank=0.052, procrustes=355.62
+layer layer6  (co-attn- 0): cosine=-0.0258, CKA=0.046, SVCCA=0.000, mknn=0.039, rank=0.046, procrustes=558.61
+layer layer7  (co-attn- 0): cosine=-0.0338, CKA=0.046, SVCCA=0.000, mknn=0.043, rank=0.049, procrustes=570.69
+layer layer8  (co-attn- 0): cosine=-0.0054, CKA=0.052, SVCCA=0.000, mknn=0.050, rank=0.055, procrustes=701.44
+layer layer9  (co-attn- 1): cosine=-0.0267, CKA=0.092, SVCCA=0.000, mknn=0.242, rank=0.281, procrustes=749.84
+layer layer10 (co-attn- 1): cosine=-0.0076, CKA=0.080, SVCCA=0.000, mknn=0.372, rank=0.300, procrustes=1128.46
+layer layer11 (co-attn- 1): cosine= 0.0254, CKA=0.084, SVCCA=0.000, mknn=0.361, rank=0.322, procrustes=1651.32
 ```
 
 contrastive pretrain + non-contrastive finetune:
 
 ```
-
+Epoch 3/9, Train Loss: 0.5136, Val Loss: 0.5200, Val Acc: 0.7447
+layer layer0  (co-attn- 0): cosine=-0.0192, CKA=0.261, SVCCA=0.000, mknn=0.024, rank=0.032, procrustes=94.28
+layer layer1  (co-attn- 0): cosine=-0.0105, CKA=0.252, SVCCA=0.000, mknn=0.031, rank=0.039, procrustes=121.10
+layer layer2  (co-attn- 0): cosine=-0.0080, CKA=0.199, SVCCA=0.000, mknn=0.037, rank=0.045, procrustes=130.70
+layer layer3  (co-attn- 0): cosine=-0.0033, CKA=0.142, SVCCA=0.000, mknn=0.038, rank=0.047, procrustes=183.84
+layer layer4  (co-attn- 0): cosine=-0.0060, CKA=0.060, SVCCA=0.000, mknn=0.041, rank=0.045, procrustes=199.85
+layer layer5  (co-attn- 0): cosine=-0.0154, CKA=0.030, SVCCA=0.000, mknn=0.039, rank=0.045, procrustes=274.81
+layer layer6  (co-attn- 0): cosine=-0.0055, CKA=0.017, SVCCA=0.000, mknn=0.039, rank=0.053, procrustes=427.67
+layer layer7  (co-attn- 0): cosine=-0.0174, CKA=0.017, SVCCA=0.000, mknn=0.038, rank=0.053, procrustes=457.30
+layer layer8  (co-attn- 0): cosine=-0.0024, CKA=0.018, SVCCA=0.000, mknn=0.036, rank=0.043, procrustes=691.56
+layer layer9  (co-attn- 1): cosine= 0.0213, CKA=0.046, SVCCA=0.000, mknn=0.343, rank=0.372, procrustes=552.76
+layer layer10 (co-attn- 1): cosine= 0.0984, CKA=0.048, SVCCA=0.000, mknn=0.329, rank=0.290, procrustes=810.04
+layer layer11 (co-attn- 1): cosine= 0.6039, CKA=0.036, SVCCA=0.000, mknn=0.674, rank=0.466, procrustes=1532.46
 ```
 </figure>
 
@@ -127,17 +1598,39 @@ contrastive pretrain + non-contrastive finetune:
 finetune only:
 
 ```
-
+Epoch 5/9, Train Loss: 0.4469, Val Loss: 0.5655, Val Acc: 0.7112
+layer layer0  (co-attn- 0): cosine=-0.0223, CKA=0.235, SVCCA=0.000, mknn=0.019, rank=0.034, procrustes=131.01
+layer layer1  (co-attn- 0): cosine=-0.0143, CKA=0.209, SVCCA=0.000, mknn=0.027, rank=0.042, procrustes=146.59
+layer layer2  (co-attn- 0): cosine=-0.0296, CKA=0.184, SVCCA=0.000, mknn=0.029, rank=0.043, procrustes=162.70
+layer layer3  (co-attn- 1): cosine=-0.0275, CKA=0.175, SVCCA=0.000, mknn=0.320, rank=0.314, procrustes=290.92
+layer layer4  (co-attn- 0): cosine=-0.0198, CKA=0.143, SVCCA=0.000, mknn=0.308, rank=0.315, procrustes=322.93
+layer layer5  (co-attn- 1): cosine=-0.0045, CKA=0.124, SVCCA=0.000, mknn=0.291, rank=0.295, procrustes=450.90
+layer layer6  (co-attn- 1): cosine=-0.0023, CKA=0.101, SVCCA=0.000, mknn=0.260, rank=0.247, procrustes=589.91
+layer layer7  (co-attn- 1): cosine=-0.0037, CKA=0.093, SVCCA=0.000, mknn=0.298, rank=0.274, procrustes=584.31
+layer layer8  (co-attn- 1): cosine=-0.0234, CKA=0.089, SVCCA=0.000, mknn=0.243, rank=0.216, procrustes=786.33
+layer layer9  (co-attn- 1): cosine=-0.0248, CKA=0.082, SVCCA=0.000, mknn=0.247, rank=0.246, procrustes=809.71
+layer layer10 (co-attn- 0): cosine=-0.0174, CKA=0.073, SVCCA=0.000, mknn=0.211, rank=0.213, procrustes=1101.21
+layer layer11 (co-attn- 0): cosine=-0.0131, CKA=0.068, SVCCA=0.000, mknn=0.250, rank=0.194, procrustes=2030.20
 ```
 
 contrastive pretrain + non-contrastive finetune:
 
 ```
-
+Epoch 4/9, Train Loss: 0.4841, Val Loss: 0.5321, Val Acc: 0.7412
+layer layer0  (co-attn- 0): cosine=-0.0137, CKA=0.257, SVCCA=0.000, mknn=0.023, rank=0.037, procrustes=97.30
+layer layer1  (co-attn- 0): cosine= 0.0026, CKA=0.226, SVCCA=0.000, mknn=0.030, rank=0.036, procrustes=124.13
+layer layer2  (co-attn- 0): cosine=-0.0055, CKA=0.171, SVCCA=0.000, mknn=0.035, rank=0.044, procrustes=143.09
+layer layer3  (co-attn- 1): cosine=-0.0149, CKA=0.162, SVCCA=0.000, mknn=0.321, rank=0.356, procrustes=203.34
+layer layer4  (co-attn- 0): cosine=-0.0227, CKA=0.123, SVCCA=0.000, mknn=0.240, rank=0.285, procrustes=240.80
+layer layer5  (co-attn- 1): cosine=-0.0363, CKA=0.104, SVCCA=0.000, mknn=0.268, rank=0.324, procrustes=338.81
+layer layer6  (co-attn- 1): cosine=-0.0054, CKA=0.088, SVCCA=0.000, mknn=0.325, rank=0.343, procrustes=435.42
+layer layer7  (co-attn- 1): cosine= 0.0246, CKA=0.077, SVCCA=0.000, mknn=0.492, rank=0.448, procrustes=512.82
+layer layer8  (co-attn- 1): cosine= 0.0733, CKA=0.068, SVCCA=0.000, mknn=0.290, rank=0.343, procrustes=1121.45
+layer layer9  (co-attn- 1): cosine= 0.1378, CKA=0.054, SVCCA=0.000, mknn=0.429, rank=0.394, procrustes=975.34
+layer layer10 (co-attn- 0): cosine= 0.2034, CKA=0.032, SVCCA=0.000, mknn=0.453, rank=0.419, procrustes=1091.84
+layer layer11 (co-attn- 0): cosine= 0.4452, CKA=0.042, SVCCA=0.000, mknn=0.498, rank=0.417, procrustes=1636.19
 ```
 </figure>
-
-
 
 
 
@@ -238,7 +1731,15 @@ Epoch 9/9, Train Loss: 0.2567, Val Loss: 0.6364, Val Acc: 0.7476
 contrastive:
 
 ```
-temp
+Epoch 1/9, Train Loss: 0.6473, Val Loss: 0.6349, Val Acc: 0.6394
+Epoch 2/9, Train Loss: 0.5830, Val Loss: 0.5544, Val Acc: 0.7418
+Epoch 3/9, Train Loss: 0.5136, Val Loss: 0.5200, Val Acc: 0.7447
+Epoch 4/9, Train Loss: 0.4485, Val Loss: 0.5342, Val Acc: 0.7482
+Epoch 5/9, Train Loss: 0.3928, Val Loss: 0.5397, Val Acc: 0.7441
+Epoch 6/9, Train Loss: 0.3438, Val Loss: 0.5516, Val Acc: 0.7524
+Epoch 7/9, Train Loss: 0.2940, Val Loss: 0.5828, Val Acc: 0.7488
+Epoch 8/9, Train Loss: 0.2621, Val Loss: 0.5912, Val Acc: 0.7429
+Epoch 9/9, Train Loss: 0.2390, Val Loss: 0.6240, Val Acc: 0.7418
 ```
 
 </figure>
@@ -265,7 +1766,15 @@ Epoch 9/9, Train Loss: 0.3297, Val Loss: 0.6135, Val Acc: 0.7324
 contrastive:
 
 ```
-temp
+Epoch 1/9, Train Loss: 0.6414, Val Loss: 0.6096, Val Acc: 0.6806
+Epoch 2/9, Train Loss: 0.5840, Val Loss: 0.5738, Val Acc: 0.7276
+Epoch 3/9, Train Loss: 0.5278, Val Loss: 0.5350, Val Acc: 0.7512
+Epoch 4/9, Train Loss: 0.4841, Val Loss: 0.5321, Val Acc: 0.7412
+Epoch 5/9, Train Loss: 0.4476, Val Loss: 0.5373, Val Acc: 0.7406
+Epoch 6/9, Train Loss: 0.4121, Val Loss: 0.5540, Val Acc: 0.7400
+Epoch 7/9, Train Loss: 0.3787, Val Loss: 0.5575, Val Acc: 0.7388
+Epoch 8/9, Train Loss: 0.3632, Val Loss: 0.5836, Val Acc: 0.7271
+Epoch 9/9, Train Loss: 0.3448, Val Loss: 0.5978, Val Acc: 0.7353
 
 ```
 
@@ -345,7 +1854,6 @@ Epoch 9/9, Train Loss: 0.3285, Val Loss: 0.5795, Val Acc: 0.7412
 </figure>
 
 
-**waiting still for data below!**
 
 <figure>
 
@@ -354,7 +1862,15 @@ Epoch 9/9, Train Loss: 0.3285, Val Loss: 0.5795, Val Acc: 0.7412
 finetune only:
 
 ```
-temp
+Epoch 1/9, Train Loss: 0.6508, Val Loss: 0.6391, Val Acc: 0.6329
+Epoch 2/9, Train Loss: 0.5907, Val Loss: 0.5904, Val Acc: 0.6888
+Epoch 3/9, Train Loss: 0.5199, Val Loss: 0.5623, Val Acc: 0.7329
+Epoch 4/9, Train Loss: 0.4636, Val Loss: 0.5544, Val Acc: 0.7388
+Epoch 5/9, Train Loss: 0.4006, Val Loss: 0.5661, Val Acc: 0.7235
+Epoch 6/9, Train Loss: 0.3515, Val Loss: 0.6019, Val Acc: 0.7141
+Epoch 7/9, Train Loss: 0.3095, Val Loss: 0.6535, Val Acc: 0.7253
+Epoch 8/9, Train Loss: 0.2736, Val Loss: 0.6691, Val Acc: 0.7082
+Epoch 9/9, Train Loss: 0.2513, Val Loss: 0.7202, Val Acc: 0.7147
 ```
 
 <br>
@@ -362,7 +1878,15 @@ temp
 pretrain+finetune:
 
 ```
-temp
+Epoch 1/9, Train Loss: 0.6473, Val Loss: 0.6349, Val Acc: 0.6394
+Epoch 2/9, Train Loss: 0.5830, Val Loss: 0.5544, Val Acc: 0.7418
+Epoch 3/9, Train Loss: 0.5136, Val Loss: 0.5200, Val Acc: 0.7447
+Epoch 4/9, Train Loss: 0.4485, Val Loss: 0.5342, Val Acc: 0.7482
+Epoch 5/9, Train Loss: 0.3928, Val Loss: 0.5397, Val Acc: 0.7441
+Epoch 6/9, Train Loss: 0.3438, Val Loss: 0.5516, Val Acc: 0.7524
+Epoch 7/9, Train Loss: 0.2940, Val Loss: 0.5828, Val Acc: 0.7488
+Epoch 8/9, Train Loss: 0.2621, Val Loss: 0.5912, Val Acc: 0.7429
+Epoch 9/9, Train Loss: 0.2390, Val Loss: 0.6240, Val Acc: 0.7418
 ```
 
 </figure>
@@ -374,15 +1898,30 @@ temp
 finetune only:
 
 ```
-temp
+Epoch 1/9, Train Loss: 0.6529, Val Loss: 0.6290, Val Acc: 0.6435
+Epoch 2/9, Train Loss: 0.5928, Val Loss: 0.5847, Val Acc: 0.6988
+Epoch 3/9, Train Loss: 0.5398, Val Loss: 0.5805, Val Acc: 0.7253
+Epoch 4/9, Train Loss: 0.4882, Val Loss: 0.5676, Val Acc: 0.7124
+Epoch 5/9, Train Loss: 0.4469, Val Loss: 0.5655, Val Acc: 0.7112
+Epoch 6/9, Train Loss: 0.3976, Val Loss: 0.5848, Val Acc: 0.7124
+Epoch 7/9, Train Loss: 0.3678, Val Loss: 0.6138, Val Acc: 0.7041
+Epoch 8/9, Train Loss: 0.3395, Val Loss: 0.6349, Val Acc: 0.7024
+Epoch 9/9, Train Loss: 0.3170, Val Loss: 0.6598, Val Acc: 0.7012
 ```
 <br>
 
 pretrain+finetune:
 
 ```
-temp
-
+Epoch 1/9, Train Loss: 0.6414, Val Loss: 0.6096, Val Acc: 0.6806
+Epoch 2/9, Train Loss: 0.5840, Val Loss: 0.5738, Val Acc: 0.7276
+Epoch 3/9, Train Loss: 0.5278, Val Loss: 0.5350, Val Acc: 0.7512
+Epoch 4/9, Train Loss: 0.4841, Val Loss: 0.5321, Val Acc: 0.7412
+Epoch 5/9, Train Loss: 0.4476, Val Loss: 0.5373, Val Acc: 0.7406
+Epoch 6/9, Train Loss: 0.4121, Val Loss: 0.5540, Val Acc: 0.7400
+Epoch 7/9, Train Loss: 0.3787, Val Loss: 0.5575, Val Acc: 0.7388
+Epoch 8/9, Train Loss: 0.3632, Val Loss: 0.5836, Val Acc: 0.7271
+Epoch 9/9, Train Loss: 0.3448, Val Loss: 0.5978, Val Acc: 0.7353
 ```
 
 </figure>
@@ -555,6 +2094,12 @@ Epoch 3/10,
 ```
 
 ## 03.10 - comparision: pretrain+finetune vs. finetune-only
+
+plot of the results of this experiment:
+<figure>
+<img src="./res/markdown_res/performance_comparison0610.png">
+</figure>
+
 temp:
 - currently running on GPU10: pretrain & pretrain+finetune for 4 different configurations
 - currently running on gamingpc: finetune only for the same configs.
@@ -706,6 +2251,8 @@ $\Rightarrow$*Pretraining impact varies by architecture:*
 - Mid fusion: +1.3%
 - Early fusion: +0.8%
 - Asymmetric: +1.5%
+
+
 
 
 

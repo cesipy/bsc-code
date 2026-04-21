@@ -1,3 +1,6 @@
+import random
+import numpy as np
+
 import torchvision; from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
@@ -89,6 +92,7 @@ def get_hateful_memes_train_augmentation():
 
 
 def get_hateful_memes_train_augmentation_albumation(seed:int,get_advanced=False, ):
+
 
     hm_transforms = A.Compose([
         A.ColorJitter(

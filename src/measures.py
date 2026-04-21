@@ -1,8 +1,23 @@
 import torch; from torch import nn
-import numpy as np
+import numpy as np;
+from scipy.stats import spearmanr
+
+import metrics; import metrics_llmrepsim
+import torch; import torch.nn.functional as F
+from config import *
+import datasets
+
+from vilbert import *
+
+import analysis
+
 
 from ckatorch.core import cka_base, cka_batch
 import cca_core
+
+from logger import Logger
+
+logger = Logger()
 
 
 #----------
@@ -33,6 +48,62 @@ def pairwise_knn(
 
 #--------
 #measures
+
+def linear_r2_alignment(X, Y, test_ratio=0.2, ridge=1e-3):
+    Xc = X - X.mean(dim=0, keepdim=True)
+    Yc = Y - Y.mean(dim=0, keepdim=True)
+    n = Xc.shape[0]
+    idx = torch.randperm(n)
+
+    # for the same data it was almost always 1.0 => nearly perfect alignment
+    split = int(n * (1 - test_ratio))
+    X_train, X_test = Xc[idx[:split]], Xc[idx[split:]]
+    Y_train, Y_test = Yc[idx[:split]], Yc[idx[split:]]
+
+    # ridge solution
+    XtX = X_train.T @ X_train + ridge * torch.eye(X_train.shape[1], device=X.device)
+    XtY = X_train.T @ Y_train
+    W = torch.linalg.solve(XtX, XtY)
+    Y_pred = X_test @ W
+
+    ss_res = torch.sum((Y_test - Y_pred) ** 2)
+    ss_tot = torch.sum((Y_test - Y_test.mean(dim=0, keepdim=True)) ** 2)
+    return (1 - ss_res / ss_tot).item()
+
+
+def rsa_similarity(X: torch.Tensor, Y: torch.Tensor, metric="cosine") -> float:
+    """
+    Representational Similarity Analysis (RSA) correlation.
+    Args:
+        X, Y: [n_samples, d]
+        metric: 'cosine' or 'euclidean'
+    Returns:
+        Spearman correlation between RDMs.
+    """
+    X = X - X.mean(dim=0, keepdim=True)
+    Y = Y - Y.mean(dim=0, keepdim=True)
+
+    if metric == "cosine":
+        sim_X = torch.nn.functional.cosine_similarity(
+            X.unsqueeze(1), X.unsqueeze(0), dim=-1
+        )
+        sim_Y = torch.nn.functional.cosine_similarity(
+            Y.unsqueeze(1), Y.unsqueeze(0), dim=-1
+        )
+        D_X = 1 - sim_X
+        D_Y = 1 - sim_Y
+    else:
+        D_X = torch.cdist(X, X)
+        D_Y = torch.cdist(Y, Y)
+
+    # Vectorize upper triangle (excluding diagonal)
+    iu = torch.triu_indices(D_X.shape[0], D_X.shape[1], offset=1)
+    dx = D_X[iu[0], iu[1]].cpu().numpy()
+    dy = D_Y[iu[0], iu[1]].cpu().numpy()
+
+    # Compute correlation
+    corr, _ = spearmanr(dx, dy)
+    return float(corr)
 
 def rank_similarity(
     X: torch.Tensor,        # [n, d]
@@ -360,10 +431,10 @@ def svcca_similarity(
 
     try:
         # print(f"reshaped text input shape: {text_input.shape}")
-        result = cca_core.get_cca_similarity(
+        result = cca_core.robust_cca_similarity(
             text_input,
             vision_input,
-            verbose=False
+            compute_dirns=False
         )
 
         # single value result
@@ -372,6 +443,7 @@ def svcca_similarity(
         return result
     except np.linalg.LinAlgError as e:
         print(f"LinAlgError during SVCCA computation: {e}")
+        logger.error(f"LinAlgError during SVCCA computation: {e}")
         return 0.0
 
 def mutual_nearest_neighbor_alignment(text_embeds, vision_embeds, k=5):
@@ -460,3 +532,118 @@ def max_similarity_patch_token(
     )
 
     return max_sims
+
+
+def sanity_check_metrics():
+    """Verify metrics behave as expected: identical=high, random=low"""
+    t1 = torch.rand((512, 768))
+    t2 = torch.rand((512, 768))
+    model_path = "res/checkpoints/20251013-finetunes-only/20251012-154634_finetuned_mm_imdb.pt"
+    model = ViLBERT.load_model(load_path=model_path, device="cuda")
+    # dl = datasets.get_task_test_dataset(task="mm_imdb", batch_size=BATCH_SIZE_ANALYSIS, num_workers=0, pin_memory=False, prefetch_factor=None, seed=10, persistent_workers=0)
+    _, _, dl, _ = datasets.get_alignment_dataloaders(
+        batch_size=BATCH_SIZE_ANALYSIS,
+        num_workers=0,
+        pin_memory=False,
+        prefetch_factor=None,
+        seed=10,
+        num_samples=512
+    )
+    data = analysis.get_alignment_data(dataloader=dl, model=model, device="cuda")
+
+    print(type(data))
+    layer3 = data[3]
+    print(type(layer3))
+    print(f"t_embeds: {layer3['text_embeddings'].shape}, v_embeds: {layer3['vision_embeddings'].shape}")
+    t1 = layer3["text_embeddings"]
+    t2 = layer3["vision_embeddings"]
+
+    from metrics_llmrepsim import sim_random_baseline
+    callabls = [
+        metrics_llmrepsim.orthogonal_procrustes,
+        metrics.AlignmentMetrics.cka,
+        metrics.AlignmentMetrics.svcca,
+
+        metrics_llmrepsim.representational_similarity_analysis,
+    ]
+    for callabl in callabls:
+        baseline = sim_random_baseline(rep1=t1, rep2=t2, sim_func=callabl)
+        print(f"Random baseline similarity: {np.mean(baseline['baseline_scores']).item()} for {callabl.__name__}")
+
+
+    svcca_identical = metrics.AlignmentMetrics.svcca(t1, t1, cca_dim=10)
+    svcca_random = metrics.AlignmentMetrics.svcca(t1, t2, cca_dim=10)
+
+    cka_identical = metrics.AlignmentMetrics.cka(t1, t1)
+    cka_random = metrics.AlignmentMetrics.cka(t1, t2)
+    cka_norm_identical = metrics.AlignmentMetrics.cka(F.normalize(t1, dim=-1), F.normalize(t1, dim=1))
+    cka_norm_random = metrics.AlignmentMetrics.cka(F.normalize(t1, dim=-1), F.normalize(t2, dim=1))
+
+
+    cka_unbiased_identical = metrics.AlignmentMetrics.cka(feats_A=t1, feats_B=t1, unbiased=True)
+    cka_unbiased_random = metrics.AlignmentMetrics.cka(feats_A=t1, feats_B=t2, unbiased=True)
+
+    mutual_knn_identical = metrics.AlignmentMetrics.mutual_knn(t1, t1, topk=KNN_K)
+    mutual_knn_random = metrics.AlignmentMetrics.mutual_knn(t1, t2, topk=KNN_K)
+
+    cknna_identical = metrics.AlignmentMetrics.cknna(t1, t1, topk=KNN_K)
+    cknna_random = metrics.AlignmentMetrics.cknna(t1, t2, topk=KNN_K)
+
+    cycle_knn_identical = metrics.AlignmentMetrics.cycle_knn(t1, t1, topk=KNN_K)
+    cycle_knn_random = metrics.AlignmentMetrics.cycle_knn(t1, t2, topk=KNN_K)
+
+    lcs_knn_identical = metrics.AlignmentMetrics.lcs_knn(t1, t1, topk=KNN_K)
+    lcs_knn_random = metrics.AlignmentMetrics.lcs_knn(t1, t2, topk=KNN_K)
+
+    edit_distance_identical = metrics.AlignmentMetrics.edit_distance_knn(t1, t1, topk=KNN_K)
+    edit_distance_random = metrics.AlignmentMetrics.edit_distance_knn(t1, t2, topk=KNN_K)
+
+    jaccard_identical = metrics_llmrepsim.jaccard_similarity(t1, t1, k=KNN_K)
+    jaccard_random = metrics_llmrepsim.jaccard_similarity(t1, t2, k=KNN_K)
+
+    procrustes_identical = metrics_llmrepsim.orthogonal_procrustes(t1, t1)
+    procrustes_random = metrics_llmrepsim.orthogonal_procrustes(t1, t2)
+
+    rsa_identical = metrics_llmrepsim.representational_similarity_analysis(t1, t1)
+    rsa_random = metrics_llmrepsim.representational_similarity_analysis(t1, t2)
+
+    print("=== SANITY CHECK ===")
+    print(f"SVCCA:           identical={svcca_identical:.4f}, random={svcca_random:.4f}")
+    print(f"CKA:             identical={cka_identical:.4f}, random={cka_random:.4f}")
+    print(f"CKA normed:      identical={cka_norm_identical:.4f}, random={cka_norm_random:.4f}")
+    print(f"CKA unbiased:    identical={cka_unbiased_identical:.4f}, random={cka_unbiased_random:.4f}")
+    print(f"Mutual KNN:      identical={mutual_knn_identical:.4f}, random={mutual_knn_random:.4f}")
+    print(f"CKNNA:           identical={cknna_identical:.4f}, random={cknna_random:.4f}")
+    print(f"Cycle KNN:       identical={cycle_knn_identical:.4f}, random={cycle_knn_random:.4f}")
+    print(f"LCS KNN:         identical={lcs_knn_identical:.4f}, random={lcs_knn_random:.4f}")
+    print(f"Edit Distance:   identical={edit_distance_identical:.4f}, random={edit_distance_random:.4f}")
+    print(f"Jaccard:         identical={jaccard_identical:.4f}, random={jaccard_random:.4f}")
+    print(f"Procrustes:      identical={procrustes_identical:.4f}, random={procrustes_random:.4f}")
+    print(f"RSA:             identical={rsa_identical:.4f}, random={rsa_random:.4f}")
+
+
+
+
+
+if __name__ == "__main__":
+
+    sanity_check_metrics()
+
+
+
+    print("\n\n\n"+ "-"*40)
+    t1 = torch.rand((1,197, 768), )
+    t2 = torch.rand((1, 197,768), )
+
+    t_half = t1.clone()
+    t_temp = t2.clone()
+    # t_half = t_half + t_temp    # results in 0.5
+    idx = 77
+    t_half[:, :, :idx] = t1[:, :, :idx]
+    t_half[:, :, idx:] = t2[:, :, idx:]
+
+    cka_diff = cka(t1, t2)
+    cka_identical = cka(t1, t1)
+    cka_half = cka(t1, t_half)
+
+    print(f"CKA identical: {cka_identical}, CKA different: {cka_diff}, CKA half: {cka_half}")

@@ -21,6 +21,8 @@ from logger import Logger
 from config import *; import config
 from .dataset_utils import get_image_embedding, get_text_embedding
 import augments_transforms
+import task as tasklib
+
 
 from .dataset_hateful_memes import HM_Dataset
 from .dataset_pretrain import *
@@ -32,6 +34,86 @@ from .dataset_upmc import *
 from .dataset_utils import generate_data_list, generate_data_list_pretrain
 
 
+def get_task_test_dataset(
+    task:str,
+    batch_size: int,
+    num_workers:int,
+    seed:int,
+    pin_memory: bool = False,
+    prefetch_factor: int = 4,
+    persistent_workers: bool = True,
+
+) -> DataLoader:
+
+
+    assert task in tasklib.all_task_list
+    tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+
+    if task=="hateful_memes":
+        if config.machine == "remote":
+            path = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/test.jsonl"
+        else:
+            path = "res/data/hateful_memes_data/test.jsonl"
+        data_list = generate_data_list(path)
+
+
+        ds = HM_Dataset(
+            data=data_list,
+            tokenizer=tokenizer,
+            image_processor=image_processor,
+            transforms=None     # no need for transforms here
+        )
+
+    elif task=="mm_imdb":
+        path = "res/data/mm-imdb/images.h5"
+        csv_path = "res/data/mm-imdb/mmimdb_test.csv"
+
+        ds = MM_IMDB_Dataset(
+            csv_path=csv_path,
+            img_path=path,
+            tokenizer=tokenizer,
+            image_processor=image_processor,
+            train_test_ratio=None,
+            is_train = False,
+            is_test=True,
+            transform=None
+        )
+    elif task=="upmc_food":
+        if config.machine == "remote":
+            csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_test.csv"
+            img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+        else:
+            csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_test.csv"
+            img_path_upmc = "res/data/UPMC_Food-101/images"
+
+        ds = UPMC_Dataset(
+            csv_path=csv_path_upmc,
+            img_path=img_path_upmc,
+            tokenizer=tokenizer,
+            image_processor=image_processor,
+            is_train=False,
+            is_test=True,
+        )
+    elif task=="easy_vqa":
+        raise NotImplementedError
+    else:
+        assert False
+
+
+    dl = DataLoader(
+        dataset=ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=persistent_workers,
+        prefetch_factor=prefetch_factor,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(seed),
+    )
+    return dl
+
 def get_alignment_dataloaders(
     batch_size,
     num_workers: int,
@@ -42,21 +124,47 @@ def get_alignment_dataloaders(
     )-> typing.Tuple[DataLoader, DataLoader, DataLoader]:
     """
     returns tuple of dataloader in the following order:
-    dataloader-hateful-memes, dataloader-conceputal-captions, dataloader-mmimdb
+    dataloader-hateful-memes, dataloader-conceputal-captions, dataloader-mmimdb, dataloader-upmc
     """
     utils.set_seeds(seed)
 
+    # test paths here, except for concap - but here it does not matter
+    # path_cc       = "res/data/conceptual-captions/validation.csv"
+    # path_hm       = "res/data/hateful_memes_data/dev.jsonl"
+    # path_imdb     = "res/data/mm-imdb/images.h5"
+    # csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
+    # if config.machine == "remote":
+    #     csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_test.csv"
+    #     img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+    # else:
+    #     csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_test.csv"
+    #     img_path_upmc = "res/data/UPMC_Food-101/images"
+
+    # validation sets that are bigger, used fr metric-analysis
     path_cc       = "res/data/conceptual-captions/validation.csv"
-    path_hm       = "res/data/hateful_memes_data/train.jsonl"
+    path_hm       = "res/data/hateful_memes_data/test.jsonl"
     path_imdb     = "res/data/mm-imdb/images.h5"
-    csv_path_imdb = "res/data/mm-imdb/mmimdb_test.csv"
+    csv_path_imdb = "res/data/mm-imdb/mmimdb_trainval.csv"
+    if config.machine == "remote":
+        csv_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/upmcfood_trainval.csv"
+        img_path_upmc = "/mnt/ifi/iis/javier.urena/UPMC_Food-101/UPMC_Food-101/images"
+        path_hm       = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/test.jsonl"
+    else:
+        csv_path_upmc = "res/data/UPMC_Food-101/upmcfood_trainval.csv"
+        img_path_upmc = "res/data/UPMC_Food-101/images"
+
+
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
     data_list_hm = generate_data_list(path_hm)
-    random.shuffle(data_list_hm)
-    # TODO: not needed for every sample!
+    # print(f"len data_list_hm: {len(data_list_hm)}, num_samples: {num_samples}")
+    # train_idx = int(len(data_list_hm) * TRAIN_TEST_RATIO)
+
+    # has len 1700
+    # data_list_hm = data_list_hm[train_idx:]
+    # random.shuffle(data_list_hm)    # validation set is shuffled
 
     assert num_samples <= len(data_list_hm)
 
@@ -74,6 +182,7 @@ def get_alignment_dataloaders(
         image_processor=image_processor,
         train_test_ratio=0.8,
         is_train=False,  # is ignored,
+        is_test=True,
         max_samples=num_samples
     )
 
@@ -86,6 +195,18 @@ def get_alignment_dataloaders(
     dataset_cc = ConceptualCaptionsDataset(
         data=data_list_cc, tokenizer=tokenizer, image_processor=image_processor,
     )
+
+    dataset_upmc = UPMC_Dataset(
+        csv_path=csv_path_upmc,
+        img_path=img_path_upmc,
+        tokenizer=tokenizer,
+        image_processor=image_processor,
+        is_train=False,
+        is_test=True,
+        max_samples=num_samples
+    )
+
+    assert len(dataset_hm) == len(dataset_cc) == len(dataset_imdb) == len(dataset_upmc)
 
     dataloader_hm = DataLoader(
         dataset=dataset_hm,
@@ -118,9 +239,19 @@ def get_alignment_dataloaders(
         worker_init_fn=utils.worker_init_fn,
         generator=utils.get_seeded_generator(seed),
     )
+    dataloader_upmc = DataLoader(
+        dataset=dataset_upmc,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        prefetch_factor=prefetch_factor,
+        worker_init_fn=utils.worker_init_fn,
+        generator=utils.get_seeded_generator(seed),
+    )
 
 
-    return dataloader_hm, dataloader_cc, dataloader_imdb
+    return dataloader_hm, dataloader_cc, dataloader_imdb, dataloader_upmc
 
 
 
@@ -353,7 +484,7 @@ def get_mmimdb_datasets(
 
 
 def get_hateful_memes_datasets(
-    train_test_ratio: float,
+    train_test_ratio: float,            # not used anymore
     batch_size: int,
     num_workers: int,
     seed:int,
@@ -366,7 +497,7 @@ def get_hateful_memes_datasets(
     """
     get the hateful memes dataset. per default enables data augmentation on testset
     parameters:
-        train_test_ratio: float
+        train_test_ratio: float, is not used anymore
         batch_size: int
         num_workers: int
         pin_memory: bool
@@ -387,12 +518,18 @@ def get_hateful_memes_datasets(
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
     image_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
 
-    path = "res/data/hateful_memes_data/train.jsonl"
+    if config.machine == "remote":
+        path = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/train.jsonl"
+        val_path = "/mnt/ifi/iis/cedric.sillaber/hateful_memes/validation.jsonl"
+    else:
+        path = "res/data/hateful_memes_data/train.jsonl"
+        val_path = "res/data/hateful_memes_data/validation.jsonl"
     data_list = generate_data_list(path)
+    val_data_list = generate_data_list(val_path)
 
-    train_idx = int(len(data_list) * train_test_ratio)
-    train_data = data_list[:train_idx]
-    val_data   = data_list[train_idx:]
+    # train_idx = int(len(data_list) * train_test_ratio)
+    train_data = data_list
+    val_data   = val_data_list
 
     if limit_total_dataset:
         train_data = train_data[:1000]
@@ -446,7 +583,7 @@ def get_easyvqa_datasets(
     pin_memory: bool = False,
     prefetch_factor: int = 4,
     persistent_workers: bool = True,
-    use_train_augmentation: bool = False  # VQA typically doesn't need augmentation
+    use_train_augmentation: bool = False
 ) -> typing.Tuple[DataLoader, DataLoader]:
     """
     Get the EasyVQA dataset for train and validation
@@ -529,7 +666,7 @@ def get_upmc_datasets(
     assert 0< train_test_ratio <1
 
     if use_train_augmentation:
-        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=False)
+        transform = augments_transforms.get_hateful_memes_train_augmentation_albumation(get_advanced=False, seed=seed)
     else: transform = None
 
     tokenizer: PreTrainedTokenizerFast = BertTokenizerFast.from_pretrained("bert-base-uncased")
@@ -561,8 +698,8 @@ def get_upmc_datasets(
         train_test_ratio=train_test_ratio,
     )
 
-    print(f"num of trainsamples: {len(train_dataset)}")
-    print(f"num of valsamples: {len(val_dataset)}")
+    # print(f"num of trainsamples: {len(train_dataset)}")
+    # print(f"num of valsamples: {len(val_dataset)}")
 
     train_dataloader = DataLoader(
         train_dataset,

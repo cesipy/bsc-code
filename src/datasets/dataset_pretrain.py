@@ -41,7 +41,7 @@ class ConceptualCaptionsDataset(Dataset):
         # placeholder task, path, text, placeholder label
         data_ = [ ( Task.PLACEHOLDER, dp[0], dp[1], 3)  for dp in data ]
         p = data_[0]
-        print( f" dp0:{p[1]}, dp1:{p[2]}" )
+        # print( f" dp0:{p[1]}, dp1:{p[2]}" )
 
         return data_
 

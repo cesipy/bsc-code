@@ -202,7 +202,6 @@ def get_text_embedding(text:str, tokenizer:PreTrainedTokenizerFast):
 
 def generate_data_list(path: str):
     dir_name = os.path.dirname(path)
-    print("dirname: ", dir_name)
 
     def read_jsonl(file_path):
         data = []
@@ -214,6 +213,8 @@ def generate_data_list(path: str):
     records = read_jsonl(path)
 
     data_list = []
+
+
 
     for i in records:
         image_path = i["img"]
@@ -232,6 +233,19 @@ def generate_data_list(path: str):
     data_list.sort(
         key = lambda triple: triple[0].split("/")[-1].split(".")[0]
     )
+
+    # ones = []
+    # for dp in data_list:
+    #     if dp[1] == 1:
+    #         ones.append(dp)
+    # infostr = f"class balance: {len(ones)/len(data_list)}"
+    # print(infostr); logger.info(infostr)
+
+    # labels = [dp[1] for dp in data_list]
+    # pos_count = sum(labels)
+    # neg_count = len(labels) - pos_count
+
+    # print(f"Positive samples: {pos_count}, Negative samples: {neg_count}")
 
     return data_list
 

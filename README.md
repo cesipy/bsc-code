@@ -153,29 +153,27 @@ original [vilbert](https://github.com/facebookresearch/vilbert-multi-task) under
 
 ## TODO
 **immediate:**
+- [ ] all the same architectures do finetune only, not pretrain
+- [ ] baseline where cka is optimized!
+    - [ ] currently with late fusion, but here the values are pretty high anyways, maybe implement with baseline no contn
+    - [ ] no coattn baseline cka optim
+- [ ] accuracy on each layer, similar plot to hintons paper from 2019
+
+
+- [ ] pretrain vs non-pretrain: run the same experiments on finetune-only!
+- [ ] update `all_finetune_logs` with new finetunes. currently includes up to late fusion
+- [ ] test acc und loss für finetunes, wo noch nicht geändert und in `all_finetune_logs.txt` inkludieren. Nur für `upmc_food, mm_imdb` Für
+    - [ ] pretrain_early_fusion
+    - [ ] pretrain_middle_fusion
+
+- [ ] pretrain für starke MM-imdb. optuna 1 ist stark für hateful_memes, optuna2 ist guter kompromiss => optuna 3 fehlt!
+- [ ] still optuna 3 needed! good archicture for mm_imdb alone!
+
+- [ ] correlation analysis of metrics on all new architectures
 - [ ] is finetuned good performance indicator for pretraining good performance?
-- [ ] seed from config, not global var
-	- [ ] convert all torchvision to albuminations + seeding
+    => no it was not!
+- [ ] convert all torchvision to albuminations + seeding
 
 - [ ] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
-- [ ] fix coattentions not really saved in intermediate_representations,
-	- [ ] better logic for that
-
 - [ ] analysis of pretrained models: discrepancies in end representation of streams
 
-- [ ] experiment_tracker:
-	- [ ] implement other tasks in run experiment
-
-- [ ] try running on mm_imdb with slightly bigger lr, more epochs, when does it plateau?
-    - [ ] report for hm; this is pretty known, as most of the current progress is for HM.
-    - [ ] report for upmcfood
-
-- [ ] run visualization and alignment for trained model.
-    - needs to restore model with highest acc/ lowest loss
-
-- [ ] include test set for:
-	- [ ] upmc food
-	- [ ] mm imdb
-	- [ ] hateful memes	- problem here, there are no labels
-
-- [ ] larger k in mknn

@@ -1,0 +1,1609 @@
+================================
+early fusion
+1/9: finetuning on upmc_food with seed 1568
+run_finetune:712 - seed = 1568
+run_finetune:732 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task upmc_food
+_run_task:680 - saving results to 20251020-171654_experiment_coattn_3-4-5
+Epoch 1/15, Train Loss: 3.9151, Val Loss: 1.1473, Val Acc: 0.8026
+Epoch 2/15, Train Loss: 0.8490, Val Loss: 0.6881, Val Acc: 0.8484
+Epoch 3/15, Train Loss: 0.6318, Val Loss: 0.6070, Val Acc: 0.8611
+Epoch 4/15, Train Loss: 0.5270, Val Loss: 0.5553, Val Acc: 0.8705
+Epoch 5/15, Train Loss: 0.4412, Val Loss: 0.5298, Val Acc: 0.8786
+Epoch 6/15, Train Loss: 0.3608, Val Loss: 0.5446, Val Acc: 0.8805
+Epoch 7/15, Train Loss: 0.2920, Val Loss: 0.5225, Val Acc: 0.8842
+Epoch 8/15, Train Loss: 0.2319, Val Loss: 0.5337, Val Acc: 0.8856
+Epoch 9/15, Train Loss: 0.1829, Val Loss: 0.5450, Val Acc: 0.8880
+Epoch 10/15, Train Loss: 0.1491, Val Loss: 0.5388, Val Acc: 0.8911
+Epoch 11/15, Train Loss: 0.1225, Val Loss: 0.5539, Val Acc: 0.8893
+Epoch 12/15, Train Loss: 0.1045, Val Loss: 0.5650, Val Acc: 0.8902
+Epoch 13/15, Train Loss: 0.0899, Val Loss: 0.5715, Val Acc: 0.8903
+Early stopping at epoch 13. Best max: 0.8911 at epoch 10
+restord model from epoch 10
+test Loss: 0.5240705023794038, test Acc: 0.892821729183197
+Saved finetuned model to res/checkpoints/finetune_only/20251020-171654_finetuned_upmc_food.pt
+
+2/9: finetuning on mm_imdb with seed 1568
+run_finetune:750 - seed = 1568
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task mm_imdb
+saving results to 20251023-181709_experiment_coattn_3-4-5
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7185653333303925, 'acc': 0.4566305875778198, 'auc': None}
+Epoch 1/15, Train Loss: 0.3731, V_Loss: 0.2535, V_Acc: 0.9020, T_Loss: 0.2501, T_Acc: 0.9035
+Epoch 2/15, Train Loss: 0.2190, V_Loss: 0.1906, V_Acc: 0.9240, T_Loss: 0.1894, T_Acc: 0.9237
+Epoch 3/15, Train Loss: 0.1803, V_Loss: 0.1861, V_Acc: 0.9264, T_Loss: 0.1836, T_Acc: 0.9265
+Epoch 4/15, Train Loss: 0.1600, V_Loss: 0.1815, V_Acc: 0.9289, T_Loss: 0.1798, T_Acc: 0.9287
+Epoch 5/15, Train Loss: 0.1422, V_Loss: 0.1828, V_Acc: 0.9281, T_Loss: 0.1814, T_Acc: 0.9280
+Epoch 6/15, Train Loss: 0.1248, V_Loss: 0.1884, V_Acc: 0.9278, T_Loss: 0.1871, T_Acc: 0.9275
+Epoch 7/15, Train Loss: 0.1110, V_Loss: 0.1969, V_Acc: 0.9265, T_Loss: 0.1962, T_Acc: 0.9265
+Early stopping at epoch 7. Best acc: 0.9289 at epoch 4
+restord model from epoch 4
+Final T_Loss: 0.1798, T_Acc: 0.9287
+Saved finetuned model to res/checkpoints/hotfix/20251023-181709_finetuned_mm_imdb.pt
+
+
+3/9: finetuning on upmc_food with seed 1569
+run_finetune:712 - seed = 1569
+run_finetune:732 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task upmc_food
+_run_task:680 - saving results to 20251021-002909_experiment_coattn_3-4-5
+Epoch 1/15, Train Loss: 3.9049, Val Loss: 1.1456, Val Acc: 0.8008
+Epoch 2/15, Train Loss: 0.8459, Val Loss: 0.6787, Val Acc: 0.8505
+Epoch 3/15, Train Loss: 0.6320, Val Loss: 0.6049, Val Acc: 0.8611
+Epoch 4/15, Train Loss: 0.5278, Val Loss: 0.5746, Val Acc: 0.8711
+Epoch 5/15, Train Loss: 0.4404, Val Loss: 0.5340, Val Acc: 0.8763
+Epoch 6/15, Train Loss: 0.3594, Val Loss: 0.5424, Val Acc: 0.8818
+Epoch 7/15, Train Loss: 0.2940, Val Loss: 0.5257, Val Acc: 0.8855
+Epoch 8/15, Train Loss: 0.2302, Val Loss: 0.5399, Val Acc: 0.8859
+Epoch 9/15, Train Loss: 0.1834, Val Loss: 0.5415, Val Acc: 0.8877
+Epoch 10/15, Train Loss: 0.1490, Val Loss: 0.5473, Val Acc: 0.8884
+Epoch 11/15, Train Loss: 0.1232, Val Loss: 0.5651, Val Acc: 0.8902
+Epoch 12/15, Train Loss: 0.1016, Val Loss: 0.5747, Val Acc: 0.8894
+Epoch 13/15, Train Loss: 0.0894, Val Loss: 0.5812, Val Acc: 0.8888
+Epoch 14/15, Train Loss: 0.0795, Val Loss: 0.5961, Val Acc: 0.8889
+Early stopping at epoch 14. Best max: 0.8902 at epoch 11
+restord model from epoch 11
+test_loss: 0.5439962503559684, test_acc: 0.8930422067642212
+Saved finetuned model to res/checkpoints/finetune_only/20251021-002909_finetuned_upmc_food.pt
+
+
+
+4/9: finetuning on mm_imdb with seed 1569
+run_finetune:750 - seed = 1569
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task mm_imdb
+saving results to 20251023-185238_experiment_coattn_3-4-5
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7185653333303925, 'acc': 0.4566305875778198, 'auc': None}
+Epoch 1/15, Train Loss: 0.3736, V_Loss: 0.2540, V_Acc: 0.9009, T_Loss: 0.2509, T_Acc: 0.9023
+Epoch 2/15, Train Loss: 0.2187, V_Loss: 0.1946, V_Acc: 0.9221, T_Loss: 0.1925, T_Acc: 0.9230
+Epoch 3/15, Train Loss: 0.1800, V_Loss: 0.1819, V_Acc: 0.9265, T_Loss: 0.1814, T_Acc: 0.9271
+Epoch 4/15, Train Loss: 0.1600, V_Loss: 0.1794, V_Acc: 0.9280, T_Loss: 0.1784, T_Acc: 0.9282
+Epoch 5/15, Train Loss: 0.1408, V_Loss: 0.1831, V_Acc: 0.9288, T_Loss: 0.1823, T_Acc: 0.9289
+Epoch 6/15, Train Loss: 0.1245, V_Loss: 0.1891, V_Acc: 0.9285, T_Loss: 0.1889, T_Acc: 0.9279
+Epoch 7/15, Train Loss: 0.1089, V_Loss: 0.2015, V_Acc: 0.9272, T_Loss: 0.2019, T_Acc: 0.9271
+Epoch 8/15, Train Loss: 0.0958, V_Loss: 0.2108, V_Acc: 0.9266, T_Loss: 0.2113, T_Acc: 0.9248
+Early stopping at epoch 8. Best acc: 0.9288 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1823, T_Acc: 0.9289
+Saved finetuned model to res/checkpoints/hotfix/20251023-185238_finetuned_mm_imdb.pt
+
+5/9: finetuning on upmc_food with seed 1570
+run_finetune:712 - seed = 1570
+run_finetune:732 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task upmc_food
+_run_task:680 - saving results to 20251021-080233_experiment_coattn_3-4-5
+Epoch 1/15, Train Loss: 3.9094, Val Loss: 1.1618, Val Acc: 0.7962
+Epoch 2/15, Train Loss: 0.8419, Val Loss: 0.6732, Val Acc: 0.8495
+Epoch 3/15, Train Loss: 0.6221, Val Loss: 0.5968, Val Acc: 0.8652
+Epoch 4/15, Train Loss: 0.5229, Val Loss: 0.5668, Val Acc: 0.8695
+Epoch 5/15, Train Loss: 0.4333, Val Loss: 0.5417, Val Acc: 0.8783
+Epoch 6/15, Train Loss: 0.3516, Val Loss: 0.5457, Val Acc: 0.8811
+Epoch 7/15, Train Loss: 0.2895, Val Loss: 0.5350, Val Acc: 0.8842
+Epoch 8/15, Train Loss: 0.2278, Val Loss: 0.5496, Val Acc: 0.8851
+Epoch 9/15, Train Loss: 0.1834, Val Loss: 0.5471, Val Acc: 0.8892
+Epoch 10/15, Train Loss: 0.1466, Val Loss: 0.5624, Val Acc: 0.8894
+Epoch 11/15, Train Loss: 0.1197, Val Loss: 0.5649, Val Acc: 0.8897
+Epoch 12/15, Train Loss: 0.1017, Val Loss: 0.5790, Val Acc: 0.8897
+Epoch 13/15, Train Loss: 0.0896, Val Loss: 0.5863, Val Acc: 0.8899
+Epoch 14/15, Train Loss: 0.0778, Val Loss: 0.5881, Val Acc: 0.8904
+Epoch 15/15, Train Loss: 0.0716, Val Loss: 0.5987, Val Acc: 0.8900
+test_loss: 0.5783893605103981, test_acc: 0.8930422067642212
+Saved finetuned model to res/checkpoints/finetune_only/20251021-080233_finetuned_upmc_food.pt
+
+
+6/9: finetuning on mm_imdb with seed 1570
+run_finetune:750 - seed = 1570
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task mm_imdb
+saving results to 20251023-193247_experiment_coattn_3-4-5
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7185653333303925, 'acc': 0.4566305875778198, 'auc': None}
+Epoch 1/15, Train Loss: 0.3738, V_Loss: 0.2525, V_Acc: 0.9024, T_Loss: 0.2493, T_Acc: 0.9040
+Epoch 2/15, Train Loss: 0.2181, V_Loss: 0.1929, V_Acc: 0.9229, T_Loss: 0.1913, T_Acc: 0.9233
+Epoch 3/15, Train Loss: 0.1806, V_Loss: 0.1806, V_Acc: 0.9281, T_Loss: 0.1793, T_Acc: 0.9279
+Epoch 4/15, Train Loss: 0.1585, V_Loss: 0.1779, V_Acc: 0.9297, T_Loss: 0.1760, T_Acc: 0.9296
+Epoch 5/15, Train Loss: 0.1411, V_Loss: 0.1821, V_Acc: 0.9285, T_Loss: 0.1827, T_Acc: 0.9283
+Epoch 6/15, Train Loss: 0.1246, V_Loss: 0.1897, V_Acc: 0.9270, T_Loss: 0.1906, T_Acc: 0.9254
+Epoch 7/15, Train Loss: 0.1105, V_Loss: 0.1985, V_Acc: 0.9276, T_Loss: 0.1993, T_Acc: 0.9266
+Early stopping at epoch 7. Best acc: 0.9297 at epoch 4
+restord model from epoch 4
+Final T_Loss: 0.1760, T_Acc: 0.9296
+Saved finetuned model to res/checkpoints/hotfix/20251023-193247_finetuned_mm_imdb.pt
+
+
+
+7/9: finetuning on hateful_memes with seed 1568
+run_finetune:744 - seed = 1568
+run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task hateful_memes
+_run_task:712 - saving results to 20251022-114514_experiment_coattn_3-4-5
+Epoch 1/15, Train Loss: 0.8663, V_Loss: 0.7007, V_Acc: 0.5615, T_Loss: 0.6695, T_Acc: 0.5933, V_AUC: 0.5619, T_AUC: 0.6150
+Epoch 2/15, Train Loss: 0.7384, V_Loss: 0.6629, V_Acc: 0.6240, T_Loss: 0.6432, T_Acc: 0.6460, V_AUC: 0.6590, T_AUC: 0.6870
+Epoch 3/15, Train Loss: 0.5765, V_Loss: 0.7248, V_Acc: 0.6183, T_Loss: 0.7014, T_Acc: 0.6667, V_AUC: 0.6798, T_AUC: 0.7068
+Epoch 4/15, Train Loss: 0.4492, V_Loss: 0.7228, V_Acc: 0.6413, T_Loss: 0.6949, T_Acc: 0.6707, V_AUC: 0.6880, T_AUC: 0.7165
+Epoch 5/15, Train Loss: 0.3288, V_Loss: 1.0539, V_Acc: 0.6337, T_Loss: 1.0033, T_Acc: 0.6713, V_AUC: 0.6868, T_AUC: 0.7200
+Epoch 6/15, Train Loss: 0.2324, V_Loss: 1.0679, V_Acc: 0.6558, T_Loss: 1.0053, T_Acc: 0.6827, V_AUC: 0.6862, T_AUC: 0.7184
+Epoch 7/15, Train Loss: 0.1889, V_Loss: 1.1206, V_Acc: 0.6510, T_Loss: 1.0861, T_Acc: 0.6857, V_AUC: 0.7019, T_AUC: 0.7259
+Epoch 8/15, Train Loss: 0.1403, V_Loss: 1.3123, V_Acc: 0.6452, T_Loss: 1.2576, T_Acc: 0.6910, V_AUC: 0.6910, T_AUC: 0.7188
+Epoch 9/15, Train Loss: 0.1078, V_Loss: 1.3164, V_Acc: 0.6625, T_Loss: 1.3041, T_Acc: 0.6893, V_AUC: 0.7030, T_AUC: 0.7264
+Epoch 10/15, Train Loss: 0.0892, V_Loss: 1.4806, V_Acc: 0.6635, T_Loss: 1.4732, T_Acc: 0.6743, V_AUC: 0.6977, T_AUC: 0.7191
+Epoch 11/15, Train Loss: 0.0723, V_Loss: 1.4841, V_Acc: 0.6538, T_Loss: 1.4159, T_Acc: 0.6900, V_AUC: 0.6941, T_AUC: 0.7213
+Epoch 12/15, Train Loss: 0.0561, V_Loss: 1.4876, V_Acc: 0.6510, T_Loss: 1.4403, T_Acc: 0.6893, V_AUC: 0.6959, T_AUC: 0.7234
+Early stopping at epoch 12. Best AUC: 0.7030 at epoch 9
+restord model from epoch 9
+Final T_Loss: 1.3041, T_Acc: 0.6893, Test AUC: 0.7264
+Saved finetuned model to res/checkpoints/20251010-234252_pretrained_early_fusion/20251022-114514_finetuned_hateful_memes.pt
+
+
+8/9: finetuning on hateful_memes with seed 1569
+run_finetune:744 - seed = 1569
+run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task hateful_memes
+_run_task:712 - saving results to 20251022-122746_experiment_coattn_3-4-5
+Epoch 1/15, Train Loss: 0.8531, V_Loss: 0.7070, V_Acc: 0.5625, T_Loss: 0.6770, T_Acc: 0.6003, V_AUC: 0.5673, T_AUC: 0.6122
+Epoch 2/15, Train Loss: 0.7203, V_Loss: 0.6673, V_Acc: 0.6144, T_Loss: 0.6484, T_Acc: 0.6497, V_AUC: 0.6761, T_AUC: 0.6936
+Epoch 3/15, Train Loss: 0.5604, V_Loss: 0.6656, V_Acc: 0.6587, T_Loss: 0.6625, T_Acc: 0.6790, V_AUC: 0.7120, T_AUC: 0.7231
+Epoch 4/15, Train Loss: 0.4169, V_Loss: 0.8198, V_Acc: 0.6510, T_Loss: 0.7784, T_Acc: 0.6807, V_AUC: 0.6929, T_AUC: 0.7249
+Epoch 5/15, Train Loss: 0.3264, V_Loss: 0.8968, V_Acc: 0.6750, T_Loss: 0.9046, T_Acc: 0.6730, V_AUC: 0.7007, T_AUC: 0.7197
+Epoch 6/15, Train Loss: 0.2475, V_Loss: 1.0159, V_Acc: 0.6673, T_Loss: 1.0055, T_Acc: 0.6713, V_AUC: 0.6931, T_AUC: 0.7148
+Early stopping at epoch 6. Best AUC: 0.7120 at epoch 3
+restord model from epoch 3
+Final T_Loss: 0.6625, T_Acc: 0.6790, Test AUC: 0.7231
+Saved finetuned model to res/checkpoints/20251010-234252_pretrained_early_fusion/20251022-122746_finetuned_hateful_memes.pt
+
+
+9/9: finetuning on hateful_memes with seed 1570
+run_finetune:744 - seed = 1570
+run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt for task hateful_memes
+_run_task:712 - saving results to 20251022-124925_experiment_coattn_3-4-5
+Epoch 1/15, Train Loss: 0.8635, V_Loss: 0.6854, V_Acc: 0.5663, T_Loss: 0.6618, T_Acc: 0.6057, V_AUC: 0.5708, T_AUC: 0.6147
+Epoch 2/15, Train Loss: 0.7418, V_Loss: 0.6533, V_Acc: 0.6327, T_Loss: 0.6457, T_Acc: 0.6440, V_AUC: 0.6784, T_AUC: 0.6873
+Epoch 3/15, Train Loss: 0.5803, V_Loss: 0.6390, V_Acc: 0.6625, T_Loss: 0.6346, T_Acc: 0.6737, V_AUC: 0.7075, T_AUC: 0.7183
+Epoch 4/15, Train Loss: 0.4364, V_Loss: 0.8016, V_Acc: 0.6615, T_Loss: 0.7292, T_Acc: 0.6920, V_AUC: 0.6973, T_AUC: 0.7366
+Epoch 5/15, Train Loss: 0.3024, V_Loss: 0.9322, V_Acc: 0.6596, T_Loss: 0.8918, T_Acc: 0.6817, V_AUC: 0.6952, T_AUC: 0.7187
+Epoch 6/15, Train Loss: 0.2259, V_Loss: 1.1920, V_Acc: 0.6519, T_Loss: 1.1014, T_Acc: 0.6757, V_AUC: 0.6983, T_AUC: 0.7267
+Early stopping at epoch 6. Best AUC: 0.7075 at epoch 3
+restord model from epoch 3
+Final T_Loss: 0.6346, T_Acc: 0.6737, Test AUC: 0.7183
+Saved finetuned model to res/checkpoints/20251010-234252_pretrained_early_fusion/20251022-124925_finetuned_hateful_memes.pt
+
+
+================================
+middle fusion
+
+2025-10-20 13:23:41 - INFO  - finetune_experiments.py:main:45 -  1/9: finetuning on upmc_food with seed 1568
+2025-10-20 13:23:41 - INFO  - experiment_tracker.py:run_finetune:712 - seed = 1568
+2025-10-20 13:23:43 - INFO  - experiment_tracker.py:run_finetune:732 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task upmc_food
+2025-10-20 13:23:43 - INFO  - experiment_tracker.py:_run_task:680 - saving results to 20251020-132341_experiment_coattn_6-7-8
+Epoch 1/15, Train Loss: 2.6656, Val Loss: 0.6820, Val Acc: 0.8527
+Epoch 2/15, Train Loss: 0.6031, Val Loss: 0.4953, Val Acc: 0.8834
+Epoch 3/15, Train Loss: 0.4037, Val Loss: 0.4296, Val Acc: 0.9028
+Epoch 4/15, Train Loss: 0.2648, Val Loss: 0.4174, Val Acc: 0.9071
+Epoch 5/15, Train Loss: 0.1693, Val Loss: 0.4195, Val Acc: 0.9077
+Epoch 6/15, Train Loss: 0.1030, Val Loss: 0.4294, Val Acc: 0.9111
+Epoch 7/15, Train Loss: 0.0666, Val Loss: 0.4243, Val Acc: 0.9151
+Epoch 8/15, Train Loss: 0.0447, Val Loss: 0.4542, Val Acc: 0.9125
+Epoch 9/15, Train Loss: 0.0338, Val Loss: 0.4662, Val Acc: 0.9139
+Epoch 10/15, Train Loss: 0.0249, Val Loss: 0.4610, Val Acc: 0.9148
+Early stopping at epoch 10. Best max: 0.9151 at epoch 7
+restord model from epoch 7
+test_loss: 0.40301292292283736, test_acc: 0.9167493581771851
+Saved finetuned model to res/checkpoints/finetune_only/20251020-132341_finetuned_upmc_food.pt
+
+
+2025-10-23 20:10:12 - INFO  - finetune_experiments_temp.py:main:60 -  2/9: finetuning on mm_imdb with seed 1568
+2025-10-23 20:10:12 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1568
+2025-10-23 20:10:16 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task mm_imdb
+saving results to 20251023-201012_experiment_coattn_6-7-8
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7544503753835504, 'acc': 0.3271588385105133, 'auc': None}
+Epoch 1/15, Train Loss: 0.4078, V_Loss: 0.2659, V_Acc: 0.8993, T_Loss: 0.2631, T_Acc: 0.9009
+Epoch 2/15, Train Loss: 0.2230, V_Loss: 0.1908, V_Acc: 0.9237, T_Loss: 0.1890, T_Acc: 0.9250
+Epoch 3/15, Train Loss: 0.1780, V_Loss: 0.1844, V_Acc: 0.9269, T_Loss: 0.1810, T_Acc: 0.9274
+Epoch 4/15, Train Loss: 0.1561, V_Loss: 0.1817, V_Acc: 0.9287, T_Loss: 0.1797, T_Acc: 0.9292
+Epoch 5/15, Train Loss: 0.1368, V_Loss: 0.1813, V_Acc: 0.9302, T_Loss: 0.1806, T_Acc: 0.9300
+Epoch 6/15, Train Loss: 0.1183, V_Loss: 0.1888, V_Acc: 0.9293, T_Loss: 0.1877, T_Acc: 0.9293
+Epoch 7/15, Train Loss: 0.1036, V_Loss: 0.1976, V_Acc: 0.9268, T_Loss: 0.1969, T_Acc: 0.9277
+Epoch 8/15, Train Loss: 0.0892, V_Loss: 0.2087, V_Acc: 0.9277, T_Loss: 0.2080, T_Acc: 0.9269
+Early stopping at epoch 8. Best acc: 0.9302 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1806, T_Acc: 0.9300
+Saved finetuned model to res/checkpoints/hotfix/20251023-201012_finetuned_mm_imdb.pt
+
+
+2025-10-20 19:48:02 - INFO  - finetune_experiments.py:main:45 -  3/9: finetuning on upmc_food with seed 1569
+2025-10-20 19:48:02 - INFO  - experiment_tracker.py:run_finetune:712 - seed = 1569
+2025-10-20 19:48:15 - INFO  - experiment_tracker.py:run_finetune:732 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task upmc_food
+2025-10-20 19:48:15 - INFO  - experiment_tracker.py:_run_task:680 - saving results to 20251020-194802_experiment_coattn_6-7-8
+Epoch 1/15, Train Loss: 2.6772, Val Loss: 0.6814, Val Acc: 0.8537
+Epoch 2/15, Train Loss: 0.6060, Val Loss: 0.4850, Val Acc: 0.8867
+Epoch 3/15, Train Loss: 0.3976, Val Loss: 0.4350, Val Acc: 0.8978
+Epoch 4/15, Train Loss: 0.2620, Val Loss: 0.4034, Val Acc: 0.9056
+Epoch 5/15, Train Loss: 0.1633, Val Loss: 0.4064, Val Acc: 0.9115
+Epoch 6/15, Train Loss: 0.1019, Val Loss: 0.4303, Val Acc: 0.9124
+Epoch 7/15, Train Loss: 0.0634, Val Loss: 0.4381, Val Acc: 0.9121
+Epoch 8/15, Train Loss: 0.0441, Val Loss: 0.4357, Val Acc: 0.9132
+Epoch 9/15, Train Loss: 0.0327, Val Loss: 0.4434, Val Acc: 0.9149
+Epoch 10/15, Train Loss: 0.0262, Val Loss: 0.4466, Val Acc: 0.9163
+Epoch 11/15, Train Loss: 0.0198, Val Loss: 0.4557, Val Acc: 0.9172
+Epoch 12/15, Train Loss: 0.0167, Val Loss: 0.4547, Val Acc: 0.9169
+Epoch 13/15, Train Loss: 0.0140, Val Loss: 0.4634, Val Acc: 0.9156
+Epoch 14/15, Train Loss: 0.0128, Val Loss: 0.4646, Val Acc: 0.9152
+Early stopping at epoch 14. Best max: 0.9172 at epoch 11
+restord model from epoch 11
+test_loss: 0.44776209666848066, test_acc: 0.9198368191719055
+Saved finetuned model to res/checkpoints/finetune_only/20251020-194802_finetuned_upmc_food.pt
+
+
+2025-10-23 20:50:59 - INFO  - finetune_experiments_temp.py:main:60 -  4/9: finetuning on mm_imdb with seed 1569
+2025-10-23 20:50:59 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1569
+2025-10-23 20:51:03 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task mm_imdb
+saving results to 20251023-205059_experiment_coattn_6-7-8
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7544503753835504, 'acc': 0.3271588385105133, 'auc': None}
+Epoch 1/15, Train Loss: 0.4091, V_Loss: 0.2676, V_Acc: 0.8993, T_Loss: 0.2645, T_Acc: 0.9008
+Epoch 2/15, Train Loss: 0.2218, V_Loss: 0.1922, V_Acc: 0.9229, T_Loss: 0.1896, T_Acc: 0.9240
+Epoch 3/15, Train Loss: 0.1774, V_Loss: 0.1792, V_Acc: 0.9280, T_Loss: 0.1786, T_Acc: 0.9285
+Epoch 4/15, Train Loss: 0.1555, V_Loss: 0.1797, V_Acc: 0.9282, T_Loss: 0.1779, T_Acc: 0.9290
+Epoch 5/15, Train Loss: 0.1361, V_Loss: 0.1807, V_Acc: 0.9304, T_Loss: 0.1798, T_Acc: 0.9301
+Epoch 6/15, Train Loss: 0.1181, V_Loss: 0.1894, V_Acc: 0.9293, T_Loss: 0.1906, T_Acc: 0.9287
+Epoch 7/15, Train Loss: 0.1018, V_Loss: 0.2000, V_Acc: 0.9286, T_Loss: 0.2008, T_Acc: 0.9285
+Epoch 8/15, Train Loss: 0.0891, V_Loss: 0.2104, V_Acc: 0.9276, T_Loss: 0.2103, T_Acc: 0.9274
+Early stopping at epoch 8. Best acc: 0.9304 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1798, T_Acc: 0.9301
+Saved finetuned model to res/checkpoints/hotfix/20251023-205059_finetuned_mm_imdb.pt
+
+2025-10-21 03:50:08 - INFO  - finetune_experiments.py:main:45 -  5/9: finetuning on upmc_food with seed 1570
+2025-10-21 03:50:08 - INFO  - experiment_tracker.py:run_finetune:712 - seed = 1570
+2025-10-21 03:50:10 - INFO  - experiment_tracker.py:run_finetune:732 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task upmc_food
+2025-10-21 03:50:10 - INFO  - experiment_tracker.py:_run_task:680 - saving results to 20251021-035008_experiment_coattn_6-7-8
+Epoch 1/15, Train Loss: 2.6697, Val Loss: 0.6825, Val Acc: 0.8512
+Epoch 2/15, Train Loss: 0.5988, Val Loss: 0.4996, Val Acc: 0.8827
+Epoch 3/15, Train Loss: 0.4011, Val Loss: 0.4290, Val Acc: 0.9000
+Epoch 4/15, Train Loss: 0.2666, Val Loss: 0.4128, Val Acc: 0.9081
+Epoch 5/15, Train Loss: 0.1726, Val Loss: 0.4184, Val Acc: 0.9087
+Epoch 6/15, Train Loss: 0.1045, Val Loss: 0.4322, Val Acc: 0.9133
+Epoch 7/15, Train Loss: 0.0666, Val Loss: 0.4402, Val Acc: 0.9136
+Epoch 8/15, Train Loss: 0.0461, Val Loss: 0.4485, Val Acc: 0.9134
+Epoch 9/15, Train Loss: 0.0323, Val Loss: 0.4629, Val Acc: 0.9155
+Epoch 10/15, Train Loss: 0.0252, Val Loss: 0.4821, Val Acc: 0.9131
+Epoch 11/15, Train Loss: 0.0195, Val Loss: 0.4788, Val Acc: 0.9152
+Epoch 12/15, Train Loss: 0.0165, Val Loss: 0.4759, Val Acc: 0.9155
+Early stopping at epoch 12. Best max: 0.9155 at epoch 9
+restord model from epoch 9
+test_loss: 0.4577598556876665, test_acc: 0.9178520441055298
+Saved finetuned model to res/checkpoints/finetune_only/20251021-035008_finetuned_upmc_food.pt
+
+
+2025-10-23 21:31:55 - INFO  - finetune_experiments_temp.py:main:60 -  6/9: finetuning on mm_imdb with seed 1570
+2025-10-23 21:31:55 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1570
+2025-10-23 21:31:57 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task mm_imdb
+saving results to 20251023-213155_experiment_coattn_6-7-8
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7544503753835504, 'acc': 0.3271588385105133, 'auc': None}
+Epoch 1/15, Train Loss: 0.4086, V_Loss: 0.2665, V_Acc: 0.8990, T_Loss: 0.2636, T_Acc: 0.9003
+Epoch 2/15, Train Loss: 0.2220, V_Loss: 0.1926, V_Acc: 0.9218, T_Loss: 0.1905, T_Acc: 0.9237
+Epoch 3/15, Train Loss: 0.1787, V_Loss: 0.1798, V_Acc: 0.9277, T_Loss: 0.1782, T_Acc: 0.9280
+Epoch 4/15, Train Loss: 0.1550, V_Loss: 0.1782, V_Acc: 0.9291, T_Loss: 0.1762, T_Acc: 0.9294
+Epoch 5/15, Train Loss: 0.1367, V_Loss: 0.1799, V_Acc: 0.9295, T_Loss: 0.1793, T_Acc: 0.9296
+Epoch 6/15, Train Loss: 0.1192, V_Loss: 0.1885, V_Acc: 0.9283, T_Loss: 0.1881, T_Acc: 0.9276
+Epoch 7/15, Train Loss: 0.1034, V_Loss: 0.1969, V_Acc: 0.9287, T_Loss: 0.1970, T_Acc: 0.9276
+Epoch 8/15, Train Loss: 0.0889, V_Loss: 0.2141, V_Acc: 0.9269, T_Loss: 0.2131, T_Acc: 0.9267
+Early stopping at epoch 8. Best acc: 0.9295 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1793, T_Acc: 0.9296
+Saved finetuned model to res/checkpoints/hotfix/20251023-213155_finetuned_mm_imdb.pt
+
+
+2025-10-22 18:34:28 - INFO  - finetune_experiments.py:main:48 -  7/9: finetuning on hateful_memes with seed 1568
+2025-10-22 18:34:28 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1568
+2025-10-22 18:34:30 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task hateful_memes
+2025-10-22 18:34:30 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-183428_experiment_coattn_6-7-8
+Epoch 1/15, Train Loss: 0.8530, V_Loss: 0.7183, V_Acc: 0.5827, T_Loss: 0.6803, T_Acc: 0.6210, V_AUC: 0.5887, T_AUC: 0.6344
+Epoch 2/15, Train Loss: 0.7008, V_Loss: 0.6413, V_Acc: 0.6519, T_Loss: 0.6063, T_Acc: 0.6830, V_AUC: 0.7066, T_AUC: 0.7357
+Epoch 3/15, Train Loss: 0.5145, V_Loss: 0.7066, V_Acc: 0.6635, T_Loss: 0.6855, T_Acc: 0.6840, V_AUC: 0.7147, T_AUC: 0.7328
+Epoch 4/15, Train Loss: 0.3466, V_Loss: 0.7338, V_Acc: 0.6625, T_Loss: 0.7029, T_Acc: 0.6993, V_AUC: 0.7242, T_AUC: 0.7478
+Epoch 5/15, Train Loss: 0.2384, V_Loss: 0.9975, V_Acc: 0.6519, T_Loss: 0.9476, T_Acc: 0.6903, V_AUC: 0.7260, T_AUC: 0.7488
+Epoch 6/15, Train Loss: 0.1520, V_Loss: 1.1123, V_Acc: 0.6683, T_Loss: 1.0478, T_Acc: 0.7003, V_AUC: 0.7347, T_AUC: 0.7555
+Epoch 7/15, Train Loss: 0.1182, V_Loss: 1.2644, V_Acc: 0.6654, T_Loss: 1.1848, T_Acc: 0.6983, V_AUC: 0.7249, T_AUC: 0.7499
+Epoch 8/15, Train Loss: 0.0757, V_Loss: 1.3856, V_Acc: 0.6808, T_Loss: 1.3376, T_Acc: 0.6993, V_AUC: 0.7321, T_AUC: 0.7486
+Epoch 9/15, Train Loss: 0.0553, V_Loss: 1.5439, V_Acc: 0.6817, T_Loss: 1.4829, T_Acc: 0.6960, V_AUC: 0.7336, T_AUC: 0.7505
+Early stopping at epoch 9. Best AUC: 0.7347 at epoch 6
+restord model from epoch 6
+Final T_Loss: 1.0478, T_Acc: 0.7003, Test AUC: 0.7555
+Saved finetuned model to res/checkpoints/20251011-234349_pretrained_middle_fusion/20251022-183428_finetuned_hateful_memes.pt
+
+
+2025-10-22 19:06:23 - INFO  - finetune_experiments.py:main:48 -  8/9: finetuning on hateful_memes with seed 1569
+2025-10-22 19:06:23 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1569
+2025-10-22 19:06:25 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task hateful_memes
+2025-10-22 19:06:25 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-190623_experiment_coattn_6-7-8
+Epoch 1/15, Train Loss: 0.8503, V_Loss: 0.6872, V_Acc: 0.5760, T_Loss: 0.6592, T_Acc: 0.6133, V_AUC: 0.6029, T_AUC: 0.6460
+Epoch 2/15, Train Loss: 0.6815, V_Loss: 0.6460, V_Acc: 0.6538, T_Loss: 0.6128, T_Acc: 0.6737, V_AUC: 0.7067, T_AUC: 0.7313
+Epoch 3/15, Train Loss: 0.5109, V_Loss: 0.6701, V_Acc: 0.6721, T_Loss: 0.6476, T_Acc: 0.6967, V_AUC: 0.7279, T_AUC: 0.7497
+Epoch 4/15, Train Loss: 0.3534, V_Loss: 0.8702, V_Acc: 0.6654, T_Loss: 0.8130, T_Acc: 0.6963, V_AUC: 0.7175, T_AUC: 0.7430
+Epoch 5/15, Train Loss: 0.2394, V_Loss: 0.8782, V_Acc: 0.6808, T_Loss: 0.8445, T_Acc: 0.6970, V_AUC: 0.7338, T_AUC: 0.7537
+Epoch 6/15, Train Loss: 0.1653, V_Loss: 1.2633, V_Acc: 0.6740, T_Loss: 1.1970, T_Acc: 0.6877, V_AUC: 0.7250, T_AUC: 0.7463
+Epoch 7/15, Train Loss: 0.1136, V_Loss: 1.3058, V_Acc: 0.6750, T_Loss: 1.2532, T_Acc: 0.6973, V_AUC: 0.7370, T_AUC: 0.7500
+Epoch 8/15, Train Loss: 0.0854, V_Loss: 1.2860, V_Acc: 0.7019, T_Loss: 1.2323, T_Acc: 0.7007, V_AUC: 0.7514, T_AUC: 0.7566
+Epoch 9/15, Train Loss: 0.0628, V_Loss: 1.4766, V_Acc: 0.6846, T_Loss: 1.4151, T_Acc: 0.7017, V_AUC: 0.7439, T_AUC: 0.7527
+Epoch 10/15, Train Loss: 0.0377, V_Loss: 1.6341, V_Acc: 0.6856, T_Loss: 1.5608, T_Acc: 0.6997, V_AUC: 0.7375, T_AUC: 0.7484
+Epoch 11/15, Train Loss: 0.0382, V_Loss: 1.5835, V_Acc: 0.6885, T_Loss: 1.5115, T_Acc: 0.6993, V_AUC: 0.7391, T_AUC: 0.7492
+Early stopping at epoch 11. Best AUC: 0.7514 at epoch 8
+restord model from epoch 8
+Final T_Loss: 1.2323, T_Acc: 0.7007, Test AUC: 0.7566
+Saved finetuned model to res/checkpoints/20251011-234349_pretrained_middle_fusion/20251022-190623_finetuned_hateful_memes.pt
+
+
+2025-10-22 19:45:14 - INFO  - finetune_experiments.py:main:48 -  9/9: finetuning on hateful_memes with seed 1570
+2025-10-22 19:45:14 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1570
+2025-10-22 19:45:16 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt for task hateful_memes
+2025-10-22 19:45:16 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-194514_experiment_coattn_6-7-8
+Epoch 1/15, Train Loss: 0.8590, V_Loss: 0.6961, V_Acc: 0.5981, T_Loss: 0.6650, T_Acc: 0.6207, V_AUC: 0.6046, T_AUC: 0.6452
+Epoch 2/15, Train Loss: 0.7081, V_Loss: 0.7128, V_Acc: 0.5990, T_Loss: 0.6833, T_Acc: 0.6420, V_AUC: 0.6621, T_AUC: 0.6834
+Epoch 3/15, Train Loss: 0.5376, V_Loss: 0.7004, V_Acc: 0.6346, T_Loss: 0.6723, T_Acc: 0.6703, V_AUC: 0.6948, T_AUC: 0.7224
+Epoch 4/15, Train Loss: 0.3946, V_Loss: 0.7746, V_Acc: 0.6510, T_Loss: 0.7311, T_Acc: 0.6817, V_AUC: 0.7093, T_AUC: 0.7370
+Epoch 5/15, Train Loss: 0.2651, V_Loss: 0.9498, V_Acc: 0.6663, T_Loss: 0.8585, T_Acc: 0.6963, V_AUC: 0.7208, T_AUC: 0.7527
+Epoch 6/15, Train Loss: 0.1828, V_Loss: 1.1799, V_Acc: 0.6712, T_Loss: 1.1159, T_Acc: 0.6830, V_AUC: 0.7191, T_AUC: 0.7424
+Epoch 7/15, Train Loss: 0.1276, V_Loss: 1.2485, V_Acc: 0.6740, T_Loss: 1.2076, T_Acc: 0.6900, V_AUC: 0.7246, T_AUC: 0.7369
+Epoch 8/15, Train Loss: 0.1009, V_Loss: 1.3143, V_Acc: 0.6635, T_Loss: 1.2697, T_Acc: 0.6923, V_AUC: 0.7221, T_AUC: 0.7418
+Epoch 9/15, Train Loss: 0.0749, V_Loss: 1.5438, V_Acc: 0.6663, T_Loss: 1.4458, T_Acc: 0.6880, V_AUC: 0.7213, T_AUC: 0.7425
+Epoch 10/15, Train Loss: 0.0482, V_Loss: 1.6984, V_Acc: 0.6577, T_Loss: 1.6285, T_Acc: 0.6817, V_AUC: 0.7227, T_AUC: 0.7377
+Early stopping at epoch 10. Best AUC: 0.7246 at epoch 7
+restord model from epoch 7
+Final T_Loss: 1.2076, T_Acc: 0.6900, Test AUC: 0.7369
+Saved finetuned model to res/checkpoints/20251011-234349_pretrained_middle_fusion/20251022-194514_finetuned_hateful_memes.pt
+
+
+================================
+late fusion
+2025-10-21 22:14:14 - INFO  - finetune_experiments.py:main:47 -  1/9: finetuning on upmc_food with seed 1568
+2025-10-21 22:14:14 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1568
+2025-10-21 22:14:16 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task upmc_food
+2025-10-21 22:14:16 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251021-221414_experiment_coattn_9-10-11
+Epoch 1/15, Train Loss: 3.6902, V_Loss: 0.8593, V_Acc: 0.8269, T_Loss: 0.8514, T_Acc: 0.8316
+Epoch 2/15, Train Loss: 0.6258, V_Loss: 0.4481, V_Acc: 0.8979, T_Loss: 0.4550, T_Acc: 0.8967
+Epoch 3/15, Train Loss: 0.3749, V_Loss: 0.3795, V_Acc: 0.9113, T_Loss: 0.3855, T_Acc: 0.9093
+Epoch 4/15, Train Loss: 0.2546, V_Loss: 0.3686, V_Acc: 0.9154, T_Loss: 0.3782, T_Acc: 0.9145
+Epoch 5/15, Train Loss: 0.1694, V_Loss: 0.3563, V_Acc: 0.9205, T_Loss: 0.3586, T_Acc: 0.9218
+Epoch 6/15, Train Loss: 0.1164, V_Loss: 0.3687, V_Acc: 0.9218, T_Loss: 0.3784, T_Acc: 0.9196
+Epoch 7/15, Train Loss: 0.0788, V_Loss: 0.3763, V_Acc: 0.9224, T_Loss: 0.3815, T_Acc: 0.9204
+Epoch 8/15, Train Loss: 0.0549, V_Loss: 0.3783, V_Acc: 0.9237, T_Loss: 0.3863, T_Acc: 0.9244
+Epoch 9/15, Train Loss: 0.0410, V_Loss: 0.3785, V_Acc: 0.9243, T_Loss: 0.3855, T_Acc: 0.9246
+Epoch 10/15, Train Loss: 0.0338, V_Loss: 0.3871, V_Acc: 0.9234, T_Loss: 0.3941, T_Acc: 0.9239
+Epoch 11/15, Train Loss: 0.0267, V_Loss: 0.3883, V_Acc: 0.9254, T_Loss: 0.3935, T_Acc: 0.9255
+Epoch 12/15, Train Loss: 0.0233, V_Loss: 0.3875, V_Acc: 0.9252, T_Loss: 0.3925, T_Acc: 0.9268
+Epoch 13/15, Train Loss: 0.0199, V_Loss: 0.3950, V_Acc: 0.9265, T_Loss: 0.4012, T_Acc: 0.9260
+Epoch 14/15, Train Loss: 0.0204, V_Loss: 0.3963, V_Acc: 0.9254, T_Loss: 0.4081, T_Acc: 0.9269
+Epoch 15/15, Train Loss: 0.0180, V_Loss: 0.3972, V_Acc: 0.9255, T_Loss: 0.4096, T_Acc: 0.9278
+2025-10-22 04:12:23 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.4096, T_Acc: 0.9278
+2025-10-22 04:12:34 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251013-010227_pretrained_late_fusion/20251021-221414_finetuned_upmc_food.pt
+
+
+2025-10-23 22:11:17 - INFO  - finetune_experiments_temp.py:main:60 -  2/9: finetuning on mm_imdb with seed 1568
+2025-10-23 22:11:17 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1568
+2025-10-23 22:11:21 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task mm_imdb
+saving results to 20251023-221117_experiment_coattn_9-10-11
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7324171762437042, 'acc': 0.36250585317611694, 'auc': None}
+Epoch 1/15, Train Loss: 0.4309, V_Loss: 0.2834, V_Acc: 0.8980, T_Loss: 0.2801, T_Acc: 0.8997
+Epoch 2/15, Train Loss: 0.2284, V_Loss: 0.1911, V_Acc: 0.9235, T_Loss: 0.1879, T_Acc: 0.9244
+Epoch 3/15, Train Loss: 0.1770, V_Loss: 0.1851, V_Acc: 0.9263, T_Loss: 0.1815, T_Acc: 0.9270
+Epoch 4/15, Train Loss: 0.1525, V_Loss: 0.1779, V_Acc: 0.9296, T_Loss: 0.1759, T_Acc: 0.9308
+Epoch 5/15, Train Loss: 0.1316, V_Loss: 0.1798, V_Acc: 0.9304, T_Loss: 0.1774, T_Acc: 0.9305
+Epoch 6/15, Train Loss: 0.1108, V_Loss: 0.1913, V_Acc: 0.9296, T_Loss: 0.1899, T_Acc: 0.9292
+Epoch 7/15, Train Loss: 0.0940, V_Loss: 0.2045, V_Acc: 0.9278, T_Loss: 0.2014, T_Acc: 0.9284
+Epoch 8/15, Train Loss: 0.0786, V_Loss: 0.2175, V_Acc: 0.9280, T_Loss: 0.2157, T_Acc: 0.9277
+Early stopping at epoch 8. Best acc: 0.9304 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1774, T_Acc: 0.9305
+Saved finetuned model to res/checkpoints/hotfix/20251023-221117_finetuned_mm_imdb.pt
+
+
+2025-10-22 06:19:25 - INFO  - finetune_experiments.py:main:47 -  3/9: finetuning on hateful_memes with seed 1568
+2025-10-22 06:19:25 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1568
+2025-10-22 06:19:27 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task hateful_memes
+2025-10-22 06:19:27 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-061925_experiment_coattn_9-10-11
+Epoch 1/15, Train Loss: 0.8759, V_Loss: 0.6711, V_Acc: 0.5779, T_Loss: 0.6565, T_Acc: 0.6157, V_AUC: 0.6027, T_AUC: 0.6398
+Epoch 2/15, Train Loss: 0.7531, V_Loss: 0.6648, V_Acc: 0.6279, T_Loss: 0.6379, T_Acc: 0.6500, V_AUC: 0.6829, T_AUC: 0.7020
+Epoch 3/15, Train Loss: 0.5875, V_Loss: 0.6604, V_Acc: 0.6394, T_Loss: 0.6299, T_Acc: 0.6853, V_AUC: 0.7149, T_AUC: 0.7387
+Epoch 4/15, Train Loss: 0.4460, V_Loss: 0.7690, V_Acc: 0.6654, T_Loss: 0.7176, T_Acc: 0.6810, V_AUC: 0.7346, T_AUC: 0.7524
+Epoch 5/15, Train Loss: 0.3244, V_Loss: 0.8468, V_Acc: 0.6635, T_Loss: 0.7933, T_Acc: 0.7013, V_AUC: 0.7438, T_AUC: 0.7617
+Epoch 6/15, Train Loss: 0.2136, V_Loss: 0.9517, V_Acc: 0.6788, T_Loss: 0.8878, T_Acc: 0.7110, V_AUC: 0.7460, T_AUC: 0.7693
+Epoch 7/15, Train Loss: 0.1478, V_Loss: 1.3605, V_Acc: 0.6548, T_Loss: 1.2042, T_Acc: 0.6930, V_AUC: 0.7218, T_AUC: 0.7490
+Epoch 8/15, Train Loss: 0.1028, V_Loss: 1.2148, V_Acc: 0.6779, T_Loss: 1.1125, T_Acc: 0.7073, V_AUC: 0.7445, T_AUC: 0.7671
+Epoch 9/15, Train Loss: 0.0760, V_Loss: 1.3838, V_Acc: 0.6663, T_Loss: 1.2467, T_Acc: 0.7027, V_AUC: 0.7421, T_AUC: 0.7641
+2025-10-22 06:48:49 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 9. Best AUC: 0.7460 at epoch 6
+2025-10-22 06:48:49 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 6
+2025-10-22 06:49:12 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.8878, T_Acc: 0.7110, Test AUC: 0.7693
+2025-10-22 06:49:24 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-061925_finetuned_hateful_memes.pt
+
+2025-10-22 06:49:24 - INFO  - finetune_experiments.py:main:47 -  4/9: finetuning on upmc_food with seed 1569
+2025-10-22 06:49:24 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1569
+2025-10-22 06:49:25 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task upmc_food
+2025-10-22 06:49:25 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-064924_experiment_coattn_9-10-11
+Epoch 1/15, Train Loss: 3.7129, V_Loss: 0.8543, V_Acc: 0.8299, T_Loss: 0.8488, T_Acc: 0.8331
+Epoch 2/15, Train Loss: 0.6293, V_Loss: 0.4605, V_Acc: 0.8940, T_Loss: 0.4596, T_Acc: 0.8937
+Epoch 3/15, Train Loss: 0.3780, V_Loss: 0.3917, V_Acc: 0.9104, T_Loss: 0.3964, T_Acc: 0.9088
+Epoch 4/15, Train Loss: 0.2537, V_Loss: 0.3570, V_Acc: 0.9175, T_Loss: 0.3696, T_Acc: 0.9177
+Epoch 5/15, Train Loss: 0.1709, V_Loss: 0.3563, V_Acc: 0.9220, T_Loss: 0.3623, T_Acc: 0.9203
+Epoch 6/15, Train Loss: 0.1112, V_Loss: 0.3659, V_Acc: 0.9216, T_Loss: 0.3550, T_Acc: 0.9268
+Epoch 7/15, Train Loss: 0.0787, V_Loss: 0.3693, V_Acc: 0.9226, T_Loss: 0.3736, T_Acc: 0.9252
+Epoch 8/15, Train Loss: 0.0552, V_Loss: 0.3844, V_Acc: 0.9218, T_Loss: 0.3828, T_Acc: 0.9249
+Epoch 9/15, Train Loss: 0.0422, V_Loss: 0.3869, V_Acc: 0.9231, T_Loss: 0.3875, T_Acc: 0.9255
+Epoch 10/15, Train Loss: 0.0314, V_Loss: 0.3911, V_Acc: 0.9234, T_Loss: 0.3904, T_Acc: 0.9261
+Epoch 11/15, Train Loss: 0.0254, V_Loss: 0.4002, V_Acc: 0.9216, T_Loss: 0.3950, T_Acc: 0.9263
+Epoch 12/15, Train Loss: 0.0228, V_Loss: 0.4009, V_Acc: 0.9239, T_Loss: 0.3933, T_Acc: 0.9280
+Epoch 13/15, Train Loss: 0.0198, V_Loss: 0.4008, V_Acc: 0.9254, T_Loss: 0.3947, T_Acc: 0.9279
+Epoch 14/15, Train Loss: 0.0190, V_Loss: 0.4073, V_Acc: 0.9247, T_Loss: 0.3993, T_Acc: 0.9278
+Epoch 15/15, Train Loss: 0.0182, V_Loss: 0.4042, V_Acc: 0.9245, T_Loss: 0.3982, T_Acc: 0.9273
+2025-10-22 12:47:23 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.3982, T_Acc: 0.9273
+2025-10-22 12:47:37 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-064924_finetuned_upmc_food.pt
+
+
+2025-10-23 22:52:51 - INFO  - finetune_experiments_temp.py:main:60 - 5/9: finetuning on mm_imdb with seed 1569
+2025-10-23 22:52:51 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1569
+2025-10-23 22:52:53 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task mm_imdb
+saving results to 20251023-225251_experiment_coattn_9-10-11
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7324171762437042, 'acc': 0.36250585317611694, 'auc': None}
+Epoch 1/15, Train Loss: 0.4319, V_Loss: 0.2847, V_Acc: 0.8926, T_Loss: 0.2817, T_Acc: 0.8934
+Epoch 2/15, Train Loss: 0.2284, V_Loss: 0.1938, V_Acc: 0.9223, T_Loss: 0.1897, T_Acc: 0.9234
+Epoch 3/15, Train Loss: 0.1760, V_Loss: 0.1776, V_Acc: 0.9282, T_Loss: 0.1765, T_Acc: 0.9289
+Epoch 4/15, Train Loss: 0.1526, V_Loss: 0.1860, V_Acc: 0.9276, T_Loss: 0.1844, T_Acc: 0.9269
+Epoch 5/15, Train Loss: 0.1310, V_Loss: 0.1794, V_Acc: 0.9307, T_Loss: 0.1771, T_Acc: 0.9309
+Epoch 6/15, Train Loss: 0.1114, V_Loss: 0.1916, V_Acc: 0.9290, T_Loss: 0.1915, T_Acc: 0.9290
+Epoch 7/15, Train Loss: 0.0935, V_Loss: 0.2103, V_Acc: 0.9285, T_Loss: 0.2084, T_Acc: 0.9292
+Epoch 8/15, Train Loss: 0.0796, V_Loss: 0.2189, V_Acc: 0.9263, T_Loss: 0.2159, T_Acc: 0.9273
+Early stopping at epoch 8. Best acc: 0.9307 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1771, T_Acc: 0.9309
+Saved finetuned model to res/checkpoints/hotfix/20251023-225251_finetuned_mm_imdb.pt
+
+
+2025-10-22 14:54:40 - INFO  - finetune_experiments.py:main:47 -  6/9: finetuning on hateful_memes with seed 1569
+2025-10-22 14:54:40 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1569
+2025-10-22 14:54:42 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task hateful_memes
+2025-10-22 14:54:42 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-145440_experiment_coattn_9-10-11
+Epoch 1/15, Train Loss: 0.8804, V_Loss: 0.6679, V_Acc: 0.5817, T_Loss: 0.6521, T_Acc: 0.6117, V_AUC: 0.6047, T_AUC: 0.6400
+Epoch 2/15, Train Loss: 0.7738, V_Loss: 0.6618, V_Acc: 0.6250, T_Loss: 0.6349, T_Acc: 0.6490, V_AUC: 0.6700, T_AUC: 0.6923
+Epoch 3/15, Train Loss: 0.6231, V_Loss: 0.6557, V_Acc: 0.6404, T_Loss: 0.6215, T_Acc: 0.6787, V_AUC: 0.7067, T_AUC: 0.7328
+Epoch 4/15, Train Loss: 0.4809, V_Loss: 0.7257, V_Acc: 0.6596, T_Loss: 0.6756, T_Acc: 0.6897, V_AUC: 0.7324, T_AUC: 0.7521
+Epoch 5/15, Train Loss: 0.3541, V_Loss: 0.8276, V_Acc: 0.6538, T_Loss: 0.7940, T_Acc: 0.6977, V_AUC: 0.7441, T_AUC: 0.7536
+Epoch 6/15, Train Loss: 0.2427, V_Loss: 0.8697, V_Acc: 0.6990, T_Loss: 0.8317, T_Acc: 0.7050, V_AUC: 0.7519, T_AUC: 0.7659
+Epoch 7/15, Train Loss: 0.1752, V_Loss: 1.1290, V_Acc: 0.6663, T_Loss: 1.0613, T_Acc: 0.6903, V_AUC: 0.7474, T_AUC: 0.7582
+Epoch 8/15, Train Loss: 0.1198, V_Loss: 1.2162, V_Acc: 0.6750, T_Loss: 1.1258, T_Acc: 0.6990, V_AUC: 0.7455, T_AUC: 0.7572
+Epoch 9/15, Train Loss: 0.0923, V_Loss: 1.1846, V_Acc: 0.6817, T_Loss: 1.1481, T_Acc: 0.7060, V_AUC: 0.7547, T_AUC: 0.7620
+Epoch 10/15, Train Loss: 0.0624, V_Loss: 1.3297, V_Acc: 0.6856, T_Loss: 1.2368, T_Acc: 0.7050, V_AUC: 0.7473, T_AUC: 0.7621
+Epoch 11/15, Train Loss: 0.0647, V_Loss: 1.5675, V_Acc: 0.6683, T_Loss: 1.4326, T_Acc: 0.6890, V_AUC: 0.7430, T_AUC: 0.7591
+Epoch 12/15, Train Loss: 0.0535, V_Loss: 1.5705, V_Acc: 0.6760, T_Loss: 1.4350, T_Acc: 0.6933, V_AUC: 0.7438, T_AUC: 0.7598
+2025-10-22 15:33:47 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 12. Best AUC: 0.7547 at epoch 9
+2025-10-22 15:33:47 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 9
+2025-10-22 15:34:10 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 1.1481, T_Acc: 0.7060, Test AUC: 0.7620
+2025-10-22 15:34:19 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-145440_finetuned_hateful_memes.pt
+
+
+2025-10-22 15:34:19 - INFO  - finetune_experiments.py:main:47 -  7/9: finetuning on upmc_food with seed 1570
+2025-10-22 15:34:19 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1570
+2025-10-22 15:34:21 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task upmc_food
+2025-10-22 15:34:21 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-153419_experiment_coattn_9-10-11
+Epoch 1/15, Train Loss: 3.7132, V_Loss: 0.8490, V_Acc: 0.8301, T_Loss: 0.8461, T_Acc: 0.8312
+Epoch 2/15, Train Loss: 0.6274, V_Loss: 0.4681, V_Acc: 0.8926, T_Loss: 0.4689, T_Acc: 0.8930
+Epoch 3/15, Train Loss: 0.3803, V_Loss: 0.3796, V_Acc: 0.9105, T_Loss: 0.3955, T_Acc: 0.9104
+Epoch 4/15, Train Loss: 0.2540, V_Loss: 0.3685, V_Acc: 0.9169, T_Loss: 0.3713, T_Acc: 0.9167
+Epoch 5/15, Train Loss: 0.1727, V_Loss: 0.3505, V_Acc: 0.9232, T_Loss: 0.3587, T_Acc: 0.9204
+Epoch 6/15, Train Loss: 0.1146, V_Loss: 0.3749, V_Acc: 0.9209, T_Loss: 0.3739, T_Acc: 0.9226
+Epoch 7/15, Train Loss: 0.0762, V_Loss: 0.3612, V_Acc: 0.9251, T_Loss: 0.3710, T_Acc: 0.9247
+Epoch 8/15, Train Loss: 0.0561, V_Loss: 0.3738, V_Acc: 0.9243, T_Loss: 0.3760, T_Acc: 0.9255
+Epoch 9/15, Train Loss: 0.0412, V_Loss: 0.3721, V_Acc: 0.9267, T_Loss: 0.3814, T_Acc: 0.9284
+Epoch 10/15, Train Loss: 0.0327, V_Loss: 0.3849, V_Acc: 0.9254, T_Loss: 0.3829, T_Acc: 0.9263
+Epoch 11/15, Train Loss: 0.0274, V_Loss: 0.3861, V_Acc: 0.9258, T_Loss: 0.3875, T_Acc: 0.9282
+Epoch 12/15, Train Loss: 0.0238, V_Loss: 0.3853, V_Acc: 0.9265, T_Loss: 0.3941, T_Acc: 0.9283
+2025-10-22 20:19:57 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 12. Best acc: 0.9267 at epoch 9
+2025-10-22 20:19:57 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 9
+2025-10-22 20:21:02 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.3814, T_Acc: 0.9284
+2025-10-22 20:21:12 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-153419_finetuned_upmc_food.pt
+
+
+2025-10-23 23:34:46 - INFO  - finetune_experiments_temp.py:main:60 -  8/9: finetuning on mm_imdb with seed 1570
+2025-10-23 23:34:46 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1570
+2025-10-23 23:34:49 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task mm_imdb
+saving results to 20251023-233446_experiment_coattn_9-10-11
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7324171762437042, 'acc': 0.36250585317611694, 'auc': None}
+Epoch 1/15, Train Loss: 0.4316, V_Loss: 0.2842, V_Acc: 0.8949, T_Loss: 0.2809, T_Acc: 0.8964
+Epoch 2/15, Train Loss: 0.2269, V_Loss: 0.1903, V_Acc: 0.9243, T_Loss: 0.1869, T_Acc: 0.9256
+Epoch 3/15, Train Loss: 0.1766, V_Loss: 0.1787, V_Acc: 0.9283, T_Loss: 0.1766, T_Acc: 0.9284
+Epoch 4/15, Train Loss: 0.1505, V_Loss: 0.1761, V_Acc: 0.9302, T_Loss: 0.1730, T_Acc: 0.9311
+Epoch 5/15, Train Loss: 0.1310, V_Loss: 0.1826, V_Acc: 0.9295, T_Loss: 0.1815, T_Acc: 0.9297
+Epoch 6/15, Train Loss: 0.1105, V_Loss: 0.1882, V_Acc: 0.9290, T_Loss: 0.1866, T_Acc: 0.9286
+Epoch 7/15, Train Loss: 0.0939, V_Loss: 0.2036, V_Acc: 0.9296, T_Loss: 0.2024, T_Acc: 0.9288
+Early stopping at epoch 7. Best acc: 0.9302 at epoch 4
+restord model from epoch 4
+Final T_Loss: 0.1730, T_Acc: 0.9311
+Saved finetuned model to res/checkpoints/hotfix/20251023-233446_finetuned_mm_imdb.ptd model to res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-202112_finetuned_mm_imdb.pt
+
+
+
+2025-10-22 22:28:08 - INFO  - finetune_experiments.py:main:47 -  9/9: finetuning on hateful_memes with seed 1570
+2025-10-22 22:28:08 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1570
+2025-10-22 22:28:10 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt for task hateful_memes
+2025-10-22 22:28:10 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-222808_experiment_coattn_9-10-11
+Epoch 1/15, Train Loss: 0.8818, V_Loss: 0.6678, V_Acc: 0.5923, T_Loss: 0.6564, T_Acc: 0.6110, V_AUC: 0.6069, T_AUC: 0.6351
+Epoch 2/15, Train Loss: 0.7607, V_Loss: 0.6995, V_Acc: 0.6250, T_Loss: 0.6604, T_Acc: 0.6543, V_AUC: 0.6630, T_AUC: 0.6898
+Epoch 3/15, Train Loss: 0.6102, V_Loss: 0.6862, V_Acc: 0.6365, T_Loss: 0.6289, T_Acc: 0.6750, V_AUC: 0.7053, T_AUC: 0.7372
+Epoch 4/15, Train Loss: 0.4729, V_Loss: 0.7710, V_Acc: 0.6635, T_Loss: 0.6926, T_Acc: 0.6823, V_AUC: 0.7136, T_AUC: 0.7467
+Epoch 5/15, Train Loss: 0.3441, V_Loss: 0.8002, V_Acc: 0.6683, T_Loss: 0.7405, T_Acc: 0.6943, V_AUC: 0.7338, T_AUC: 0.7569
+Epoch 6/15, Train Loss: 0.2421, V_Loss: 1.0615, V_Acc: 0.6625, T_Loss: 0.9581, T_Acc: 0.6843, V_AUC: 0.7379, T_AUC: 0.7573
+Epoch 7/15, Train Loss: 0.1692, V_Loss: 1.0830, V_Acc: 0.6798, T_Loss: 0.9856, T_Acc: 0.6917, V_AUC: 0.7434, T_AUC: 0.7606
+Epoch 8/15, Train Loss: 0.1210, V_Loss: 1.2030, V_Acc: 0.6817, T_Loss: 1.1220, T_Acc: 0.6907, V_AUC: 0.7435, T_AUC: 0.7607
+Epoch 9/15, Train Loss: 0.0879, V_Loss: 1.2854, V_Acc: 0.6827, T_Loss: 1.2161, T_Acc: 0.6887, V_AUC: 0.7504, T_AUC: 0.7597
+Epoch 10/15, Train Loss: 0.0710, V_Loss: 1.3992, V_Acc: 0.6798, T_Loss: 1.2969, T_Acc: 0.6957, V_AUC: 0.7472, T_AUC: 0.7601
+Epoch 11/15, Train Loss: 0.0558, V_Loss: 1.4869, V_Acc: 0.6865, T_Loss: 1.3622, T_Acc: 0.6983, V_AUC: 0.7454, T_AUC: 0.7605
+Epoch 12/15, Train Loss: 0.0489, V_Loss: 1.5588, V_Acc: 0.6750, T_Loss: 1.4233, T_Acc: 0.6883, V_AUC: 0.7421, T_AUC: 0.7556
+2025-10-22 23:07:15 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 12. Best AUC: 0.7504 at epoch 9
+2025-10-22 23:07:15 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 9
+2025-10-22 23:07:38 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 1.2161, T_Acc: 0.6887, Test AUC: 0.7597
+2025-10-22 23:07:52 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-222808_finetuned_hateful_memes.pt
+
+
+================================
+asymmetric fusion
+
+2025-10-24 00:11:00 - INFO  - finetune_experiments_temp.py:main:60 - 1/9: finetuning on mm_imdb with seed 1568
+2025-10-24 00:11:00 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1568
+2025-10-24 00:11:04 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task mm_imdb
+saving results to 20251024-001100_experiment_coattn_3-5-7-9
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.6789157215178656, 'acc': 0.5621441006660461, 'auc': None}
+Epoch 1/15, Train Loss: 0.3868, V_Loss: 0.2806, V_Acc: 0.8979, T_Loss: 0.2774, T_Acc: 0.8993
+Epoch 2/15, Train Loss: 0.2322, V_Loss: 0.1949, V_Acc: 0.9221, T_Loss: 0.1932, T_Acc: 0.9224
+Epoch 3/15, Train Loss: 0.1821, V_Loss: 0.1869, V_Acc: 0.9259, T_Loss: 0.1836, T_Acc: 0.9269
+Epoch 4/15, Train Loss: 0.1594, V_Loss: 0.1829, V_Acc: 0.9281, T_Loss: 0.1809, T_Acc: 0.9284
+Epoch 5/15, Train Loss: 0.1397, V_Loss: 0.1822, V_Acc: 0.9287, T_Loss: 0.1803, T_Acc: 0.9290
+Epoch 6/15, Train Loss: 0.1208, V_Loss: 0.1901, V_Acc: 0.9279, T_Loss: 0.1882, T_Acc: 0.9283
+Epoch 7/15, Train Loss: 0.1057, V_Loss: 0.2000, V_Acc: 0.9273, T_Loss: 0.1995, T_Acc: 0.9270
+Epoch 8/15, Train Loss: 0.0926, V_Loss: 0.2130, V_Acc: 0.9263, T_Loss: 0.2128, T_Acc: 0.9267
+Early stopping at epoch 8. Best acc: 0.9287 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1803, T_Acc: 0.9290
+Saved finetuned model to res/checkpoints/hotfix/20251024-001100_finetuned_mm_imdb.pt
+2025-10-22 01:03:47 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251014-034432_pretrained_asymmetric_fusion/20251021-223826_finetuned_mm_imdb.pt
+
+2025-10-22 01:03:47 - INFO  - finetune_experiments.py:main:48 -  2/9: finetuning on hateful_memes with seed 1568
+2025-10-22 01:03:47 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1568
+2025-10-22 01:03:49 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task hateful_memes
+2025-10-22 01:03:49 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-010347_experiment_coattn_3-5-7-9
+Epoch 1/15, Train Loss: 0.8596, V_Loss: 0.6930, V_Acc: 0.5490, T_Loss: 0.6706, T_Acc: 0.5983, V_AUC: 0.5794, T_AUC: 0.6193
+Epoch 2/15, Train Loss: 0.7058, V_Loss: 0.6809, V_Acc: 0.6115, T_Loss: 0.6551, T_Acc: 0.6563, V_AUC: 0.6579, T_AUC: 0.6892
+Epoch 3/15, Train Loss: 0.5327, V_Loss: 0.7064, V_Acc: 0.6298, T_Loss: 0.6853, T_Acc: 0.6570, V_AUC: 0.6847, T_AUC: 0.7074
+Epoch 4/15, Train Loss: 0.3972, V_Loss: 0.7429, V_Acc: 0.6519, T_Loss: 0.7192, T_Acc: 0.6690, V_AUC: 0.6824, T_AUC: 0.7073
+Epoch 5/15, Train Loss: 0.3007, V_Loss: 0.9037, V_Acc: 0.6519, T_Loss: 0.8793, T_Acc: 0.6683, V_AUC: 0.6850, T_AUC: 0.7114
+Epoch 6/15, Train Loss: 0.2087, V_Loss: 1.0620, V_Acc: 0.6548, T_Loss: 0.9918, T_Acc: 0.6713, V_AUC: 0.6938, T_AUC: 0.7191
+Epoch 7/15, Train Loss: 0.1651, V_Loss: 1.2347, V_Acc: 0.6481, T_Loss: 1.1770, T_Acc: 0.6733, V_AUC: 0.6987, T_AUC: 0.7216
+Epoch 8/15, Train Loss: 0.1102, V_Loss: 1.3529, V_Acc: 0.6615, T_Loss: 1.3185, T_Acc: 0.6677, V_AUC: 0.6938, T_AUC: 0.7156
+Epoch 9/15, Train Loss: 0.0899, V_Loss: 1.4072, V_Acc: 0.6731, T_Loss: 1.3764, T_Acc: 0.6700, V_AUC: 0.7029, T_AUC: 0.7224
+Epoch 10/15, Train Loss: 0.0620, V_Loss: 1.5417, V_Acc: 0.6462, T_Loss: 1.4872, T_Acc: 0.6657, V_AUC: 0.7008, T_AUC: 0.7176
+Epoch 11/15, Train Loss: 0.0512, V_Loss: 1.6952, V_Acc: 0.6712, T_Loss: 1.6481, T_Acc: 0.6720, V_AUC: 0.6971, T_AUC: 0.7179
+Epoch 12/15, Train Loss: 0.0406, V_Loss: 1.6811, V_Acc: 0.6663, T_Loss: 1.6469, T_Acc: 0.6633, V_AUC: 0.7017, T_AUC: 0.7154
+2025-10-22 01:48:52 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 12. Best AUC: 0.7029 at epoch 9
+2025-10-22 01:48:52 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 9
+2025-10-22 01:49:17 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 1.3764, T_Acc: 0.6700, Test AUC: 0.7224
+
+
+2025-10-24 00:56:13 - INFO  - finetune_experiments_temp.py:main:60 - 3/9: finetuning on mm_imdb with seed 1569
+2025-10-24 00:56:13 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1569
+2025-10-24 00:56:15 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task mm_imdb
+saving results to 20251024-005613_experiment_coattn_3-5-7-9
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.6789157215178656, 'acc': 0.5621441006660461, 'auc': None}
+Epoch 1/15, Train Loss: 0.3874, V_Loss: 0.2799, V_Acc: 0.8953, T_Loss: 0.2770, T_Acc: 0.8962
+Epoch 2/15, Train Loss: 0.2303, V_Loss: 0.2003, V_Acc: 0.9190, T_Loss: 0.1974, T_Acc: 0.9193
+Epoch 3/15, Train Loss: 0.1817, V_Loss: 0.1838, V_Acc: 0.9262, T_Loss: 0.1825, T_Acc: 0.9267
+Epoch 4/15, Train Loss: 0.1589, V_Loss: 0.1851, V_Acc: 0.9270, T_Loss: 0.1832, T_Acc: 0.9266
+Epoch 5/15, Train Loss: 0.1385, V_Loss: 0.1842, V_Acc: 0.9287, T_Loss: 0.1810, T_Acc: 0.9291
+Epoch 6/15, Train Loss: 0.1216, V_Loss: 0.1922, V_Acc: 0.9284, T_Loss: 0.1902, T_Acc: 0.9280
+Epoch 7/15, Train Loss: 0.1055, V_Loss: 0.2050, V_Acc: 0.9269, T_Loss: 0.2028, T_Acc: 0.9270
+Epoch 8/15, Train Loss: 0.0923, V_Loss: 0.2141, V_Acc: 0.9246, T_Loss: 0.2126, T_Acc: 0.9254
+Early stopping at epoch 8. Best acc: 0.9287 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1810, T_Acc: 0.9291
+Saved finetuned model to res/checkpoints/hotfix/20251024-005613_finetuned_mm_imdb.pt
+2025-10-22 04:14:50 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251014-034432_pretrained_asymmetric_fusion/20251022-014928_finetuned_mm_imdb.pt
+
+2025-10-22 04:14:50 - INFO  - finetune_experiments.py:main:48 -  4/9: finetuning on hateful_memes with seed 1569
+2025-10-22 04:14:50 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1569
+2025-10-22 04:14:52 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task hateful_memes
+2025-10-22 04:14:52 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-041450_experiment_coattn_3-5-7-9
+Epoch 1/15, Train Loss: 0.8566, V_Loss: 0.6927, V_Acc: 0.5635, T_Loss: 0.6668, T_Acc: 0.6030, V_AUC: 0.5749, T_AUC: 0.6182
+Epoch 2/15, Train Loss: 0.7009, V_Loss: 0.6589, V_Acc: 0.6308, T_Loss: 0.6391, T_Acc: 0.6603, V_AUC: 0.6752, T_AUC: 0.6985
+Epoch 3/15, Train Loss: 0.5394, V_Loss: 0.7042, V_Acc: 0.6452, T_Loss: 0.6797, T_Acc: 0.6683, V_AUC: 0.6949, T_AUC: 0.7226
+Epoch 4/15, Train Loss: 0.3851, V_Loss: 0.8442, V_Acc: 0.6558, T_Loss: 0.7848, T_Acc: 0.6893, V_AUC: 0.6928, T_AUC: 0.7289
+Epoch 5/15, Train Loss: 0.2870, V_Loss: 0.9130, V_Acc: 0.6375, T_Loss: 0.8687, T_Acc: 0.6887, V_AUC: 0.6958, T_AUC: 0.7251
+Epoch 6/15, Train Loss: 0.1995, V_Loss: 1.0475, V_Acc: 0.6577, T_Loss: 1.0078, T_Acc: 0.6807, V_AUC: 0.7043, T_AUC: 0.7205
+Epoch 7/15, Train Loss: 0.1491, V_Loss: 1.1965, V_Acc: 0.6577, T_Loss: 1.0941, T_Acc: 0.6863, V_AUC: 0.7014, T_AUC: 0.7337
+Epoch 8/15, Train Loss: 0.1198, V_Loss: 1.2790, V_Acc: 0.6635, T_Loss: 1.2378, T_Acc: 0.6797, V_AUC: 0.7129, T_AUC: 0.7269
+Epoch 9/15, Train Loss: 0.0922, V_Loss: 1.4251, V_Acc: 0.6673, T_Loss: 1.3457, T_Acc: 0.6837, V_AUC: 0.7048, T_AUC: 0.7303
+Epoch 10/15, Train Loss: 0.0729, V_Loss: 1.4759, V_Acc: 0.6615, T_Loss: 1.4022, T_Acc: 0.6773, V_AUC: 0.7041, T_AUC: 0.7270
+Epoch 11/15, Train Loss: 0.0501, V_Loss: 1.6013, V_Acc: 0.6596, T_Loss: 1.4919, T_Acc: 0.6770, V_AUC: 0.7017, T_AUC: 0.7288
+2025-10-22 04:56:10 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 11. Best AUC: 0.7129 at epoch 8
+2025-10-22 04:56:10 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 8
+2025-10-22 04:56:35 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 1.2378, T_Acc: 0.6797, Test AUC: 0.7269
+
+
+2025-10-24 01:40:47 - INFO  - finetune_experiments_temp.py:main:60 - 5/9: finetuning on mm_imdb with seed 1570
+2025-10-24 01:40:47 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1570
+2025-10-24 01:40:49 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task mm_imdb
+saving results to 20251024-014047_experiment_coattn_3-5-7-9
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.6789157215178656, 'acc': 0.5621441006660461, 'auc': None}
+Epoch 1/15, Train Loss: 0.3870, V_Loss: 0.2808, V_Acc: 0.8959, T_Loss: 0.2775, T_Acc: 0.8972
+Epoch 2/15, Train Loss: 0.2306, V_Loss: 0.1969, V_Acc: 0.9209, T_Loss: 0.1943, T_Acc: 0.9223
+Epoch 3/15, Train Loss: 0.1823, V_Loss: 0.1813, V_Acc: 0.9269, T_Loss: 0.1800, T_Acc: 0.9269
+Epoch 4/15, Train Loss: 0.1574, V_Loss: 0.1793, V_Acc: 0.9294, T_Loss: 0.1773, T_Acc: 0.9291
+Epoch 5/15, Train Loss: 0.1389, V_Loss: 0.1820, V_Acc: 0.9294, T_Loss: 0.1813, T_Acc: 0.9292
+Epoch 6/15, Train Loss: 0.1214, V_Loss: 0.1894, V_Acc: 0.9278, T_Loss: 0.1875, T_Acc: 0.9277
+Epoch 7/15, Train Loss: 0.1053, V_Loss: 0.2016, V_Acc: 0.9269, T_Loss: 0.2003, T_Acc: 0.9268
+Epoch 8/15, Train Loss: 0.0916, V_Loss: 0.2137, V_Acc: 0.9252, T_Loss: 0.2116, T_Acc: 0.9260
+Early stopping at epoch 8. Best acc: 0.9294 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1813, T_Acc: 0.9292
+Saved finetuned model to res/checkpoints/hotfix/20251024-014047_finetuned_mm_imdb.pt
+2025-10-22 07:22:04 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251014-034432_pretrained_asymmetric_fusion/20251022-045646_finetuned_mm_imdb.pt
+
+
+2025-10-22 07:22:04 - INFO  - finetune_experiments.py:main:48 -  6/9: finetuning on hateful_memes with seed 1570
+2025-10-22 07:22:04 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1570
+2025-10-22 07:22:06 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task hateful_memes
+2025-10-22 07:22:07 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251022-072204_experiment_coattn_3-5-7-9
+Epoch 1/15, Train Loss: 0.8663, V_Loss: 0.6876, V_Acc: 0.5808, T_Loss: 0.6672, T_Acc: 0.6027, V_AUC: 0.5872, T_AUC: 0.6193
+Epoch 2/15, Train Loss: 0.7155, V_Loss: 0.6503, V_Acc: 0.6317, T_Loss: 0.6436, T_Acc: 0.6447, V_AUC: 0.6884, T_AUC: 0.6979
+Epoch 3/15, Train Loss: 0.5499, V_Loss: 0.6745, V_Acc: 0.6481, T_Loss: 0.6668, T_Acc: 0.6680, V_AUC: 0.6967, T_AUC: 0.7126
+Epoch 4/15, Train Loss: 0.4102, V_Loss: 0.8119, V_Acc: 0.6404, T_Loss: 0.7735, T_Acc: 0.6740, V_AUC: 0.6943, T_AUC: 0.7184
+Epoch 5/15, Train Loss: 0.2868, V_Loss: 0.8937, V_Acc: 0.6644, T_Loss: 0.8873, T_Acc: 0.6860, V_AUC: 0.7092, T_AUC: 0.7242
+Epoch 6/15, Train Loss: 0.1979, V_Loss: 1.1678, V_Acc: 0.6433, T_Loss: 1.1088, T_Acc: 0.6733, V_AUC: 0.6902, T_AUC: 0.7209
+Epoch 7/15, Train Loss: 0.1440, V_Loss: 1.2436, V_Acc: 0.6567, T_Loss: 1.1943, T_Acc: 0.6717, V_AUC: 0.7019, T_AUC: 0.7227
+Epoch 8/15, Train Loss: 0.1091, V_Loss: 1.3323, V_Acc: 0.6510, T_Loss: 1.3476, T_Acc: 0.6830, V_AUC: 0.7067, T_AUC: 0.7197
+2025-10-22 07:52:10 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 8. Best AUC: 0.7092 at epoch 5
+2025-10-22 07:52:10 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 5
+2025-10-22 07:52:35 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.8873, T_Acc: 0.6860, Test AUC: 0.7242
+2025-10-22 07:52:47 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251014-034432_pretrained_asymmetric_fusion/20251022-072204_finetuned_hateful_memes.pt
+
+2025-10-23 09:17:59 - INFO  - finetune_experiments.py:main:48 -  7/9: finetuning on upmc_food with seed 1568
+2025-10-23 09:18:00 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1568
+2025-10-23 09:18:02 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task upmc_food
+2025-10-23 09:18:02 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251023-091800_experiment_coattn_3-5-7-9
+Epoch 1/15, Train Loss: 2.8774, V_Loss: 0.7902, V_Acc: 0.8329, T_Loss: 0.7734, T_Acc: 0.8395
+Epoch 2/15, Train Loss: 0.7222, V_Loss: 0.6133, V_Acc: 0.8608, T_Loss: 0.6040, T_Acc: 0.8632
+Epoch 3/15, Train Loss: 0.5591, V_Loss: 0.5532, V_Acc: 0.8701, T_Loss: 0.5453, T_Acc: 0.8740
+Epoch 4/15, Train Loss: 0.4329, V_Loss: 0.5095, V_Acc: 0.8833, T_Loss: 0.5060, T_Acc: 0.8837
+Epoch 5/15, Train Loss: 0.3319, V_Loss: 0.4743, V_Acc: 0.8921, T_Loss: 0.4777, T_Acc: 0.8916
+Epoch 6/15, Train Loss: 0.2373, V_Loss: 0.4919, V_Acc: 0.8916, T_Loss: 0.4950, T_Acc: 0.8920
+Epoch 7/15, Train Loss: 0.1658, V_Loss: 0.5280, V_Acc: 0.8924, T_Loss: 0.5400, T_Acc: 0.8928
+Epoch 8/15, Train Loss: 0.1105, V_Loss: 0.5273, V_Acc: 0.8952, T_Loss: 0.5275, T_Acc: 0.8964
+Epoch 9/15, Train Loss: 0.0754, V_Loss: 0.5392, V_Acc: 0.8972, T_Loss: 0.5453, T_Acc: 0.8970
+Epoch 10/15, Train Loss: 0.0542, V_Loss: 0.5525, V_Acc: 0.8973, T_Loss: 0.5580, T_Acc: 0.8984
+Epoch 11/15, Train Loss: 0.0381, V_Loss: 0.5708, V_Acc: 0.8976, T_Loss: 0.5635, T_Acc: 0.8991
+Epoch 12/15, Train Loss: 0.0317, V_Loss: 0.5746, V_Acc: 0.8984, T_Loss: 0.5652, T_Acc: 0.9011
+Epoch 13/15, Train Loss: 0.0266, V_Loss: 0.5891, V_Acc: 0.8979, T_Loss: 0.5732, T_Acc: 0.9030
+Epoch 14/15, Train Loss: 0.0222, V_Loss: 0.5984, V_Acc: 0.8982, T_Loss: 0.5879, T_Acc: 0.9018
+Epoch 15/15, Train Loss: 0.0228, V_Loss: 0.5969, V_Acc: 0.8981, T_Loss: 0.5880, T_Acc: 0.9019
+2025-10-23 16:10:53 - INFO  - experiment_tracker.py:run_single_experiment:638 - Early stopping at epoch 15. Best acc: 0.8984 at epoch 12
+2025-10-23 16:10:53 - INFO  - experiment_tracker.py:run_single_experiment:643 - restord model from epoch 12
+2025-10-23 16:12:05 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.5652, T_Acc: 0.9011
+2025-10-23 16:12:18 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251014-034432_pretrained_asymmetric_fusion/20251023-091800_finetuned_upmc_food.pt
+
+2025-10-23 16:12:18 - INFO  - finetune_experiments.py:main:48 -  8/9: finetuning on upmc_food with seed 1569
+2025-10-23 16:12:18 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1569
+2025-10-23 16:12:20 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task upmc_food
+2025-10-23 16:12:20 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251023-161218_experiment_coattn_3-5-7-9
+Epoch 1/15, Train Loss: 2.8670, V_Loss: 0.7853, V_Acc: 0.8369, T_Loss: 0.7759, T_Acc: 0.8407
+Epoch 2/15, Train Loss: 0.7217, V_Loss: 0.6239, V_Acc: 0.8567, T_Loss: 0.6174, T_Acc: 0.8580
+Epoch 3/15, Train Loss: 0.5605, V_Loss: 0.5472, V_Acc: 0.8742, T_Loss: 0.5437, T_Acc: 0.8722
+Epoch 4/15, Train Loss: 0.4406, V_Loss: 0.5145, V_Acc: 0.8820, T_Loss: 0.5143, T_Acc: 0.8826
+Epoch 5/15, Train Loss: 0.3417, V_Loss: 0.4857, V_Acc: 0.8884, T_Loss: 0.4815, T_Acc: 0.8929
+Epoch 6/15, Train Loss: 0.2442, V_Loss: 0.4976, V_Acc: 0.8898, T_Loss: 0.5005, T_Acc: 0.8901
+Epoch 7/15, Train Loss: 0.1720, V_Loss: 0.5117, V_Acc: 0.8934, T_Loss: 0.5137, T_Acc: 0.8927
+Epoch 8/15, Train Loss: 0.1138, V_Loss: 0.5304, V_Acc: 0.8956, T_Loss: 0.5300, T_Acc: 0.8968
+Epoch 9/15, Train Loss: 0.0816, V_Loss: 0.5475, V_Acc: 0.8974, T_Loss: 0.5544, T_Acc: 0.8995
+Epoch 10/15, Train Loss: 0.0583, V_Loss: 0.5593, V_Acc: 0.8975, T_Loss: 0.5701, T_Acc: 0.8988
+Epoch 11/15, Train Loss: 0.0420, V_Loss: 0.5771, V_Acc: 0.8965, T_Loss: 0.5732, T_Acc: 0.8990
+Epoch 12/15, Train Loss: 0.0327, V_Loss: 0.5716, V_Acc: 0.8971, T_Loss: 0.5762, T_Acc: 0.8997
+Epoch 13/15, Train Loss: 0.0280, V_Loss: 0.5806, V_Acc: 0.8977, T_Loss: 0.5807, T_Acc: 0.8999
+Epoch 14/15, Train Loss: 0.0255, V_Loss: 0.6012, V_Acc: 0.8966, T_Loss: 0.6020, T_Acc: 0.8982
+Epoch 15/15, Train Loss: 0.0232, V_Loss: 0.5966, V_Acc: 0.8977, T_Loss: 0.6004, T_Acc: 0.9008
+2025-10-23 23:06:17 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.6004, T_Acc: 0.9008
+2025-10-23 23:06:28 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251014-034432_pretrained_asymmetric_fusion/20251023-161218_finetuned_upmc_food.pt
+
+2025-10-23 23:06:28 - INFO  - finetune_experiments.py:main:48 -  9/9: finetuning on upmc_food with seed 1570
+2025-10-23 23:06:28 - INFO  - experiment_tracker.py:run_finetune:744 - seed = 1570
+2025-10-23 23:06:30 - INFO  - experiment_tracker.py:run_finetune:764 - Loaded pretrained model from res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt for task upmc_food
+2025-10-23 23:06:30 - INFO  - experiment_tracker.py:_run_task:712 - saving results to 20251023-230628_experiment_coattn_3-5-7-9
+Epoch 1/15, Train Loss: 2.8817, V_Loss: 0.7716, V_Acc: 0.8373, T_Loss: 0.7698, T_Acc: 0.8406
+Epoch 2/15, Train Loss: 0.7223, V_Loss: 0.6315, V_Acc: 0.8566, T_Loss: 0.6249, T_Acc: 0.8615
+Epoch 3/15, Train Loss: 0.5513, V_Loss: 0.5462, V_Acc: 0.8733, T_Loss: 0.5516, T_Acc: 0.8752
+Epoch 4/15, Train Loss: 0.4287, V_Loss: 0.4985, V_Acc: 0.8842, T_Loss: 0.5069, T_Acc: 0.8814
+Epoch 5/15, Train Loss: 0.3177, V_Loss: 0.4877, V_Acc: 0.8896, T_Loss: 0.4921, T_Acc: 0.8914
+Epoch 6/15, Train Loss: 0.2273, V_Loss: 0.4921, V_Acc: 0.8952, T_Loss: 0.5018, T_Acc: 0.8946
+Epoch 7/15, Train Loss: 0.1559, V_Loss: 0.5162, V_Acc: 0.8932, T_Loss: 0.5152, T_Acc: 0.8954
+Epoch 8/15, Train Loss: 0.1073, V_Loss: 0.5208, V_Acc: 0.8956, T_Loss: 0.5162, T_Acc: 0.9002
+Epoch 9/15, Train Loss: 0.0703, V_Loss: 0.5506, V_Acc: 0.8987, T_Loss: 0.5380, T_Acc: 0.9004
+Epoch 10/15, Train Loss: 0.0495, V_Loss: 0.5600, V_Acc: 0.8993, T_Loss: 0.5488, T_Acc: 0.8988
+Epoch 11/15, Train Loss: 0.0369, V_Loss: 0.5770, V_Acc: 0.8968, T_Loss: 0.5632, T_Acc: 0.9002
+Epoch 12/15, Train Loss: 0.0290, V_Loss: 0.5952, V_Acc: 0.8979, T_Loss: 0.5805, T_Acc: 0.9004
+Epoch 13/15, Train Loss: 0.0248, V_Loss: 0.5880, V_Acc: 0.9000, T_Loss: 0.5766, T_Acc: 0.9013
+Epoch 14/15, Train Loss: 0.0219, V_Loss: 0.5974, V_Acc: 0.8981, T_Loss: 0.5871, T_Acc: 0.9003
+Epoch 15/15, Train Loss: 0.0217, V_Loss: 0.6091, V_Acc: 0.9004, T_Loss: 0.5919, T_Acc: 0.9011
+2025-10-24 06:00:22 - INFO  - experiment_tracker.py:run_single_experiment:669 - Final T_Loss: 0.5919, T_Acc: 0.9011
+2025-10-24 06:00:33 - INFO  - experiment_tracker.py:run_single_experiment:677 - Saved finetuned model to res/checkpoints/20251014-034432_pretrained_asymmetric_fusion/20251023-230628_finetuned_upmc_food.pt
+
+
+================================
+optuna1 fusion
+
+2025-10-23 17:53:08 - INFO  - finetune_experiments.py:main:49 -  1/9: finetuning on mm_imdb with seed 1568
+run_finetune:750 - seed = 1568
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task mm_imdb
+_run_task:718 - saving results to 20251023-175308_experiment_coattn_6-8
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7469321939802389, 'acc': 0.3713991343975067, 'auc': None}
+Epoch 1/15, Train Loss: 0.4728, V_Loss: 0.2912, V_Acc: 0.8962, T_Loss: 0.2868, T_Acc: 0.8975
+Epoch 2/15, Train Loss: 0.2770, V_Loss: 0.2453, V_Acc: 0.9049, T_Loss: 0.2428, T_Acc: 0.9061
+Epoch 3/15, Train Loss: 0.2233, V_Loss: 0.2039, V_Acc: 0.9183, T_Loss: 0.2010, T_Acc: 0.9194
+Epoch 4/15, Train Loss: 0.1925, V_Loss: 0.1926, V_Acc: 0.9221, T_Loss: 0.1897, T_Acc: 0.9225
+Epoch 5/15, Train Loss: 0.1756, V_Loss: 0.1830, V_Acc: 0.9270, T_Loss: 0.1799, T_Acc: 0.9281
+Epoch 6/15, Train Loss: 0.1626, V_Loss: 0.1809, V_Acc: 0.9279, T_Loss: 0.1780, T_Acc: 0.9287
+Epoch 7/15, Train Loss: 0.1508, V_Loss: 0.1831, V_Acc: 0.9278, T_Loss: 0.1800, T_Acc: 0.9285
+Epoch 8/15, Train Loss: 0.1416, V_Loss: 0.1827, V_Acc: 0.9283, T_Loss: 0.1802, T_Acc: 0.9284
+Epoch 9/15, Train Loss: 0.1333, V_Loss: 0.1832, V_Acc: 0.9287, T_Loss: 0.1795, T_Acc: 0.9294
+Epoch 10/15, Train Loss: 0.1266, V_Loss: 0.1857, V_Acc: 0.9281, T_Loss: 0.1824, T_Acc: 0.9285
+Epoch 11/15, Train Loss: 0.1206, V_Loss: 0.1876, V_Acc: 0.9284, T_Loss: 0.1839, T_Acc: 0.9289
+Epoch 12/15, Train Loss: 0.1166, V_Loss: 0.1895, V_Acc: 0.9282, T_Loss: 0.1857, T_Acc: 0.9287
+Early stopping at epoch 12. Best acc: 0.9287 at epoch 9
+restord model from epoch 9
+Final T_Loss: 0.1795, T_Acc: 0.9294
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251023-175308_finetuned_mm_imdb.pt
+
+
+2025-10-23 19:05:50 - INFO  - finetune_experiments.py:main:49 -  2/9: finetuning on hateful_memes with seed 1568
+run_finetune:750 - seed = 1568
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task hateful_memes
+_run_task:718 - saving results to 20251023-190550_experiment_coattn_6-8
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.6919720578193664, 'acc': 0.5253333333333333, 'auc': 0.4856513471407624}
+Epoch 1/15, Train Loss: 0.8682, V_Loss: 0.7040, V_Acc: 0.5260, T_Loss: 0.6811, T_Acc: 0.5770, V_AUC: 0.5602, T_AUC: 0.6013
+Epoch 2/15, Train Loss: 0.7731, V_Loss: 0.6794, V_Acc: 0.5990, T_Loss: 0.6495, T_Acc: 0.6360, V_AUC: 0.6436, T_AUC: 0.6758
+Epoch 3/15, Train Loss: 0.6507, V_Loss: 0.6576, V_Acc: 0.6404, T_Loss: 0.6348, T_Acc: 0.6627, V_AUC: 0.6976, T_AUC: 0.7109
+Epoch 4/15, Train Loss: 0.5347, V_Loss: 0.7431, V_Acc: 0.6567, T_Loss: 0.6995, T_Acc: 0.6660, V_AUC: 0.7190, T_AUC: 0.7284
+Epoch 5/15, Train Loss: 0.4116, V_Loss: 0.8554, V_Acc: 0.6596, T_Loss: 0.7908, T_Acc: 0.6797, V_AUC: 0.7205, T_AUC: 0.7394
+Epoch 6/15, Train Loss: 0.3090, V_Loss: 0.9392, V_Acc: 0.6731, T_Loss: 0.8626, T_Acc: 0.6910, V_AUC: 0.7328, T_AUC: 0.7482
+Epoch 7/15, Train Loss: 0.2216, V_Loss: 1.0157, V_Acc: 0.6702, T_Loss: 0.9468, T_Acc: 0.6933, V_AUC: 0.7352, T_AUC: 0.7511
+Epoch 8/15, Train Loss: 0.1707, V_Loss: 1.3225, V_Acc: 0.6529, T_Loss: 1.2386, T_Acc: 0.6793, V_AUC: 0.7280, T_AUC: 0.7400
+Epoch 9/15, Train Loss: 0.1247, V_Loss: 1.2747, V_Acc: 0.6673, T_Loss: 1.2003, T_Acc: 0.6943, V_AUC: 0.7361, T_AUC: 0.7462
+Epoch 10/15, Train Loss: 0.0925, V_Loss: 1.3359, V_Acc: 0.6702, T_Loss: 1.2575, T_Acc: 0.6947, V_AUC: 0.7419, T_AUC: 0.7476
+Epoch 11/15, Train Loss: 0.0838, V_Loss: 1.4543, V_Acc: 0.6635, T_Loss: 1.3572, T_Acc: 0.6890, V_AUC: 0.7403, T_AUC: 0.7468
+Epoch 12/15, Train Loss: 0.0692, V_Loss: 1.5556, V_Acc: 0.6587, T_Loss: 1.4588, T_Acc: 0.6833, V_AUC: 0.7372, T_AUC: 0.7431
+Epoch 13/15, Train Loss: 0.0631, V_Loss: 1.6170, V_Acc: 0.6606, T_Loss: 1.5155, T_Acc: 0.6807, V_AUC: 0.7368, T_AUC: 0.7435
+Early stopping at epoch 13. Best AUC: 0.7419 at epoch 10
+restord model from epoch 10
+Final T_Loss: 1.2575, T_Acc: 0.6947, Test AUC: 0.7476
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251023-190550_finetuned_hateful_memes.pt
+
+
+2025-10-23 19:45:41 - INFO  - finetune_experiments.py:main:49 -  3/9: finetuning on upmc_food with seed 1568
+run_finetune:750 - seed = 1568
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task upmc_food
+_run_task:718 - saving results to 20251023-194541_experiment_coattn_6-8
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.695795102094216, 'acc': 0.01036497950553894, 'auc': None}
+Epoch 1/15, Train Loss: 3.7344, V_Loss: 0.8960, V_Acc: 0.8253, T_Loss: 0.8795, T_Acc: 0.8299
+Epoch 2/15, Train Loss: 0.6690, V_Loss: 0.5077, V_Acc: 0.8845, T_Loss: 0.4971, T_Acc: 0.8843
+Epoch 3/15, Train Loss: 0.4228, V_Loss: 0.4449, V_Acc: 0.8966, T_Loss: 0.4308, T_Acc: 0.8993
+Epoch 4/15, Train Loss: 0.2866, V_Loss: 0.4042, V_Acc: 0.9081, T_Loss: 0.3935, T_Acc: 0.9076
+Epoch 5/15, Train Loss: 0.1956, V_Loss: 0.4068, V_Acc: 0.9085, T_Loss: 0.3901, T_Acc: 0.9115
+Epoch 6/15, Train Loss: 0.1266, V_Loss: 0.4169, V_Acc: 0.9114, T_Loss: 0.3960, T_Acc: 0.9142
+Epoch 7/15, Train Loss: 0.0871, V_Loss: 0.4191, V_Acc: 0.9138, T_Loss: 0.4009, T_Acc: 0.9172
+Epoch 8/15, Train Loss: 0.0581, V_Loss: 0.4233, V_Acc: 0.9144, T_Loss: 0.4058, T_Acc: 0.9163
+Epoch 9/15, Train Loss: 0.0417, V_Loss: 0.4313, V_Acc: 0.9145, T_Loss: 0.4049, T_Acc: 0.9180
+Epoch 10/15, Train Loss: 0.0327, V_Loss: 0.4465, V_Acc: 0.9148, T_Loss: 0.4283, T_Acc: 0.9167
+Epoch 11/15, Train Loss: 0.0266, V_Loss: 0.4519, V_Acc: 0.9141, T_Loss: 0.4290, T_Acc: 0.9169
+Epoch 12/15, Train Loss: 0.0220, V_Loss: 0.4506, V_Acc: 0.9152, T_Loss: 0.4343, T_Acc: 0.9195
+Epoch 13/15, Train Loss: 0.0199, V_Loss: 0.4552, V_Acc: 0.9155, T_Loss: 0.4381, T_Acc: 0.9172
+Epoch 14/15, Train Loss: 0.0198, V_Loss: 0.4598, V_Acc: 0.9139, T_Loss: 0.4404, T_Acc: 0.9174
+Epoch 15/15, Train Loss: 0.0178, V_Loss: 0.4623, V_Acc: 0.9163, T_Loss: 0.4422, T_Acc: 0.9181
+Final T_Loss: 0.4422, T_Acc: 0.9181
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251023-194541_finetuned_upmc_food.pt
+
+
+2025-10-24 01:16:15 - INFO  - finetune_experiments.py:main:49 -  4/9: finetuning on mm_imdb with seed 1569
+run_finetune:750 - seed = 1569
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task mm_imdb
+_run_task:718 - saving results to 20251024-011615_experiment_coattn_6-8
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7469321939802389, 'acc': 0.3713991343975067, 'auc': None}
+Epoch 1/15, Train Loss: 0.4724, V_Loss: 0.2909, V_Acc: 0.8974, T_Loss: 0.2865, T_Acc: 0.8984
+Epoch 2/15, Train Loss: 0.2713, V_Loss: 0.2343, V_Acc: 0.9072, T_Loss: 0.2311, T_Acc: 0.9089
+Epoch 3/15, Train Loss: 0.2169, V_Loss: 0.1992, V_Acc: 0.9202, T_Loss: 0.1956, T_Acc: 0.9213
+Epoch 4/15, Train Loss: 0.1907, V_Loss: 0.1892, V_Acc: 0.9247, T_Loss: 0.1849, T_Acc: 0.9250
+Epoch 5/15, Train Loss: 0.1748, V_Loss: 0.1825, V_Acc: 0.9270, T_Loss: 0.1794, T_Acc: 0.9274
+Epoch 6/15, Train Loss: 0.1611, V_Loss: 0.1821, V_Acc: 0.9271, T_Loss: 0.1782, T_Acc: 0.9283
+Epoch 7/15, Train Loss: 0.1514, V_Loss: 0.1793, V_Acc: 0.9285, T_Loss: 0.1755, T_Acc: 0.9295
+Epoch 8/15, Train Loss: 0.1419, V_Loss: 0.1808, V_Acc: 0.9286, T_Loss: 0.1775, T_Acc: 0.9297
+Epoch 9/15, Train Loss: 0.1335, V_Loss: 0.1830, V_Acc: 0.9283, T_Loss: 0.1797, T_Acc: 0.9298
+Epoch 10/15, Train Loss: 0.1266, V_Loss: 0.1843, V_Acc: 0.9285, T_Loss: 0.1810, T_Acc: 0.9301
+Epoch 11/15, Train Loss: 0.1212, V_Loss: 0.1863, V_Acc: 0.9288, T_Loss: 0.1830, T_Acc: 0.9297
+Epoch 12/15, Train Loss: 0.1166, V_Loss: 0.1886, V_Acc: 0.9283, T_Loss: 0.1850, T_Acc: 0.9293
+Epoch 13/15, Train Loss: 0.1132, V_Loss: 0.1908, V_Acc: 0.9275, T_Loss: 0.1872, T_Acc: 0.9286
+Epoch 14/15, Train Loss: 0.1099, V_Loss: 0.1928, V_Acc: 0.9274, T_Loss: 0.1893, T_Acc: 0.9284
+Early stopping at epoch 14. Best acc: 0.9288 at epoch 11
+restord model from epoch 11
+Final T_Loss: 0.1830, T_Acc: 0.9297
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251024-011615_finetuned_mm_imdb.pt
+
+
+2025-10-24 02:40:51 - INFO  - finetune_experiments.py:main:49 -  5/9: finetuning on hateful_memes with seed 1569
+run_finetune:750 - seed = 1569
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task hateful_memes
+_run_task:718 - saving results to 20251024-024051_experiment_coattn_6-8
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.6919720578193664, 'acc': 0.5253333333333333, 'auc': 0.4856513471407624}
+Epoch 1/15, Train Loss: 0.8677, V_Loss: 0.7001, V_Acc: 0.5663, T_Loss: 0.6724, T_Acc: 0.5910, V_AUC: 0.5588, T_AUC: 0.6028
+Epoch 2/15, Train Loss: 0.7664, V_Loss: 0.6749, V_Acc: 0.6173, T_Loss: 0.6436, T_Acc: 0.6447, V_AUC: 0.6540, T_AUC: 0.6807
+Epoch 3/15, Train Loss: 0.6312, V_Loss: 0.6640, V_Acc: 0.6481, T_Loss: 0.6356, T_Acc: 0.6720, V_AUC: 0.7022, T_AUC: 0.7176
+Epoch 4/15, Train Loss: 0.5134, V_Loss: 0.7832, V_Acc: 0.6462, T_Loss: 0.7344, T_Acc: 0.6673, V_AUC: 0.7137, T_AUC: 0.7295
+Epoch 5/15, Train Loss: 0.4054, V_Loss: 0.8079, V_Acc: 0.6635, T_Loss: 0.7657, T_Acc: 0.6807, V_AUC: 0.7212, T_AUC: 0.7401
+Epoch 6/15, Train Loss: 0.3026, V_Loss: 0.8372, V_Acc: 0.6827, T_Loss: 0.8041, T_Acc: 0.6917, V_AUC: 0.7299, T_AUC: 0.7450
+Epoch 7/15, Train Loss: 0.2242, V_Loss: 0.9771, V_Acc: 0.6750, T_Loss: 0.9294, T_Acc: 0.6847, V_AUC: 0.7319, T_AUC: 0.7459
+Epoch 8/15, Train Loss: 0.1551, V_Loss: 1.0932, V_Acc: 0.6837, T_Loss: 1.0593, T_Acc: 0.6853, V_AUC: 0.7351, T_AUC: 0.7425
+Epoch 9/15, Train Loss: 0.1289, V_Loss: 1.2927, V_Acc: 0.6702, T_Loss: 1.2538, T_Acc: 0.6770, V_AUC: 0.7287, T_AUC: 0.7342
+Epoch 10/15, Train Loss: 0.0858, V_Loss: 1.4006, V_Acc: 0.6673, T_Loss: 1.3646, T_Acc: 0.6760, V_AUC: 0.7310, T_AUC: 0.7356
+Epoch 11/15, Train Loss: 0.0735, V_Loss: 1.5349, V_Acc: 0.6683, T_Loss: 1.4631, T_Acc: 0.6797, V_AUC: 0.7327, T_AUC: 0.7355
+Early stopping at epoch 11. Best AUC: 0.7351 at epoch 8
+restord model from epoch 8
+Final T_Loss: 1.0593, T_Acc: 0.6853, Test AUC: 0.7425
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251024-024051_finetuned_hateful_memes.pt
+
+
+2025-10-24 03:14:39 - INFO  - finetune_experiments.py:main:49 -  6/9: finetuning on upmc_food with seed 1569
+run_finetune:750 - seed = 1569
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task upmc_food
+_run_task:718 - saving results to 20251024-031439_experiment_coattn_6-8
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.695795102094216, 'acc': 0.01036497950553894, 'auc': None}
+Epoch 1/15, Train Loss: 3.7463, V_Loss: 0.9021, V_Acc: 0.8257, T_Loss: 0.8802, T_Acc: 0.8307
+Epoch 2/15, Train Loss: 0.6747, V_Loss: 0.5248, V_Acc: 0.8823, T_Loss: 0.5212, T_Acc: 0.8807
+Epoch 3/15, Train Loss: 0.4251, V_Loss: 0.4436, V_Acc: 0.9001, T_Loss: 0.4287, T_Acc: 0.8981
+Epoch 4/15, Train Loss: 0.2882, V_Loss: 0.4030, V_Acc: 0.9081, T_Loss: 0.3936, T_Acc: 0.9106
+Epoch 5/15, Train Loss: 0.1946, V_Loss: 0.4044, V_Acc: 0.9113, T_Loss: 0.3999, T_Acc: 0.9102
+Epoch 6/15, Train Loss: 0.1295, V_Loss: 0.4084, V_Acc: 0.9122, T_Loss: 0.3921, T_Acc: 0.9166
+Epoch 7/15, Train Loss: 0.0823, V_Loss: 0.4286, V_Acc: 0.9117, T_Loss: 0.4085, T_Acc: 0.9158
+Epoch 8/15, Train Loss: 0.0574, V_Loss: 0.4330, V_Acc: 0.9122, T_Loss: 0.4147, T_Acc: 0.9148
+Epoch 9/15, Train Loss: 0.0420, V_Loss: 0.4399, V_Acc: 0.9128, T_Loss: 0.4328, T_Acc: 0.9166
+Epoch 10/15, Train Loss: 0.0317, V_Loss: 0.4370, V_Acc: 0.9160, T_Loss: 0.4240, T_Acc: 0.9172
+Epoch 11/15, Train Loss: 0.0247, V_Loss: 0.4462, V_Acc: 0.9142, T_Loss: 0.4339, T_Acc: 0.9176
+Epoch 12/15, Train Loss: 0.0208, V_Loss: 0.4489, V_Acc: 0.9141, T_Loss: 0.4359, T_Acc: 0.9185
+Epoch 13/15, Train Loss: 0.0194, V_Loss: 0.4508, V_Acc: 0.9147, T_Loss: 0.4368, T_Acc: 0.9182
+Early stopping at epoch 13. Best acc: 0.9160 at epoch 10
+restord model from epoch 10
+Final T_Loss: 0.4240, T_Acc: 0.9172
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251024-031439_finetuned_upmc_food.pt
+
+
+2025-10-24 08:01:23 - INFO  - finetune_experiments.py:main:49 -  7/9: finetuning on mm_imdb with seed 1570
+run_finetune:750 - seed = 1570
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task mm_imdb
+_run_task:718 - saving results to 20251024-080123_experiment_coattn_6-8
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.7469321939802389, 'acc': 0.3713991343975067, 'auc': None}
+Epoch 1/15, Train Loss: 0.4728, V_Loss: 0.2911, V_Acc: 0.8958, T_Loss: 0.2867, T_Acc: 0.8972
+Epoch 2/15, Train Loss: 0.2712, V_Loss: 0.2322, V_Acc: 0.9079, T_Loss: 0.2294, T_Acc: 0.9091
+Epoch 3/15, Train Loss: 0.2165, V_Loss: 0.2005, V_Acc: 0.9198, T_Loss: 0.1971, T_Acc: 0.9208
+Epoch 4/15, Train Loss: 0.1891, V_Loss: 0.1872, V_Acc: 0.9249, T_Loss: 0.1838, T_Acc: 0.9254
+Epoch 5/15, Train Loss: 0.1728, V_Loss: 0.1817, V_Acc: 0.9270, T_Loss: 0.1783, T_Acc: 0.9284
+Epoch 6/15, Train Loss: 0.1606, V_Loss: 0.1823, V_Acc: 0.9267, T_Loss: 0.1783, T_Acc: 0.9284
+Epoch 7/15, Train Loss: 0.1501, V_Loss: 0.1819, V_Acc: 0.9280, T_Loss: 0.1782, T_Acc: 0.9296
+Epoch 8/15, Train Loss: 0.1412, V_Loss: 0.1814, V_Acc: 0.9283, T_Loss: 0.1779, T_Acc: 0.9292
+Epoch 9/15, Train Loss: 0.1328, V_Loss: 0.1829, V_Acc: 0.9286, T_Loss: 0.1797, T_Acc: 0.9293
+Epoch 10/15, Train Loss: 0.1261, V_Loss: 0.1847, V_Acc: 0.9291, T_Loss: 0.1816, T_Acc: 0.9298
+Epoch 11/15, Train Loss: 0.1204, V_Loss: 0.1867, V_Acc: 0.9292, T_Loss: 0.1834, T_Acc: 0.9299
+Epoch 12/15, Train Loss: 0.1158, V_Loss: 0.1887, V_Acc: 0.9288, T_Loss: 0.1853, T_Acc: 0.9294
+Epoch 13/15, Train Loss: 0.1124, V_Loss: 0.1907, V_Acc: 0.9284, T_Loss: 0.1870, T_Acc: 0.9291
+Epoch 14/15, Train Loss: 0.1095, V_Loss: 0.1928, V_Acc: 0.9274, T_Loss: 0.1895, T_Acc: 0.9279
+Early stopping at epoch 14. Best acc: 0.9292 at epoch 11
+restord model from epoch 11
+Final T_Loss: 0.1834, T_Acc: 0.9299
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251024-080123_finetuned_mm_imdb.pt
+
+
+2025-10-24 09:25:51 - INFO  - finetune_experiments.py:main:49 -  8/9: finetuning on hateful_memes with seed 1570
+run_finetune:750 - seed = 1570
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task hateful_memes
+_run_task:718 - saving results to 20251024-092551_experiment_coattn_6-8
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.6919720578193664, 'acc': 0.5253333333333333, 'auc': 0.4856513471407624}
+Epoch 1/15, Train Loss: 0.8696, V_Loss: 0.7009, V_Acc: 0.5798, T_Loss: 0.6707, T_Acc: 0.5967, V_AUC: 0.5564, T_AUC: 0.6015
+Epoch 2/15, Train Loss: 0.7685, V_Loss: 0.6856, V_Acc: 0.6096, T_Loss: 0.6581, T_Acc: 0.6293, V_AUC: 0.6435, T_AUC: 0.6693
+Epoch 3/15, Train Loss: 0.6401, V_Loss: 0.6771, V_Acc: 0.6346, T_Loss: 0.6506, T_Acc: 0.6690, V_AUC: 0.6984, T_AUC: 0.7110
+Epoch 4/15, Train Loss: 0.5093, V_Loss: 0.7316, V_Acc: 0.6673, T_Loss: 0.6963, T_Acc: 0.6820, V_AUC: 0.7152, T_AUC: 0.7302
+Epoch 5/15, Train Loss: 0.4090, V_Loss: 0.7538, V_Acc: 0.6712, T_Loss: 0.7074, T_Acc: 0.6967, V_AUC: 0.7318, T_AUC: 0.7522
+Epoch 6/15, Train Loss: 0.2920, V_Loss: 1.0141, V_Acc: 0.6577, T_Loss: 0.9606, T_Acc: 0.6773, V_AUC: 0.7312, T_AUC: 0.7439
+Epoch 7/15, Train Loss: 0.2010, V_Loss: 1.0893, V_Acc: 0.6692, T_Loss: 1.0391, T_Acc: 0.6833, V_AUC: 0.7365, T_AUC: 0.7479
+Epoch 8/15, Train Loss: 0.1578, V_Loss: 1.1127, V_Acc: 0.6721, T_Loss: 1.0814, T_Acc: 0.6963, V_AUC: 0.7383, T_AUC: 0.7480
+Epoch 9/15, Train Loss: 0.1267, V_Loss: 1.3882, V_Acc: 0.6673, T_Loss: 1.2880, T_Acc: 0.6770, V_AUC: 0.7351, T_AUC: 0.7464
+Epoch 10/15, Train Loss: 0.0981, V_Loss: 1.3871, V_Acc: 0.6644, T_Loss: 1.3190, T_Acc: 0.6890, V_AUC: 0.7313, T_AUC: 0.7440
+Epoch 11/15, Train Loss: 0.0735, V_Loss: 1.4694, V_Acc: 0.6644, T_Loss: 1.3921, T_Acc: 0.6817, V_AUC: 0.7314, T_AUC: 0.7442
+Early stopping at epoch 11. Best AUC: 0.7383 at epoch 8
+restord model from epoch 8
+Final T_Loss: 1.0814, T_Acc: 0.6963, Test AUC: 0.7480
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251024-092551_finetuned_hateful_memes.pt
+
+2025-10-24 09:59:39 - INFO  - finetune_experiments.py:main:49 -  9/9: finetuning on upmc_food with seed 1570
+run_finetune:750 - seed = 1570
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt for task upmc_food
+_run_task:718 - saving results to 20251024-095939_experiment_coattn_6-8
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.695795102094216, 'acc': 0.01036497950553894, 'auc': None}
+Epoch 1/15, Train Loss: 3.7393, V_Loss: 0.9024, V_Acc: 0.8238, T_Loss: 0.8859, T_Acc: 0.8293
+Epoch 2/15, Train Loss: 0.6732, V_Loss: 0.5223, V_Acc: 0.8816, T_Loss: 0.5060, T_Acc: 0.8825
+Epoch 3/15, Train Loss: 0.4222, V_Loss: 0.4341, V_Acc: 0.9001, T_Loss: 0.4174, T_Acc: 0.9027
+Epoch 4/15, Train Loss: 0.2933, V_Loss: 0.4052, V_Acc: 0.9085, T_Loss: 0.3977, T_Acc: 0.9094
+Epoch 5/15, Train Loss: 0.1965, V_Loss: 0.4013, V_Acc: 0.9114, T_Loss: 0.3866, T_Acc: 0.9124
+Epoch 6/15, Train Loss: 0.1297, V_Loss: 0.4120, V_Acc: 0.9127, T_Loss: 0.4003, T_Acc: 0.9155
+Epoch 7/15, Train Loss: 0.0846, V_Loss: 0.4155, V_Acc: 0.9136, T_Loss: 0.4010, T_Acc: 0.9162
+Epoch 8/15, Train Loss: 0.0588, V_Loss: 0.4149, V_Acc: 0.9155, T_Loss: 0.4068, T_Acc: 0.9162
+Epoch 9/15, Train Loss: 0.0421, V_Loss: 0.4249, V_Acc: 0.9152, T_Loss: 0.4108, T_Acc: 0.9172
+Epoch 10/15, Train Loss: 0.0327, V_Loss: 0.4303, V_Acc: 0.9147, T_Loss: 0.4298, T_Acc: 0.9159
+Epoch 11/15, Train Loss: 0.0262, V_Loss: 0.4355, V_Acc: 0.9158, T_Loss: 0.4275, T_Acc: 0.9172
+Epoch 12/15, Train Loss: 0.0231, V_Loss: 0.4424, V_Acc: 0.9163, T_Loss: 0.4329, T_Acc: 0.9169
+Epoch 13/15, Train Loss: 0.0191, V_Loss: 0.4487, V_Acc: 0.9150, T_Loss: 0.4366, T_Acc: 0.9176
+Epoch 14/15, Train Loss: 0.0182, V_Loss: 0.4476, V_Acc: 0.9172, T_Loss: 0.4388, T_Acc: 0.9166
+Epoch 15/15, Train Loss: 0.0168, V_Loss: 0.4478, V_Acc: 0.9166, T_Loss: 0.4360, T_Acc: 0.9181
+Final T_Loss: 0.4360, T_Acc: 0.9181
+Saved finetuned model to res/checkpoints/20251015-081211_pretrained_optuna1/20251024-095939_finetuned_upmc_food.pt
+
+
+
+================================
+optuna2 fusion
+
+
+1/9: finetuning on mm_imdb with seed 1568
+2025-10-24 16:06:21 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1568
+2025-10-24 16:06:22 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task mm_imdb
+2025-10-24 16:06:22 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251024-160621_experiment_coattn_6-7-9-10
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.691568463079391, 'acc': 0.5416275858879089, 'auc': None}
+Epoch 1/15, Train Loss: 0.4509, V_Loss: 0.2891, V_Acc: 0.8944, T_Loss: 0.2848, T_Acc: 0.8957
+Epoch 2/15, Train Loss: 0.2723, V_Loss: 0.2365, V_Acc: 0.9077, T_Loss: 0.2336, T_Acc: 0.9087
+Epoch 3/15, Train Loss: 0.2155, V_Loss: 0.1995, V_Acc: 0.9202, T_Loss: 0.1957, T_Acc: 0.9216
+Epoch 4/15, Train Loss: 0.1863, V_Loss: 0.1873, V_Acc: 0.9241, T_Loss: 0.1844, T_Acc: 0.9246
+Epoch 5/15, Train Loss: 0.1694, V_Loss: 0.1816, V_Acc: 0.9277, T_Loss: 0.1788, T_Acc: 0.9274
+Epoch 6/15, Train Loss: 0.1556, V_Loss: 0.1800, V_Acc: 0.9286, T_Loss: 0.1769, T_Acc: 0.9290
+Epoch 7/15, Train Loss: 0.1436, V_Loss: 0.1801, V_Acc: 0.9296, T_Loss: 0.1763, T_Acc: 0.9296
+Epoch 8/15, Train Loss: 0.1339, V_Loss: 0.1832, V_Acc: 0.9280, T_Loss: 0.1795, T_Acc: 0.9284
+Epoch 9/15, Train Loss: 0.1255, V_Loss: 0.1845, V_Acc: 0.9289, T_Loss: 0.1809, T_Acc: 0.9285
+Epoch 10/15, Train Loss: 0.1180, V_Loss: 0.1883, V_Acc: 0.9283, T_Loss: 0.1847, T_Acc: 0.9282
+Early stopping at epoch 10. Best acc: 0.9296 at epoch 7
+restord model from epoch 7
+Final T_Loss: 0.1763, T_Acc: 0.9296
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251024-160621_finetuned_mm_imdb.pt
+
+
+
+
+2/9: finetuning on hateful_memes with seed 1568
+2025-10-24 17:18:04 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1568
+2025-10-24 17:18:06 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task hateful_memes
+2025-10-24 17:18:06 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251024-171804_experiment_coattn_6-7-9-10
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.7466063137054444, 'acc': 0.4136666666666667, 'auc': 0.4968546096041056}
+Epoch 1/15, Train Loss: 0.8827, V_Loss: 0.6853, V_Acc: 0.5596, T_Loss: 0.6648, T_Acc: 0.5960, V_AUC: 0.5532, T_AUC: 0.5961
+Epoch 2/15, Train Loss: 0.7675, V_Loss: 0.6907, V_Acc: 0.6077, T_Loss: 0.6614, T_Acc: 0.6387, V_AUC: 0.6430, T_AUC: 0.6690
+Epoch 3/15, Train Loss: 0.6226, V_Loss: 0.6798, V_Acc: 0.6144, T_Loss: 0.6492, T_Acc: 0.6573, V_AUC: 0.6741, T_AUC: 0.7030
+Epoch 4/15, Train Loss: 0.4881, V_Loss: 0.7860, V_Acc: 0.6423, T_Loss: 0.7453, T_Acc: 0.6587, V_AUC: 0.6916, T_AUC: 0.7208
+Epoch 5/15, Train Loss: 0.3723, V_Loss: 0.8691, V_Acc: 0.6606, T_Loss: 0.8123, T_Acc: 0.6807, V_AUC: 0.7055, T_AUC: 0.7348
+Epoch 6/15, Train Loss: 0.2648, V_Loss: 0.9806, V_Acc: 0.6567, T_Loss: 0.9115, T_Acc: 0.6913, V_AUC: 0.7085, T_AUC: 0.7409
+Epoch 7/15, Train Loss: 0.1770, V_Loss: 1.1965, V_Acc: 0.6548, T_Loss: 1.1112, T_Acc: 0.6857, V_AUC: 0.7102, T_AUC: 0.7377
+Epoch 8/15, Train Loss: 0.1339, V_Loss: 1.2842, V_Acc: 0.6692, T_Loss: 1.1787, T_Acc: 0.6870, V_AUC: 0.7164, T_AUC: 0.7462
+Epoch 9/15, Train Loss: 0.1010, V_Loss: 1.4187, V_Acc: 0.6519, T_Loss: 1.3513, T_Acc: 0.6780, V_AUC: 0.7142, T_AUC: 0.7340
+Epoch 10/15, Train Loss: 0.0784, V_Loss: 1.4518, V_Acc: 0.6635, T_Loss: 1.3448, T_Acc: 0.6833, V_AUC: 0.7122, T_AUC: 0.7367
+Epoch 11/15, Train Loss: 0.0599, V_Loss: 1.5939, V_Acc: 0.6558, T_Loss: 1.4659, T_Acc: 0.6870, V_AUC: 0.7142, T_AUC: 0.7430
+Early stopping at epoch 11. Best AUC: 0.7164 at epoch 8
+restord model from epoch 8
+Final T_Loss: 1.1787, T_Acc: 0.6870, Test AUC: 0.7462
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251024-171804_finetuned_hateful_memes.pt
+
+3/9: finetuning on upmc_food with seed 1568
+2025-10-24 17:57:57 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1568
+2025-10-24 17:57:58 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task upmc_food
+2025-10-24 17:57:58 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251024-175757_experiment_coattn_6-7-9-10
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.641725673877373, 'acc': 0.010034182108938694, 'auc': None}
+Epoch 1/15, Train Loss: 3.5712, V_Loss: 0.8255, V_Acc: 0.8350, T_Loss: 0.8217, T_Acc: 0.8361
+Epoch 2/15, Train Loss: 0.6248, V_Loss: 0.4863, V_Acc: 0.8904, T_Loss: 0.4868, T_Acc: 0.8876
+Epoch 3/15, Train Loss: 0.3897, V_Loss: 0.4101, V_Acc: 0.9063, T_Loss: 0.4093, T_Acc: 0.9055
+Epoch 4/15, Train Loss: 0.2616, V_Loss: 0.3824, V_Acc: 0.9144, T_Loss: 0.3855, T_Acc: 0.9131
+Epoch 5/15, Train Loss: 0.1781, V_Loss: 0.3792, V_Acc: 0.9166, T_Loss: 0.3843, T_Acc: 0.9147
+Epoch 6/15, Train Loss: 0.1150, V_Loss: 0.4112, V_Acc: 0.9142, T_Loss: 0.4058, T_Acc: 0.9162
+Epoch 7/15, Train Loss: 0.0749, V_Loss: 0.4197, V_Acc: 0.9198, T_Loss: 0.4133, T_Acc: 0.9202
+Epoch 8/15, Train Loss: 0.0516, V_Loss: 0.4298, V_Acc: 0.9172, T_Loss: 0.4214, T_Acc: 0.9203
+Epoch 9/15, Train Loss: 0.0388, V_Loss: 0.4338, V_Acc: 0.9198, T_Loss: 0.4303, T_Acc: 0.9195
+Epoch 10/15, Train Loss: 0.0282, V_Loss: 0.4369, V_Acc: 0.9188, T_Loss: 0.4318, T_Acc: 0.9197
+Early stopping at epoch 10. Best acc: 0.9198 at epoch 7
+restord model from epoch 7
+Final T_Loss: 0.4133, T_Acc: 0.9202
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251024-175757_finetuned_upmc_food.pt
+
+4/9: finetuning on mm_imdb with seed 1569
+2025-10-24 22:18:58 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1569
+2025-10-24 22:19:00 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task mm_imdb
+2025-10-24 22:19:00 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251024-221858_experiment_coattn_6-7-9-10
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.691568463079391, 'acc': 0.5416275858879089, 'auc': None}
+Epoch 1/15, Train Loss: 0.4507, V_Loss: 0.2886, V_Acc: 0.8947, T_Loss: 0.2846, T_Acc: 0.8963
+Epoch 2/15, Train Loss: 0.2717, V_Loss: 0.2350, V_Acc: 0.9086, T_Loss: 0.2320, T_Acc: 0.9103
+Epoch 3/15, Train Loss: 0.2147, V_Loss: 0.1977, V_Acc: 0.9207, T_Loss: 0.1945, T_Acc: 0.9214
+Epoch 4/15, Train Loss: 0.1870, V_Loss: 0.1864, V_Acc: 0.9252, T_Loss: 0.1822, T_Acc: 0.9260
+Epoch 5/15, Train Loss: 0.1692, V_Loss: 0.1813, V_Acc: 0.9264, T_Loss: 0.1779, T_Acc: 0.9277
+Epoch 6/15, Train Loss: 0.1562, V_Loss: 0.1791, V_Acc: 0.9293, T_Loss: 0.1751, T_Acc: 0.9292
+Epoch 7/15, Train Loss: 0.1445, V_Loss: 0.1807, V_Acc: 0.9285, T_Loss: 0.1766, T_Acc: 0.9286
+Epoch 8/15, Train Loss: 0.1350, V_Loss: 0.1827, V_Acc: 0.9279, T_Loss: 0.1793, T_Acc: 0.9282
+Epoch 9/15, Train Loss: 0.1261, V_Loss: 0.1831, V_Acc: 0.9294, T_Loss: 0.1796, T_Acc: 0.9288
+Epoch 10/15, Train Loss: 0.1181, V_Loss: 0.1875, V_Acc: 0.9295, T_Loss: 0.1841, T_Acc: 0.9289
+Epoch 11/15, Train Loss: 0.1126, V_Loss: 0.1900, V_Acc: 0.9293, T_Loss: 0.1863, T_Acc: 0.9288
+Epoch 12/15, Train Loss: 0.1073, V_Loss: 0.1941, V_Acc: 0.9287, T_Loss: 0.1903, T_Acc: 0.9281
+Epoch 13/15, Train Loss: 0.1038, V_Loss: 0.1959, V_Acc: 0.9290, T_Loss: 0.1919, T_Acc: 0.9283
+Early stopping at epoch 13. Best acc: 0.9295 at epoch 10
+restord model from epoch 10
+Final T_Loss: 0.1841, T_Acc: 0.9289
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251024-221858_finetuned_mm_imdb.pt
+
+5/9: finetuning on hateful_memes with seed 1569
+2025-10-24 23:51:54 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1569
+2025-10-24 23:51:55 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task hateful_memes
+2025-10-24 23:51:56 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251024-235154_experiment_coattn_6-7-9-10
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.7466063137054444, 'acc': 0.4136666666666667, 'auc': 0.4968546096041056}
+Epoch 1/15, Train Loss: 0.8808, V_Loss: 0.6866, V_Acc: 0.5692, T_Loss: 0.6638, T_Acc: 0.5993, V_AUC: 0.5555, T_AUC: 0.6001
+Epoch 2/15, Train Loss: 0.7804, V_Loss: 0.6874, V_Acc: 0.5904, T_Loss: 0.6673, T_Acc: 0.6200, V_AUC: 0.6356, T_AUC: 0.6647
+Epoch 3/15, Train Loss: 0.6344, V_Loss: 0.6658, V_Acc: 0.6462, T_Loss: 0.6304, T_Acc: 0.6620, V_AUC: 0.6823, T_AUC: 0.7153
+Epoch 4/15, Train Loss: 0.5014, V_Loss: 0.7393, V_Acc: 0.6433, T_Loss: 0.6832, T_Acc: 0.6770, V_AUC: 0.6946, T_AUC: 0.7287
+Epoch 5/15, Train Loss: 0.3850, V_Loss: 0.8622, V_Acc: 0.6452, T_Loss: 0.7876, T_Acc: 0.6857, V_AUC: 0.6966, T_AUC: 0.7334
+Epoch 6/15, Train Loss: 0.2681, V_Loss: 0.9437, V_Acc: 0.6577, T_Loss: 0.8707, T_Acc: 0.6790, V_AUC: 0.7040, T_AUC: 0.7371
+Epoch 7/15, Train Loss: 0.1894, V_Loss: 1.1211, V_Acc: 0.6596, T_Loss: 1.0405, T_Acc: 0.6863, V_AUC: 0.7098, T_AUC: 0.7402
+Epoch 8/15, Train Loss: 0.1330, V_Loss: 1.2180, V_Acc: 0.6644, T_Loss: 1.1272, T_Acc: 0.6857, V_AUC: 0.7099, T_AUC: 0.7389
+Epoch 9/15, Train Loss: 0.1079, V_Loss: 1.4139, V_Acc: 0.6548, T_Loss: 1.3127, T_Acc: 0.6840, V_AUC: 0.7082, T_AUC: 0.7381
+Epoch 10/15, Train Loss: 0.0777, V_Loss: 1.6181, V_Acc: 0.6538, T_Loss: 1.4826, T_Acc: 0.6773, V_AUC: 0.7042, T_AUC: 0.7381
+Epoch 11/15, Train Loss: 0.0714, V_Loss: 1.4765, V_Acc: 0.6654, T_Loss: 1.3634, T_Acc: 0.6863, V_AUC: 0.7100, T_AUC: 0.7386
+Epoch 12/15, Train Loss: 0.0563, V_Loss: 1.6502, V_Acc: 0.6529, T_Loss: 1.5339, T_Acc: 0.6790, V_AUC: 0.7067, T_AUC: 0.7375
+Epoch 13/15, Train Loss: 0.0498, V_Loss: 1.5588, V_Acc: 0.6673, T_Loss: 1.4310, T_Acc: 0.6917, V_AUC: 0.7069, T_AUC: 0.7391
+Epoch 14/15, Train Loss: 0.0433, V_Loss: 1.6388, V_Acc: 0.6654, T_Loss: 1.5067, T_Acc: 0.6833, V_AUC: 0.7109, T_AUC: 0.7409
+Epoch 15/15, Train Loss: 0.0421, V_Loss: 1.7515, V_Acc: 0.6558, T_Loss: 1.6153, T_Acc: 0.6823, V_AUC: 0.7132, T_AUC: 0.7401
+Final T_Loss: 1.6153, T_Acc: 0.6823, Test AUC: 0.7401
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251024-235154_finetuned_hateful_memes.pt
+
+6/9: finetuning on upmc_food with seed 1569
+2025-10-25 00:45:53 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1569
+2025-10-25 00:45:54 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task upmc_food
+2025-10-25 00:45:54 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251025-004553_experiment_coattn_6-7-9-10
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.641725673877373, 'acc': 0.010034182108938694, 'auc': None}
+Epoch 1/15, Train Loss: 3.5784, V_Loss: 0.8232, V_Acc: 0.8371, T_Loss: 0.8135, T_Acc: 0.8395
+Epoch 2/15, Train Loss: 0.6352, V_Loss: 0.4833, V_Acc: 0.8919, T_Loss: 0.4819, T_Acc: 0.8927
+Epoch 3/15, Train Loss: 0.3914, V_Loss: 0.4098, V_Acc: 0.9085, T_Loss: 0.4029, T_Acc: 0.9059
+Epoch 4/15, Train Loss: 0.2650, V_Loss: 0.3762, V_Acc: 0.9151, T_Loss: 0.3817, T_Acc: 0.9131
+Epoch 5/15, Train Loss: 0.1750, V_Loss: 0.3922, V_Acc: 0.9160, T_Loss: 0.3984, T_Acc: 0.9149
+Epoch 6/15, Train Loss: 0.1117, V_Loss: 0.3989, V_Acc: 0.9189, T_Loss: 0.4067, T_Acc: 0.9164
+Epoch 7/15, Train Loss: 0.0750, V_Loss: 0.4075, V_Acc: 0.9187, T_Loss: 0.4161, T_Acc: 0.9188
+Epoch 8/15, Train Loss: 0.0498, V_Loss: 0.4131, V_Acc: 0.9197, T_Loss: 0.4186, T_Acc: 0.9201
+Epoch 9/15, Train Loss: 0.0371, V_Loss: 0.4342, V_Acc: 0.9180, T_Loss: 0.4331, T_Acc: 0.9173
+Epoch 10/15, Train Loss: 0.0285, V_Loss: 0.4352, V_Acc: 0.9203, T_Loss: 0.4338, T_Acc: 0.9185
+Epoch 11/15, Train Loss: 0.0239, V_Loss: 0.4410, V_Acc: 0.9194, T_Loss: 0.4393, T_Acc: 0.9203
+Epoch 12/15, Train Loss: 0.0203, V_Loss: 0.4396, V_Acc: 0.9218, T_Loss: 0.4476, T_Acc: 0.9223
+Epoch 13/15, Train Loss: 0.0171, V_Loss: 0.4530, V_Acc: 0.9212, T_Loss: 0.4528, T_Acc: 0.9227
+Epoch 14/15, Train Loss: 0.0170, V_Loss: 0.4512, V_Acc: 0.9215, T_Loss: 0.4499, T_Acc: 0.9213
+Epoch 15/15, Train Loss: 0.0157, V_Loss: 0.4559, V_Acc: 0.9204, T_Loss: 0.4528, T_Acc: 0.9222
+Early stopping at epoch 15. Best acc: 0.9218 at epoch 12
+restord model from epoch 12
+Final T_Loss: 0.4476, T_Acc: 0.9223
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251025-004553_finetuned_upmc_food.pt
+
+7/9: finetuning on mm_imdb with seed 1570
+2025-10-25 07:16:31 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1570
+2025-10-25 07:16:33 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task mm_imdb
+2025-10-25 07:16:33 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251025-071631_experiment_coattn_6-7-9-10
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.691568463079391, 'acc': 0.5416275858879089, 'auc': None}
+Epoch 1/15, Train Loss: 0.4502, V_Loss: 0.2889, V_Acc: 0.8945, T_Loss: 0.2849, T_Acc: 0.8959
+Epoch 2/15, Train Loss: 0.2706, V_Loss: 0.2339, V_Acc: 0.9077, T_Loss: 0.2305, T_Acc: 0.9093
+Epoch 3/15, Train Loss: 0.2132, V_Loss: 0.1967, V_Acc: 0.9211, T_Loss: 0.1944, T_Acc: 0.9217
+Epoch 4/15, Train Loss: 0.1858, V_Loss: 0.1861, V_Acc: 0.9252, T_Loss: 0.1825, T_Acc: 0.9259
+Epoch 5/15, Train Loss: 0.1685, V_Loss: 0.1828, V_Acc: 0.9270, T_Loss: 0.1795, T_Acc: 0.9276
+Epoch 6/15, Train Loss: 0.1554, V_Loss: 0.1788, V_Acc: 0.9288, T_Loss: 0.1753, T_Acc: 0.9293
+Epoch 7/15, Train Loss: 0.1431, V_Loss: 0.1803, V_Acc: 0.9291, T_Loss: 0.1773, T_Acc: 0.9286
+Epoch 8/15, Train Loss: 0.1344, V_Loss: 0.1843, V_Acc: 0.9280, T_Loss: 0.1813, T_Acc: 0.9282
+Epoch 9/15, Train Loss: 0.1260, V_Loss: 0.1854, V_Acc: 0.9291, T_Loss: 0.1823, T_Acc: 0.9283
+Epoch 10/15, Train Loss: 0.1186, V_Loss: 0.1880, V_Acc: 0.9283, T_Loss: 0.1851, T_Acc: 0.9278
+Early stopping at epoch 10. Best acc: 0.9291 at epoch 7
+restord model from epoch 7
+Final T_Loss: 0.1773, T_Acc: 0.9286
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251025-071631_finetuned_mm_imdb.pt
+
+8/9: finetuning on hateful_memes with seed 1570
+2025-10-25 08:28:21 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1570
+2025-10-25 08:28:23 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task hateful_memes
+2025-10-25 08:28:23 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251025-082821_experiment_coattn_6-7-9-10
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.7466063137054444, 'acc': 0.4136666666666667, 'auc': 0.4968546096041056}
+Epoch 1/15, Train Loss: 0.8768, V_Loss: 0.6909, V_Acc: 0.5625, T_Loss: 0.6671, T_Acc: 0.5890, V_AUC: 0.5583, T_AUC: 0.6008
+Epoch 2/15, Train Loss: 0.7648, V_Loss: 0.6921, V_Acc: 0.6000, T_Loss: 0.6625, T_Acc: 0.6347, V_AUC: 0.6338, T_AUC: 0.6650
+Epoch 3/15, Train Loss: 0.6111, V_Loss: 0.7003, V_Acc: 0.6308, T_Loss: 0.6544, T_Acc: 0.6623, V_AUC: 0.6763, T_AUC: 0.7112
+Epoch 4/15, Train Loss: 0.4787, V_Loss: 0.7632, V_Acc: 0.6442, T_Loss: 0.7249, T_Acc: 0.6767, V_AUC: 0.6916, T_AUC: 0.7204
+Epoch 5/15, Train Loss: 0.3689, V_Loss: 0.8961, V_Acc: 0.6356, T_Loss: 0.8337, T_Acc: 0.6683, V_AUC: 0.6964, T_AUC: 0.7253
+Epoch 6/15, Train Loss: 0.2512, V_Loss: 1.0163, V_Acc: 0.6712, T_Loss: 0.9735, T_Acc: 0.6837, V_AUC: 0.7111, T_AUC: 0.7319
+Epoch 7/15, Train Loss: 0.1691, V_Loss: 1.2148, V_Acc: 0.6740, T_Loss: 1.1520, T_Acc: 0.6850, V_AUC: 0.7162, T_AUC: 0.7340
+Epoch 8/15, Train Loss: 0.1327, V_Loss: 1.2587, V_Acc: 0.6558, T_Loss: 1.1653, T_Acc: 0.6867, V_AUC: 0.7097, T_AUC: 0.7354
+Epoch 9/15, Train Loss: 0.1029, V_Loss: 1.5254, V_Acc: 0.6500, T_Loss: 1.4447, T_Acc: 0.6753, V_AUC: 0.7156, T_AUC: 0.7349
+Epoch 10/15, Train Loss: 0.0700, V_Loss: 1.5009, V_Acc: 0.6635, T_Loss: 1.4185, T_Acc: 0.6860, V_AUC: 0.7145, T_AUC: 0.7339
+Early stopping at epoch 10. Best AUC: 0.7162 at epoch 7
+restord model from epoch 7
+Final T_Loss: 1.1520, T_Acc: 0.6850, Test AUC: 0.7340
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251025-082821_finetuned_hateful_memes.pt
+
+9/9: finetuning on upmc_food with seed 1570
+2025-10-25 09:04:45 - INFO  - experiment_tracker.py:run_finetune:750 - seed = 1570
+2025-10-25 09:04:47 - INFO  - experiment_tracker.py:run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt for task upmc_food
+2025-10-25 09:04:47 - INFO  - experiment_tracker.py:_run_task:718 - saving results to 20251025-090445_experiment_coattn_6-7-9-10
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.641725673877373, 'acc': 0.010034182108938694, 'auc': None}
+Epoch 1/15, Train Loss: 3.5727, V_Loss: 0.8360, V_Acc: 0.8309, T_Loss: 0.8181, T_Acc: 0.8361
+Epoch 2/15, Train Loss: 0.6302, V_Loss: 0.4997, V_Acc: 0.8873, T_Loss: 0.4947, T_Acc: 0.8886
+Epoch 3/15, Train Loss: 0.3943, V_Loss: 0.4203, V_Acc: 0.9051, T_Loss: 0.4240, T_Acc: 0.9030
+Epoch 4/15, Train Loss: 0.2692, V_Loss: 0.3965, V_Acc: 0.9117, T_Loss: 0.3988, T_Acc: 0.9117
+Epoch 5/15, Train Loss: 0.1772, V_Loss: 0.3817, V_Acc: 0.9184, T_Loss: 0.3752, T_Acc: 0.9175
+Epoch 6/15, Train Loss: 0.1151, V_Loss: 0.4059, V_Acc: 0.9168, T_Loss: 0.4056, T_Acc: 0.9137
+Epoch 7/15, Train Loss: 0.0746, V_Loss: 0.4114, V_Acc: 0.9162, T_Loss: 0.4076, T_Acc: 0.9188
+Epoch 8/15, Train Loss: 0.0528, V_Loss: 0.4145, V_Acc: 0.9194, T_Loss: 0.4138, T_Acc: 0.9203
+Epoch 9/15, Train Loss: 0.0371, V_Loss: 0.4117, V_Acc: 0.9205, T_Loss: 0.4147, T_Acc: 0.9193
+Epoch 10/15, Train Loss: 0.0298, V_Loss: 0.4233, V_Acc: 0.9204, T_Loss: 0.4272, T_Acc: 0.9219
+Epoch 11/15, Train Loss: 0.0219, V_Loss: 0.4377, V_Acc: 0.9199, T_Loss: 0.4362, T_Acc: 0.9212
+Epoch 12/15, Train Loss: 0.0192, V_Loss: 0.4447, V_Acc: 0.9213, T_Loss: 0.4453, T_Acc: 0.9224
+Epoch 13/15, Train Loss: 0.0169, V_Loss: 0.4398, V_Acc: 0.9220, T_Loss: 0.4415, T_Acc: 0.9227
+Epoch 14/15, Train Loss: 0.0157, V_Loss: 0.4502, V_Acc: 0.9210, T_Loss: 0.4516, T_Acc: 0.9220
+Epoch 15/15, Train Loss: 0.0157, V_Loss: 0.4464, V_Acc: 0.9207, T_Loss: 0.4443, T_Acc: 0.9222
+Final T_Loss: 0.4443, T_Acc: 0.9222
+Saved finetuned model to res/checkpoints/20251016-062038_pretrained_optuna2/20251025-090445_finetuned_upmc_food.pt
+
+
+
+================================
+baseline_no_coatts
+2025-10-24 16:05:08 - INFO  - finetune_experiments.py:main:51 -  1/9: finetuning on mm_imdb with seed 1568
+run_finetune:750 - seed = 1568
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task mm_imdb
+_run_task:718 - saving results to 20251024-160508_experiment_no_coattn
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 2.072645539311672, 'acc': 0.3629078269004822, 'auc': None}
+Epoch 1/15, Train Loss: 0.5594, V_Loss: 0.2566, V_Acc: 0.9007, T_Loss: 0.2534, T_Acc: 0.9017
+Epoch 2/15, Train Loss: 0.2344, V_Loss: 0.2039, V_Acc: 0.9205, T_Loss: 0.2018, T_Acc: 0.9221
+Epoch 3/15, Train Loss: 0.1932, V_Loss: 0.1891, V_Acc: 0.9256, T_Loss: 0.1875, T_Acc: 0.9263
+Epoch 4/15, Train Loss: 0.1704, V_Loss: 0.1903, V_Acc: 0.9258, T_Loss: 0.1891, T_Acc: 0.9253
+Epoch 5/15, Train Loss: 0.1504, V_Loss: 0.1850, V_Acc: 0.9270, T_Loss: 0.1840, T_Acc: 0.9262
+Epoch 6/15, Train Loss: 0.1327, V_Loss: 0.1907, V_Acc: 0.9257, T_Loss: 0.1902, T_Acc: 0.9254
+Epoch 7/15, Train Loss: 0.1198, V_Loss: 0.1943, V_Acc: 0.9263, T_Loss: 0.1943, T_Acc: 0.9252
+Epoch 8/15, Train Loss: 0.1083, V_Loss: 0.1990, V_Acc: 0.9266, T_Loss: 0.1975, T_Acc: 0.9266
+Early stopping at epoch 8. Best acc: 0.9270 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1840, T_Acc: 0.9262
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251024-160508_finetuned_mm_imdb.pt
+
+
+2025-10-24 16:35:02 - INFO  - finetune_experiments.py:main:51 -  2/9: finetuning on hateful_memes with seed 1568
+run_finetune:750 - seed = 1568
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task hateful_memes
+_run_task:718 - saving results to 20251024-163502_experiment_no_coattn
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 1.8802370340625445, 'acc': 0.5556666666666666, 'auc': 0.48728601539589445}
+Epoch 1/15, Train Loss: 1.4249, V_Loss: 0.7624, V_Acc: 0.4462, T_Loss: 0.7656, T_Acc: 0.4397, V_AUC: 0.5051, T_AUC: 0.5178
+Epoch 2/15, Train Loss: 0.8667, V_Loss: 0.7419, V_Acc: 0.5798, T_Loss: 0.7219, T_Acc: 0.6017, V_AUC: 0.6066, T_AUC: 0.6336
+Epoch 3/15, Train Loss: 0.6880, V_Loss: 0.7666, V_Acc: 0.5962, T_Loss: 0.7302, T_Acc: 0.6167, V_AUC: 0.6206, T_AUC: 0.6450
+Epoch 4/15, Train Loss: 0.5827, V_Loss: 0.7786, V_Acc: 0.5904, T_Loss: 0.7457, T_Acc: 0.6277, V_AUC: 0.6270, T_AUC: 0.6561
+Epoch 5/15, Train Loss: 0.4708, V_Loss: 0.9717, V_Acc: 0.5942, T_Loss: 0.8999, T_Acc: 0.6260, V_AUC: 0.6145, T_AUC: 0.6429
+Epoch 6/15, Train Loss: 0.3975, V_Loss: 0.9802, V_Acc: 0.5894, T_Loss: 0.9042, T_Acc: 0.6213, V_AUC: 0.6001, T_AUC: 0.6412
+Epoch 7/15, Train Loss: 0.3574, V_Loss: 1.1163, V_Acc: 0.5865, T_Loss: 1.0479, T_Acc: 0.6137, V_AUC: 0.5965, T_AUC: 0.6274
+Early stopping at epoch 7. Best AUC: 0.6270 at epoch 4
+restord model from epoch 4
+Final T_Loss: 0.7457, T_Acc: 0.6277, Test AUC: 0.6561
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251024-163502_finetuned_hateful_memes.pt
+
+
+2025-10-24 16:48:42 - INFO  - finetune_experiments.py:main:51 -  3/9: finetuning on upmc_food with seed 1568
+run_finetune:750 - seed = 1568
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task upmc_food
+_run_task:718 - saving results to 20251024-164842_experiment_no_coattn
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 10.719357995129137, 'acc': 0.012239497154951096, 'auc': None}
+Epoch 1/15, Train Loss: 4.3708, V_Loss: 1.2476, V_Acc: 0.8309, T_Loss: 1.2305, T_Acc: 0.8345
+Epoch 2/15, Train Loss: 0.9671, V_Loss: 0.6803, V_Acc: 0.8577, T_Loss: 0.6725, T_Acc: 0.8604
+Epoch 3/15, Train Loss: 0.6241, V_Loss: 0.5969, V_Acc: 0.8700, T_Loss: 0.5939, T_Acc: 0.8704
+Epoch 4/15, Train Loss: 0.4679, V_Loss: 0.5867, V_Acc: 0.8738, T_Loss: 0.5684, T_Acc: 0.8768
+Epoch 5/15, Train Loss: 0.3453, V_Loss: 0.5667, V_Acc: 0.8794, T_Loss: 0.5570, T_Acc: 0.8809
+Epoch 6/15, Train Loss: 0.2487, V_Loss: 0.5811, V_Acc: 0.8801, T_Loss: 0.5702, T_Acc: 0.8823
+Epoch 7/15, Train Loss: 0.1851, V_Loss: 0.6014, V_Acc: 0.8788, T_Loss: 0.5841, T_Acc: 0.8830
+Epoch 8/15, Train Loss: 0.1416, V_Loss: 0.5997, V_Acc: 0.8824, T_Loss: 0.5778, T_Acc: 0.8842
+Epoch 9/15, Train Loss: 0.1107, V_Loss: 0.6019, V_Acc: 0.8825, T_Loss: 0.5800, T_Acc: 0.8836
+Epoch 10/15, Train Loss: 0.0911, V_Loss: 0.6033, V_Acc: 0.8839, T_Loss: 0.5814, T_Acc: 0.8854
+Epoch 11/15, Train Loss: 0.0756, V_Loss: 0.6095, V_Acc: 0.8825, T_Loss: 0.5886, T_Acc: 0.8861
+Epoch 12/15, Train Loss: 0.0646, V_Loss: 0.6083, V_Acc: 0.8844, T_Loss: 0.5818, T_Acc: 0.8863
+Epoch 13/15, Train Loss: 0.0583, V_Loss: 0.6123, V_Acc: 0.8840, T_Loss: 0.5885, T_Acc: 0.8876
+Epoch 14/15, Train Loss: 0.0522, V_Loss: 0.6179, V_Acc: 0.8845, T_Loss: 0.5989, T_Acc: 0.8864
+Epoch 15/15, Train Loss: 0.0511, V_Loss: 0.6202, V_Acc: 0.8837, T_Loss: 0.6017, T_Acc: 0.8863
+Final T_Loss: 0.6017, T_Acc: 0.8863
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251024-164842_finetuned_upmc_food.pt
+
+
+2025-10-24 20:17:04 - INFO  - finetune_experiments.py:main:51 -  4/9: finetuning on mm_imdb with seed 1569
+run_finetune:750 - seed = 1569
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task mm_imdb
+_run_task:718 - saving results to 20251024-201704_experiment_no_coattn
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 2.072645539311672, 'acc': 0.3629078269004822, 'auc': None}
+Epoch 1/15, Train Loss: 0.5612, V_Loss: 0.2600, V_Acc: 0.8997, T_Loss: 0.2568, T_Acc: 0.9004
+Epoch 2/15, Train Loss: 0.2345, V_Loss: 0.2060, V_Acc: 0.9193, T_Loss: 0.2024, T_Acc: 0.9204
+Epoch 3/15, Train Loss: 0.1938, V_Loss: 0.1892, V_Acc: 0.9250, T_Loss: 0.1875, T_Acc: 0.9258
+Epoch 4/15, Train Loss: 0.1697, V_Loss: 0.1912, V_Acc: 0.9243, T_Loss: 0.1900, T_Acc: 0.9246
+Epoch 5/15, Train Loss: 0.1497, V_Loss: 0.1861, V_Acc: 0.9275, T_Loss: 0.1840, T_Acc: 0.9271
+Epoch 6/15, Train Loss: 0.1328, V_Loss: 0.1896, V_Acc: 0.9269, T_Loss: 0.1894, T_Acc: 0.9269
+Epoch 7/15, Train Loss: 0.1182, V_Loss: 0.1963, V_Acc: 0.9272, T_Loss: 0.1955, T_Acc: 0.9266
+Epoch 8/15, Train Loss: 0.1072, V_Loss: 0.2000, V_Acc: 0.9265, T_Loss: 0.1991, T_Acc: 0.9267
+Early stopping at epoch 8. Best acc: 0.9275 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1840, T_Acc: 0.9271
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251024-201704_finetuned_mm_imdb.pt
+
+2025-10-24 20:46:41 - INFO  - finetune_experiments.py:main:51 -  5/9: finetuning on hateful_memes with seed 1569
+run_finetune:750 - seed = 1569
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task hateful_memes
+_run_task:718 - saving results to 20251024-204641_experiment_no_coattn
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 1.8802370340625445, 'acc': 0.5556666666666666, 'auc': 0.48728601539589445}
+Epoch 1/15, Train Loss: 1.4122, V_Loss: 0.7080, V_Acc: 0.5163, T_Loss: 0.7069, T_Acc: 0.5093, V_AUC: 0.5462, T_AUC: 0.5401
+Epoch 2/15, Train Loss: 0.8555, V_Loss: 0.7324, V_Acc: 0.6048, T_Loss: 0.6916, T_Acc: 0.6253, V_AUC: 0.5744, T_AUC: 0.6380
+Epoch 3/15, Train Loss: 0.6763, V_Loss: 0.7811, V_Acc: 0.5788, T_Loss: 0.7719, T_Acc: 0.6013, V_AUC: 0.6245, T_AUC: 0.6522
+Epoch 4/15, Train Loss: 0.5681, V_Loss: 0.8049, V_Acc: 0.5923, T_Loss: 0.7524, T_Acc: 0.6243, V_AUC: 0.6168, T_AUC: 0.6506
+Epoch 5/15, Train Loss: 0.4656, V_Loss: 0.9071, V_Acc: 0.5779, T_Loss: 0.8386, T_Acc: 0.6140, V_AUC: 0.6100, T_AUC: 0.6426
+Epoch 6/15, Train Loss: 0.3928, V_Loss: 0.9749, V_Acc: 0.5760, T_Loss: 0.9160, T_Acc: 0.6163, V_AUC: 0.6013, T_AUC: 0.6308
+Early stopping at epoch 6. Best AUC: 0.6245 at epoch 3
+restord model from epoch 3
+Final T_Loss: 0.7719, T_Acc: 0.6013, Test AUC: 0.6522
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251024-204641_finetuned_hateful_memes.pt
+2025-10-24 20:57:42 - INFO  - finetune_experiments.py:main:51 -  6/9: finetuning on upmc_food with seed 1569
+run_finetune:750 - seed = 1569
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task upmc_food
+_run_task:718 - saving results to 20251024-205742_experiment_no_coattn
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 10.719357995129137, 'acc': 0.012239497154951096, 'auc': None}
+Epoch 1/15, Train Loss: 4.3787, V_Loss: 1.2632, V_Acc: 0.8334, T_Loss: 1.2414, T_Acc: 0.8366
+Epoch 2/15, Train Loss: 0.9721, V_Loss: 0.6734, V_Acc: 0.8600, T_Loss: 0.6698, T_Acc: 0.8604
+Epoch 3/15, Train Loss: 0.6230, V_Loss: 0.6163, V_Acc: 0.8687, T_Loss: 0.6052, T_Acc: 0.8686
+Epoch 4/15, Train Loss: 0.4718, V_Loss: 0.5808, V_Acc: 0.8741, T_Loss: 0.5682, T_Acc: 0.8772
+Epoch 5/15, Train Loss: 0.3496, V_Loss: 0.5669, V_Acc: 0.8785, T_Loss: 0.5512, T_Acc: 0.8807
+Epoch 6/15, Train Loss: 0.2545, V_Loss: 0.5728, V_Acc: 0.8813, T_Loss: 0.5590, T_Acc: 0.8842
+Epoch 7/15, Train Loss: 0.1873, V_Loss: 0.5767, V_Acc: 0.8805, T_Loss: 0.5612, T_Acc: 0.8840
+Epoch 8/15, Train Loss: 0.1437, V_Loss: 0.5903, V_Acc: 0.8829, T_Loss: 0.5732, T_Acc: 0.8844
+Epoch 9/15, Train Loss: 0.1154, V_Loss: 0.5956, V_Acc: 0.8832, T_Loss: 0.5840, T_Acc: 0.8839
+Epoch 10/15, Train Loss: 0.0918, V_Loss: 0.5923, V_Acc: 0.8835, T_Loss: 0.5768, T_Acc: 0.8836
+Epoch 11/15, Train Loss: 0.0769, V_Loss: 0.5949, V_Acc: 0.8843, T_Loss: 0.5712, T_Acc: 0.8879
+Epoch 12/15, Train Loss: 0.0650, V_Loss: 0.6067, V_Acc: 0.8844, T_Loss: 0.5869, T_Acc: 0.8857
+Epoch 13/15, Train Loss: 0.0574, V_Loss: 0.6025, V_Acc: 0.8862, T_Loss: 0.5790, T_Acc: 0.8858
+Epoch 14/15, Train Loss: 0.0524, V_Loss: 0.6067, V_Acc: 0.8854, T_Loss: 0.5874, T_Acc: 0.8868
+Epoch 15/15, Train Loss: 0.0512, V_Loss: 0.6101, V_Acc: 0.8865, T_Loss: 0.5869, T_Acc: 0.8861
+Final T_Loss: 0.5869, T_Acc: 0.8861
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251024-205742_finetuned_upmc_food.pt
+
+
+2025-10-25 00:21:25 - INFO  - finetune_experiments.py:main:51 -  7/9: finetuning on mm_imdb with seed 1570
+run_finetune:750 - seed = 1570
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task mm_imdb
+_run_task:718 - saving results to 20251025-002125_experiment_no_coattn
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 2.072645539311672, 'acc': 0.3629078269004822, 'auc': None}
+Epoch 1/15, Train Loss: 0.5611, V_Loss: 0.2580, V_Acc: 0.9002, T_Loss: 0.2550, T_Acc: 0.9014
+Epoch 2/15, Train Loss: 0.2338, V_Loss: 0.2059, V_Acc: 0.9181, T_Loss: 0.2029, T_Acc: 0.9201
+Epoch 3/15, Train Loss: 0.1937, V_Loss: 0.1893, V_Acc: 0.9251, T_Loss: 0.1879, T_Acc: 0.9254
+Epoch 4/15, Train Loss: 0.1682, V_Loss: 0.1863, V_Acc: 0.9265, T_Loss: 0.1844, T_Acc: 0.9262
+Epoch 5/15, Train Loss: 0.1498, V_Loss: 0.1864, V_Acc: 0.9272, T_Loss: 0.1858, T_Acc: 0.9271
+Epoch 6/15, Train Loss: 0.1326, V_Loss: 0.1934, V_Acc: 0.9260, T_Loss: 0.1927, T_Acc: 0.9252
+Epoch 7/15, Train Loss: 0.1192, V_Loss: 0.1933, V_Acc: 0.9271, T_Loss: 0.1926, T_Acc: 0.9269
+Epoch 8/15, Train Loss: 0.1073, V_Loss: 0.1995, V_Acc: 0.9270, T_Loss: 0.1985, T_Acc: 0.9268
+Early stopping at epoch 8. Best acc: 0.9272 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.1858, T_Acc: 0.9271
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251025-002125_finetuned_mm_imdb.pt
+
+
+2025-10-25 00:49:21 - INFO  - finetune_experiments.py:main:51 -  8/9: finetuning on hateful_memes with seed 1570
+run_finetune:750 - seed = 1570
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task hateful_memes
+_run_task:718 - saving results to 20251025-004921_experiment_no_coattn
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 1.8802370340625445, 'acc': 0.5556666666666666, 'auc': 0.48728601539589445}
+Epoch 1/15, Train Loss: 1.4314, V_Loss: 0.7157, V_Acc: 0.4769, T_Loss: 0.7175, T_Acc: 0.4907, V_AUC: 0.5140, T_AUC: 0.5264
+Epoch 2/15, Train Loss: 0.9346, V_Loss: 0.7306, V_Acc: 0.5981, T_Loss: 0.6864, T_Acc: 0.6340, V_AUC: 0.5917, T_AUC: 0.6302
+Epoch 3/15, Train Loss: 0.7037, V_Loss: 0.7164, V_Acc: 0.5923, T_Loss: 0.6857, T_Acc: 0.6347, V_AUC: 0.6226, T_AUC: 0.6543
+Epoch 4/15, Train Loss: 0.5678, V_Loss: 0.7948, V_Acc: 0.6019, T_Loss: 0.7441, T_Acc: 0.6293, V_AUC: 0.6186, T_AUC: 0.6581
+Epoch 5/15, Train Loss: 0.4809, V_Loss: 0.8547, V_Acc: 0.5875, T_Loss: 0.8007, T_Acc: 0.6253, V_AUC: 0.6167, T_AUC: 0.6504
+Epoch 6/15, Train Loss: 0.4022, V_Loss: 1.0739, V_Acc: 0.5923, T_Loss: 1.0112, T_Acc: 0.6170, V_AUC: 0.6054, T_AUC: 0.6322
+Early stopping at epoch 6. Best AUC: 0.6226 at epoch 3
+restord model from epoch 3
+Final T_Loss: 0.6857, T_Acc: 0.6347, Test AUC: 0.6543
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251025-004921_finetuned_hateful_memes.pt
+
+
+2025-10-25 01:01:11 - INFO  - finetune_experiments.py:main:51 -  9/9: finetuning on upmc_food with seed 1570
+run_finetune:750 - seed = 1570
+run_finetune:770 - Loaded pretrained model from res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt for task upmc_food
+_run_task:718 - saving results to 20251025-010111_experiment_no_coattn
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 10.719357995129137, 'acc': 0.012239497154951096, 'auc': None}
+Epoch 1/15, Train Loss: 4.3734, V_Loss: 1.2414, V_Acc: 0.8336, T_Loss: 1.2232, T_Acc: 0.8374
+Epoch 2/15, Train Loss: 0.9602, V_Loss: 0.6793, V_Acc: 0.8590, T_Loss: 0.6659, T_Acc: 0.8613
+Epoch 3/15, Train Loss: 0.6210, V_Loss: 0.6107, V_Acc: 0.8680, T_Loss: 0.6073, T_Acc: 0.8689
+Epoch 4/15, Train Loss: 0.4669, V_Loss: 0.5801, V_Acc: 0.8750, T_Loss: 0.5687, T_Acc: 0.8762
+Epoch 5/15, Train Loss: 0.3429, V_Loss: 0.5797, V_Acc: 0.8777, T_Loss: 0.5557, T_Acc: 0.8823
+Epoch 6/15, Train Loss: 0.2521, V_Loss: 0.5723, V_Acc: 0.8802, T_Loss: 0.5564, T_Acc: 0.8831
+Epoch 7/15, Train Loss: 0.1819, V_Loss: 0.5864, V_Acc: 0.8817, T_Loss: 0.5687, T_Acc: 0.8844
+Epoch 8/15, Train Loss: 0.1393, V_Loss: 0.5909, V_Acc: 0.8820, T_Loss: 0.5715, T_Acc: 0.8854
+Epoch 9/15, Train Loss: 0.1124, V_Loss: 0.5935, V_Acc: 0.8843, T_Loss: 0.5660, T_Acc: 0.8882
+Epoch 10/15, Train Loss: 0.0916, V_Loss: 0.5992, V_Acc: 0.8843, T_Loss: 0.5772, T_Acc: 0.8854
+Epoch 11/15, Train Loss: 0.0770, V_Loss: 0.5970, V_Acc: 0.8846, T_Loss: 0.5704, T_Acc: 0.8876
+Epoch 12/15, Train Loss: 0.0634, V_Loss: 0.6022, V_Acc: 0.8854, T_Loss: 0.5772, T_Acc: 0.8890
+Epoch 13/15, Train Loss: 0.0571, V_Loss: 0.6001, V_Acc: 0.8872, T_Loss: 0.5685, T_Acc: 0.8909
+Epoch 14/15, Train Loss: 0.0512, V_Loss: 0.6094, V_Acc: 0.8852, T_Loss: 0.5828, T_Acc: 0.8880
+Epoch 15/15, Train Loss: 0.0487, V_Loss: 0.6131, V_Acc: 0.8854, T_Loss: 0.5842, T_Acc: 0.8887
+Final T_Loss: 0.5842, T_Acc: 0.8887
+Saved finetuned model to res/checkpoints/20251010-085859_pretrained_baseline/20251025-010111_finetuned_upmc_food.pt
+
+
+================================
+baseline full_coatts
+
+
+1/9: finetuning on mm_imdb with seed 1568
+2025-10-27 10:57:21 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1568
+2025-10-27 10:57:24 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task mm_imdb
+2025-10-27 10:57:24 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251027-105721_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.689628954032599, 'acc': 0.5171585083007812, 'auc': None}
+
+
+1/9: finetuning on mm_imdb with seed 1568
+2025-10-27 11:03:03 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1568
+2025-10-27 11:03:05 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task mm_imdb
+2025-10-27 11:03:05 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251027-110303_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.6896317384793208, 'acc': 0.5171501040458679, 'auc': None}
+Epoch 1/15, Train Loss: 0.4400, V_Loss: 0.2903, V_Acc: 0.8942, T_Loss: 0.2867, T_Acc: 0.8956
+Epoch 2/15, Train Loss: 0.2810, V_Loss: 0.2521, V_Acc: 0.9007, T_Loss: 0.2495, T_Acc: 0.9021
+Epoch 3/15, Train Loss: 0.2327, V_Loss: 0.2230, V_Acc: 0.9114, T_Loss: 0.2214, T_Acc: 0.9131
+Epoch 4/15, Train Loss: 0.2006, V_Loss: 0.1955, V_Acc: 0.9220, T_Loss: 0.1933, T_Acc: 0.9223
+Epoch 5/15, Train Loss: 0.1768, V_Loss: 0.1883, V_Acc: 0.9255, T_Loss: 0.1873, T_Acc: 0.9259
+Epoch 6/15, Train Loss: 0.1606, V_Loss: 0.1841, V_Acc: 0.9269, T_Loss: 0.1835, T_Acc: 0.9271
+Epoch 7/15, Train Loss: 0.1478, V_Loss: 0.1851, V_Acc: 0.9283, T_Loss: 0.1848, T_Acc: 0.9282
+Epoch 8/15, Train Loss: 0.1355, V_Loss: 0.1877, V_Acc: 0.9263, T_Loss: 0.1880, T_Acc: 0.9271
+Epoch 9/15, Train Loss: 0.1249, V_Loss: 0.1892, V_Acc: 0.9283, T_Loss: 0.1900, T_Acc: 0.9287
+Epoch 10/15, Train Loss: 0.1159, V_Loss: 0.1978, V_Acc: 0.9260, T_Loss: 0.1975, T_Acc: 0.9269
+Epoch 11/15, Train Loss: 0.1086, V_Loss: 0.2002, V_Acc: 0.9273, T_Loss: 0.2001, T_Acc: 0.9265
+Epoch 12/15, Train Loss: 0.1026, V_Loss: 0.2023, V_Acc: 0.9273, T_Loss: 0.2020, T_Acc: 0.9274
+Early stopping at epoch 12. Best acc: 0.9283 at epoch 9
+restord model from epoch 9
+Final T_Loss: 0.1900, T_Acc: 0.9287
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251027-110303_finetuned_mm_imdb.pt
+
+
+2/9: finetuning on hateful_memes with seed 1568
+2025-10-27 13:20:40 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1568
+2025-10-27 13:20:43 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task hateful_memes
+2025-10-27 13:20:43 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251027-132040_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.6924815051099087, 'acc': 0.5093333333333333, 'auc': 0.49957019794721413}
+Epoch 1/15, Train Loss: 0.8584, V_Loss: 0.7358, V_Acc: 0.5606, T_Loss: 0.7018, T_Acc: 0.5997, V_AUC: 0.5679, T_AUC: 0.6156
+Epoch 2/15, Train Loss: 0.7347, V_Loss: 0.6845, V_Acc: 0.6038, T_Loss: 0.6536, T_Acc: 0.6483, V_AUC: 0.6560, T_AUC: 0.6803
+Epoch 3/15, Train Loss: 0.6198, V_Loss: 0.6988, V_Acc: 0.6260, T_Loss: 0.6814, T_Acc: 0.6527, V_AUC: 0.6721, T_AUC: 0.6948
+Epoch 4/15, Train Loss: 0.5000, V_Loss: 0.7931, V_Acc: 0.6308, T_Loss: 0.7643, T_Acc: 0.6623, V_AUC: 0.6714, T_AUC: 0.6990
+Epoch 5/15, Train Loss: 0.3770, V_Loss: 0.8342, V_Acc: 0.6606, T_Loss: 0.8229, T_Acc: 0.6677, V_AUC: 0.6935, T_AUC: 0.7092
+Epoch 6/15, Train Loss: 0.3079, V_Loss: 0.9887, V_Acc: 0.6394, T_Loss: 0.9407, T_Acc: 0.6690, V_AUC: 0.6902, T_AUC: 0.7135
+Epoch 7/15, Train Loss: 0.2400, V_Loss: 1.0734, V_Acc: 0.6462, T_Loss: 0.9985, T_Acc: 0.6720, V_AUC: 0.6878, T_AUC: 0.7186
+Epoch 8/15, Train Loss: 0.1838, V_Loss: 1.1415, V_Acc: 0.6538, T_Loss: 1.1389, T_Acc: 0.6680, V_AUC: 0.6896, T_AUC: 0.7108
+Early stopping at epoch 8. Best AUC: 0.6935 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.8229, T_Acc: 0.6677, Test AUC: 0.7092
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251027-132040_finetuned_hateful_memes.pt
+
+
+3/9: finetuning on upmc_food with seed 1568
+2025-10-27 14:07:19 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1568
+2025-10-27 14:07:22 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task upmc_food
+2025-10-27 14:07:22 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251027-140719_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.629834487114423, 'acc': 0.010916308499872684, 'auc': None}
+Epoch 1/15, Train Loss: 3.2981, V_Loss: 0.8547, V_Acc: 0.8339, T_Loss: 0.8424, T_Acc: 0.8360
+Epoch 2/15, Train Loss: 0.7318, V_Loss: 0.6257, V_Acc: 0.8622, T_Loss: 0.6136, T_Acc: 0.8648
+Epoch 3/15, Train Loss: 0.5370, V_Loss: 0.5462, V_Acc: 0.8790, T_Loss: 0.5510, T_Acc: 0.8793
+Epoch 4/15, Train Loss: 0.4137, V_Loss: 0.4846, V_Acc: 0.8918, T_Loss: 0.4831, T_Acc: 0.8916
+Epoch 5/15, Train Loss: 0.3091, V_Loss: 0.4643, V_Acc: 0.8971, T_Loss: 0.4670, T_Acc: 0.8989
+Epoch 6/15, Train Loss: 0.2213, V_Loss: 0.4832, V_Acc: 0.8982, T_Loss: 0.4723, T_Acc: 0.8997
+Epoch 7/15, Train Loss: 0.1548, V_Loss: 0.4871, V_Acc: 0.9009, T_Loss: 0.4954, T_Acc: 0.9021
+Epoch 8/15, Train Loss: 0.1013, V_Loss: 0.4911, V_Acc: 0.9054, T_Loss: 0.4869, T_Acc: 0.9057
+Epoch 9/15, Train Loss: 0.0700, V_Loss: 0.5096, V_Acc: 0.9057, T_Loss: 0.4990, T_Acc: 0.9053
+Epoch 10/15, Train Loss: 0.0505, V_Loss: 0.5138, V_Acc: 0.9063, T_Loss: 0.5016, T_Acc: 0.9072
+Epoch 11/15, Train Loss: 0.0372, V_Loss: 0.5304, V_Acc: 0.9074, T_Loss: 0.5206, T_Acc: 0.9074
+Epoch 12/15, Train Loss: 0.0291, V_Loss: 0.5237, V_Acc: 0.9090, T_Loss: 0.5124, T_Acc: 0.9099
+Epoch 13/15, Train Loss: 0.0242, V_Loss: 0.5409, V_Acc: 0.9083, T_Loss: 0.5291, T_Acc: 0.9088
+Epoch 14/15, Train Loss: 0.0210, V_Loss: 0.5334, V_Acc: 0.9088, T_Loss: 0.5260, T_Acc: 0.9089
+Epoch 15/15, Train Loss: 0.0200, V_Loss: 0.5403, V_Acc: 0.9087, T_Loss: 0.5325, T_Acc: 0.9086
+Early stopping at epoch 15. Best acc: 0.9090 at epoch 12
+restord model from epoch 12
+Final T_Loss: 0.5124, T_Acc: 0.9099
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251027-140719_finetuned_upmc_food.pt
+
+
+4/9: finetuning on mm_imdb with seed 1569
+2025-10-28 00:36:05 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1569
+2025-10-28 00:36:07 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task mm_imdb
+2025-10-28 00:36:07 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251028-003605_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.6896317384793208, 'acc': 0.5171501040458679, 'auc': None}
+Epoch 1/15, Train Loss: 0.4404, V_Loss: 0.2900, V_Acc: 0.8917, T_Loss: 0.2865, T_Acc: 0.8922
+Epoch 2/15, Train Loss: 0.2837, V_Loss: 0.2585, V_Acc: 0.8995, T_Loss: 0.2554, T_Acc: 0.9009
+Epoch 3/15, Train Loss: 0.2411, V_Loss: 0.2239, V_Acc: 0.9129, T_Loss: 0.2242, T_Acc: 0.9136
+Epoch 4/15, Train Loss: 0.2082, V_Loss: 0.2034, V_Acc: 0.9193, T_Loss: 0.2020, T_Acc: 0.9191
+Epoch 5/15, Train Loss: 0.1851, V_Loss: 0.1928, V_Acc: 0.9236, T_Loss: 0.1913, T_Acc: 0.9244
+Epoch 6/15, Train Loss: 0.1673, V_Loss: 0.1868, V_Acc: 0.9262, T_Loss: 0.1864, T_Acc: 0.9266
+Epoch 7/15, Train Loss: 0.1535, V_Loss: 0.1874, V_Acc: 0.9272, T_Loss: 0.1874, T_Acc: 0.9277
+Epoch 8/15, Train Loss: 0.1418, V_Loss: 0.1907, V_Acc: 0.9262, T_Loss: 0.1918, T_Acc: 0.9257
+Epoch 9/15, Train Loss: 0.1313, V_Loss: 0.1899, V_Acc: 0.9263, T_Loss: 0.1911, T_Acc: 0.9268
+Epoch 10/15, Train Loss: 0.1226, V_Loss: 0.1946, V_Acc: 0.9274, T_Loss: 0.1968, T_Acc: 0.9272
+Epoch 11/15, Train Loss: 0.1152, V_Loss: 0.1979, V_Acc: 0.9270, T_Loss: 0.1997, T_Acc: 0.9270
+Epoch 12/15, Train Loss: 0.1089, V_Loss: 0.2016, V_Acc: 0.9280, T_Loss: 0.2033, T_Acc: 0.9275
+Epoch 13/15, Train Loss: 0.1041, V_Loss: 0.2041, V_Acc: 0.9271, T_Loss: 0.2063, T_Acc: 0.9266
+Epoch 14/15, Train Loss: 0.0993, V_Loss: 0.2098, V_Acc: 0.9257, T_Loss: 0.2118, T_Acc: 0.9258
+Epoch 15/15, Train Loss: 0.0970, V_Loss: 0.2151, V_Acc: 0.9254, T_Loss: 0.2175, T_Acc: 0.9253
+Early stopping at epoch 15. Best acc: 0.9280 at epoch 12
+restord model from epoch 12
+Final T_Loss: 0.2033, T_Acc: 0.9275
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251028-003605_finetuned_mm_imdb.pt
+
+
+5/9: finetuning on hateful_memes with seed 1569
+2025-10-28 03:27:30 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1569
+2025-10-28 03:27:32 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task hateful_memes
+2025-10-28 03:27:32 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251028-032730_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.6924815051099087, 'acc': 0.5093333333333333, 'auc': 0.49957019794721413}
+Epoch 1/15, Train Loss: 0.8536, V_Loss: 0.7320, V_Acc: 0.5596, T_Loss: 0.7014, T_Acc: 0.5870, V_AUC: 0.5705, T_AUC: 0.6139
+Epoch 2/15, Train Loss: 0.7164, V_Loss: 0.6996, V_Acc: 0.5923, T_Loss: 0.6653, T_Acc: 0.6383, V_AUC: 0.6465, T_AUC: 0.6746
+Epoch 3/15, Train Loss: 0.5864, V_Loss: 0.7405, V_Acc: 0.6154, T_Loss: 0.7064, T_Acc: 0.6610, V_AUC: 0.6675, T_AUC: 0.7055
+Epoch 4/15, Train Loss: 0.4729, V_Loss: 0.7802, V_Acc: 0.6529, T_Loss: 0.7543, T_Acc: 0.6567, V_AUC: 0.6844, T_AUC: 0.7067
+Epoch 5/15, Train Loss: 0.3617, V_Loss: 0.8717, V_Acc: 0.6356, T_Loss: 0.8574, T_Acc: 0.6693, V_AUC: 0.6888, T_AUC: 0.7066
+Epoch 6/15, Train Loss: 0.3022, V_Loss: 1.1240, V_Acc: 0.6433, T_Loss: 1.0924, T_Acc: 0.6590, V_AUC: 0.6847, T_AUC: 0.7019
+Epoch 7/15, Train Loss: 0.2256, V_Loss: 1.1483, V_Acc: 0.6413, T_Loss: 1.1191, T_Acc: 0.6650, V_AUC: 0.6859, T_AUC: 0.7105
+Epoch 8/15, Train Loss: 0.1666, V_Loss: 1.2268, V_Acc: 0.6413, T_Loss: 1.2191, T_Acc: 0.6663, V_AUC: 0.6853, T_AUC: 0.7041
+Early stopping at epoch 8. Best AUC: 0.6888 at epoch 5
+restord model from epoch 5
+Final T_Loss: 0.8574, T_Acc: 0.6693, Test AUC: 0.7066
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251028-032730_finetuned_hateful_memes.pt
+
+
+6/9: finetuning on upmc_food with seed 1569
+2025-10-28 04:14:07 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1569
+2025-10-28 04:14:09 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task upmc_food
+2025-10-28 04:14:09 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251028-041407_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.629834487114423, 'acc': 0.010916308499872684, 'auc': None}
+Epoch 1/15, Train Loss: 3.2860, V_Loss: 0.8198, V_Acc: 0.8358, T_Loss: 0.8081, T_Acc: 0.8382
+Epoch 2/15, Train Loss: 0.7317, V_Loss: 0.6089, V_Acc: 0.8646, T_Loss: 0.6048, T_Acc: 0.8675
+Epoch 3/15, Train Loss: 0.5411, V_Loss: 0.5678, V_Acc: 0.8742, T_Loss: 0.5523, T_Acc: 0.8741
+Epoch 4/15, Train Loss: 0.4156, V_Loss: 0.4793, V_Acc: 0.8917, T_Loss: 0.4785, T_Acc: 0.8901
+Epoch 5/15, Train Loss: 0.3134, V_Loss: 0.4860, V_Acc: 0.8926, T_Loss: 0.4700, T_Acc: 0.8947
+Epoch 6/15, Train Loss: 0.2307, V_Loss: 0.4925, V_Acc: 0.8978, T_Loss: 0.4815, T_Acc: 0.9014
+Epoch 7/15, Train Loss: 0.1578, V_Loss: 0.4955, V_Acc: 0.9014, T_Loss: 0.4784, T_Acc: 0.9033
+Epoch 8/15, Train Loss: 0.1095, V_Loss: 0.4908, V_Acc: 0.9044, T_Loss: 0.4810, T_Acc: 0.9056
+Epoch 9/15, Train Loss: 0.0720, V_Loss: 0.5021, V_Acc: 0.9048, T_Loss: 0.4884, T_Acc: 0.9061
+Epoch 10/15, Train Loss: 0.0491, V_Loss: 0.5152, V_Acc: 0.9063, T_Loss: 0.4995, T_Acc: 0.9073
+Epoch 11/15, Train Loss: 0.0364, V_Loss: 0.5318, V_Acc: 0.9066, T_Loss: 0.5168, T_Acc: 0.9084
+Epoch 12/15, Train Loss: 0.0291, V_Loss: 0.5409, V_Acc: 0.9068, T_Loss: 0.5215, T_Acc: 0.9079
+Epoch 13/15, Train Loss: 0.0249, V_Loss: 0.5514, V_Acc: 0.9052, T_Loss: 0.5296, T_Acc: 0.9072
+Epoch 14/15, Train Loss: 0.0219, V_Loss: 0.5627, V_Acc: 0.9052, T_Loss: 0.5375, T_Acc: 0.9075
+Epoch 15/15, Train Loss: 0.0193, V_Loss: 0.5593, V_Acc: 0.9049, T_Loss: 0.5288, T_Acc: 0.9087
+Early stopping at epoch 15. Best acc: 0.9068 at epoch 12
+restord model from epoch 12
+Final T_Loss: 0.5215, T_Acc: 0.9079
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251028-041407_finetuned_upmc_food.pt
+
+
+7/9: finetuning on mm_imdb with seed 1570
+2025-10-28 14:42:14 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1570
+2025-10-28 14:42:16 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task mm_imdb
+2025-10-28 14:42:16 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251028-144214_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=16613, len(val_loader)=4154
+Initial test performance: {'loss': 0.6896317384793208, 'acc': 0.5171501040458679, 'auc': None}
+Epoch 1/15, Train Loss: 0.4401, V_Loss: 0.2902, V_Acc: 0.8942, T_Loss: 0.2868, T_Acc: 0.8956
+Epoch 2/15, Train Loss: 0.2756, V_Loss: 0.2448, V_Acc: 0.9037, T_Loss: 0.2425, T_Acc: 0.9042
+Epoch 3/15, Train Loss: 0.2281, V_Loss: 0.2149, V_Acc: 0.9134, T_Loss: 0.2147, T_Acc: 0.9136
+Epoch 4/15, Train Loss: 0.1995, V_Loss: 0.2005, V_Acc: 0.9198, T_Loss: 0.1996, T_Acc: 0.9204
+Epoch 5/15, Train Loss: 0.1772, V_Loss: 0.1885, V_Acc: 0.9246, T_Loss: 0.1893, T_Acc: 0.9252
+Epoch 6/15, Train Loss: 0.1617, V_Loss: 0.1888, V_Acc: 0.9252, T_Loss: 0.1902, T_Acc: 0.9255
+Epoch 7/15, Train Loss: 0.1490, V_Loss: 0.1883, V_Acc: 0.9275, T_Loss: 0.1897, T_Acc: 0.9264
+Epoch 8/15, Train Loss: 0.1370, V_Loss: 0.1918, V_Acc: 0.9257, T_Loss: 0.1951, T_Acc: 0.9255
+Epoch 9/15, Train Loss: 0.1273, V_Loss: 0.1914, V_Acc: 0.9276, T_Loss: 0.1929, T_Acc: 0.9271
+Epoch 10/15, Train Loss: 0.1183, V_Loss: 0.1958, V_Acc: 0.9266, T_Loss: 0.1980, T_Acc: 0.9268
+Epoch 11/15, Train Loss: 0.1109, V_Loss: 0.1993, V_Acc: 0.9271, T_Loss: 0.2007, T_Acc: 0.9273
+Epoch 12/15, Train Loss: 0.1042, V_Loss: 0.2021, V_Acc: 0.9264, T_Loss: 0.2048, T_Acc: 0.9259
+Early stopping at epoch 12. Best acc: 0.9276 at epoch 9
+restord model from epoch 9
+Final T_Loss: 0.1929, T_Acc: 0.9271
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251028-144214_finetuned_mm_imdb.pt
+
+
+8/9: finetuning on hateful_memes with seed 1570
+2025-10-28 16:59:43 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1570
+2025-10-28 16:59:54 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task hateful_memes
+2025-10-28 16:59:54 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251028-165943_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=8500, len(val_loader)=1040
+Initial test performance: {'loss': 0.6924815051099087, 'acc': 0.5093333333333333, 'auc': 0.49957019794721413}
+Epoch 1/15, Train Loss: 0.8621, V_Loss: 0.7234, V_Acc: 0.5798, T_Loss: 0.6897, T_Acc: 0.6030, V_AUC: 0.5694, T_AUC: 0.6164
+Epoch 2/15, Train Loss: 0.7475, V_Loss: 0.6792, V_Acc: 0.6135, T_Loss: 0.6561, T_Acc: 0.6447, V_AUC: 0.6430, T_AUC: 0.6708
+Epoch 3/15, Train Loss: 0.6157, V_Loss: 0.7193, V_Acc: 0.6356, T_Loss: 0.6915, T_Acc: 0.6610, V_AUC: 0.6740, T_AUC: 0.6982
+Epoch 4/15, Train Loss: 0.4903, V_Loss: 0.8424, V_Acc: 0.6260, T_Loss: 0.8036, T_Acc: 0.6447, V_AUC: 0.6699, T_AUC: 0.6931
+Epoch 5/15, Train Loss: 0.3847, V_Loss: 0.8556, V_Acc: 0.6346, T_Loss: 0.8021, T_Acc: 0.6607, V_AUC: 0.6792, T_AUC: 0.7137
+Epoch 6/15, Train Loss: 0.3075, V_Loss: 1.0581, V_Acc: 0.6375, T_Loss: 1.0264, T_Acc: 0.6633, V_AUC: 0.6904, T_AUC: 0.7063
+Epoch 7/15, Train Loss: 0.2305, V_Loss: 1.2465, V_Acc: 0.6356, T_Loss: 1.1825, T_Acc: 0.6597, V_AUC: 0.6847, T_AUC: 0.7106
+Epoch 8/15, Train Loss: 0.1636, V_Loss: 1.2662, V_Acc: 0.6385, T_Loss: 1.2063, T_Acc: 0.6680, V_AUC: 0.6866, T_AUC: 0.7137
+Epoch 9/15, Train Loss: 0.1286, V_Loss: 1.3998, V_Acc: 0.6404, T_Loss: 1.3022, T_Acc: 0.6750, V_AUC: 0.6835, T_AUC: 0.7149
+Early stopping at epoch 9. Best AUC: 0.6904 at epoch 6
+restord model from epoch 6
+Final T_Loss: 1.0264, T_Acc: 0.6633, Test AUC: 0.7063
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251028-165943_finetuned_hateful_memes.pt
+
+
+9/9: finetuning on upmc_food with seed 1570
+2025-10-28 17:52:11 - INFO  - experiment_tracker.py:run_finetune:769 - seed = 1570
+2025-10-28 17:52:13 - INFO  - experiment_tracker.py:run_finetune:789 - Loaded pretrained model from res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt for task upmc_food
+2025-10-28 17:52:13 - INFO  - experiment_tracker.py:_run_task:737 - saving results to 20251028-175211_experiment_coattn_0-1-2-3-4-5-6-7-8-9-10-11
+len(train_loader))=65295, len(val_loader)=16324
+Initial test performance: {'loss': 4.629834487114423, 'acc': 0.010916308499872684, 'auc': None}
+Epoch 1/15, Train Loss: 3.2859, V_Loss: 0.8418, V_Acc: 0.8322, T_Loss: 0.8273, T_Acc: 0.8382
+Epoch 2/15, Train Loss: 0.7277, V_Loss: 0.5978, V_Acc: 0.8660, T_Loss: 0.5792, T_Acc: 0.8681
+Epoch 3/15, Train Loss: 0.5363, V_Loss: 0.5492, V_Acc: 0.8779, T_Loss: 0.5445, T_Acc: 0.8806
+Epoch 4/15, Train Loss: 0.4109, V_Loss: 0.5008, V_Acc: 0.8899, T_Loss: 0.4915, T_Acc: 0.8918
+Epoch 5/15, Train Loss: 0.3074, V_Loss: 0.4849, V_Acc: 0.8952, T_Loss: 0.4727, T_Acc: 0.8951
+Epoch 6/15, Train Loss: 0.2244, V_Loss: 0.4825, V_Acc: 0.9003, T_Loss: 0.4749, T_Acc: 0.8997
+Epoch 7/15, Train Loss: 0.1569, V_Loss: 0.4911, V_Acc: 0.9033, T_Loss: 0.4773, T_Acc: 0.9015
+Epoch 8/15, Train Loss: 0.1037, V_Loss: 0.4888, V_Acc: 0.9058, T_Loss: 0.4919, T_Acc: 0.9035
+Epoch 9/15, Train Loss: 0.0737, V_Loss: 0.5132, V_Acc: 0.9060, T_Loss: 0.5003, T_Acc: 0.9048
+Epoch 10/15, Train Loss: 0.0478, V_Loss: 0.5250, V_Acc: 0.9047, T_Loss: 0.5237, T_Acc: 0.9056
+Epoch 11/15, Train Loss: 0.0377, V_Loss: 0.5316, V_Acc: 0.9075, T_Loss: 0.5157, T_Acc: 0.9076
+Epoch 12/15, Train Loss: 0.0291, V_Loss: 0.5438, V_Acc: 0.9065, T_Loss: 0.5286, T_Acc: 0.9070
+Epoch 13/15, Train Loss: 0.0243, V_Loss: 0.5405, V_Acc: 0.9071, T_Loss: 0.5265, T_Acc: 0.9088
+Epoch 14/15, Train Loss: 0.0216, V_Loss: 0.5480, V_Acc: 0.9082, T_Loss: 0.5331, T_Acc: 0.9074
+Epoch 15/15, Train Loss: 0.0206, V_Loss: 0.5377, V_Acc: 0.9085, T_Loss: 0.5222, T_Acc: 0.9102
+Final T_Loss: 0.5222, T_Acc: 0.9102
+Saved finetuned model to res/checkpoints/20251025-105249_pretrained_bl_full_coattn/20251028-175211_finetuned_upmc_food.pt
+
+

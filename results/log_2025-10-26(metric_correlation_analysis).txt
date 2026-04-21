@@ -1,0 +1,884 @@
+num_samples=64: avg running time: 13.27s ± 1.81s over 69 models
+num_samples=128: avg running time: 9.85s ± 1.47s over 69 models
+num_samples=256: avg running time: 11.26s ± 1.06s over 69 models
+num_samples=512: avg running time: 14.92s ± 0.92s over 69 models
+num_samples=1024: avg running time: 26.75s ± 1.68s over 69 models
+num_samples=1536: avg running time: 46.35s ± 2.11s over 69 models
+num_samples=2048: avg running time: 63.44s ± 2.03s over 69 models
+
+
+-------------------------
+analysis for mknn with 64 vs. 256
+Within-model layer ordering:
+Mean within-model: 0.7469 ± 0.2043
+p values: mean p=0.0518 ± 0.1562
+
+
+-------------------------
+analysis for mknn with 128 vs. 256
+Within-model layer ordering:
+Mean within-model: 0.8297 ± 0.1932
+p values: mean p=0.0326 ± 0.0994
+
+
+-------------------------
+analysis for mknn with 256 vs. 512
+Within-model layer ordering:
+Mean within-model: 0.8129 ± 0.2766
+p values: mean p=0.0462 ± 0.1411
+
+
+-------------------------
+analysis for mknn with 64 vs. 1024
+Within-model layer ordering:
+Mean within-model: 0.7143 ± 0.3287
+p values: mean p=0.0845 ± 0.2132
+
+
+-------------------------
+analysis for mknn with 64 vs. 1536
+Within-model layer ordering:
+Mean within-model: 0.6647 ± 0.4090
+p values: mean p=0.0482 ± 0.1131
+
+
+-------------------------
+analysis for mknn with 128 vs. 1536
+Within-model layer ordering:
+Mean within-model: 0.6795 ± 0.3961
+p values: mean p=0.0680 ± 0.1406
+
+
+-------------------------
+analysis for mknn with 256 vs. 1536
+Within-model layer ordering:
+Mean within-model: 0.7376 ± 0.3802
+p values: mean p=0.0523 ± 0.1491
+
+
+-------------------------
+analysis for mknn with 512 vs. 1536
+Within-model layer ordering:
+Mean within-model: 0.8747 ± 0.2206
+p values: mean p=0.0337 ± 0.1302
+
+
+-------------------------
+analysis for mknn with 1024 vs. 1536
+Within-model layer ordering:
+Mean within-model: 0.9328 ± 0.1091
+p values: mean p=0.0047 ± 0.0215
+
+
+-------------------------
+analysis for mknn with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6569 ± 0.4296
+p values: mean p=0.0522 ± 0.1317
+
+
+-------------------------
+analysis for mknn with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6638 ± 0.4284
+p values: mean p=0.0636 ± 0.1467
+
+
+-------------------------
+analysis for mknn with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7173 ± 0.4072
+p values: mean p=0.0572 ± 0.1637
+
+
+-------------------------
+analysis for mknn with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8655 ± 0.2346
+p values: mean p=0.0532 ± 0.1825
+
+
+-------------------------
+analysis for mknn with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9140 ± 0.1288
+p values: mean p=0.0071 ± 0.0260
+
+
+-------------------------
+analysis for mknn with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9662 ± 0.0480
+p values: mean p=0.0001 ± 0.0005
+avg rank for mknn      (64 vs 2048): 0.6576 (std:0.43057029739559516),
+p=0.0526 (std:0.13374843574209724)
+avg rank for mknn      (128 vs 2048): 0.6631 (std:0.4288624939099313),
+p=0.0643 (std:0.1499644769608678)
+avg rank for mknn      (256 vs 2048): 0.7154 (std:0.4101302317107771),
+p=0.0560 (std:0.1604210088958308)
+avg rank for mknn      (512 vs 2048): 0.8666 (std:0.23166983494349586),
+p=0.0511 (std:0.17573407505682384)
+
+
+-------------------------
+analysis for cka with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8964 ± 0.1353
+p values: mean p=0.0080 ± 0.0276
+
+
+-------------------------
+analysis for cka with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9259 ± 0.1193
+p values: mean p=0.0070 ± 0.0345
+
+
+-------------------------
+analysis for cka with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9410 ± 0.1181
+p values: mean p=0.0085 ± 0.0546
+
+
+-------------------------
+analysis for cka with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9646 ± 0.0738
+p values: mean p=0.0014 ± 0.0102
+
+
+-------------------------
+analysis for cka with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9771 ± 0.0635
+p values: mean p=0.0010 ± 0.0080
+
+
+-------------------------
+analysis for cka with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9875 ± 0.0330
+p values: mean p=0.0000 ± 0.0002
+avg rank for cka       (64 vs 2048): 0.8964 (std:0.13528691843579543),
+p=0.0080 (std:0.02755228096725851)
+avg rank for cka       (128 vs 2048): 0.9259 (std:0.11926691964183991),
+p=0.0070 (std:0.03448151160656137)
+avg rank for cka       (256 vs 2048): 0.9410 (std:0.11812143333806399),
+p=0.0085 (std:0.05460138753138897)
+avg rank for cka       (512 vs 2048): 0.9646 (std:0.07378532827354128),
+p=0.0014 (std:0.010173652795149328)
+
+
+-------------------------
+analysis for cka_rbf with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8873 ± 0.1560
+p values: mean p=0.0158 ± 0.0583
+
+
+-------------------------
+analysis for cka_rbf with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9034 ± 0.1743
+p values: mean p=0.0247 ± 0.1204
+
+
+-------------------------
+analysis for cka_rbf with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9269 ± 0.1528
+p values: mean p=0.0188 ± 0.1040
+
+
+-------------------------
+analysis for cka_rbf with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9553 ± 0.1020
+p values: mean p=0.0054 ± 0.0396
+
+
+-------------------------
+analysis for cka_rbf with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9744 ± 0.0766
+p values: mean p=0.0025 ± 0.0199
+
+
+-------------------------
+analysis for cka_rbf with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9851 ± 0.0493
+p values: mean p=0.0004 ± 0.0031
+avg rank for cka_rbf   (64 vs 2048): 0.8873 (std:0.15597146397726258),
+p=0.0158 (std:0.0582507077371095)
+avg rank for cka_rbf   (128 vs 2048): 0.9034 (std:0.17427205644917038),
+p=0.0247 (std:0.12042914146374147)
+avg rank for cka_rbf   (256 vs 2048): 0.9269 (std:0.15283180088027812),
+p=0.0188 (std:0.1040285870545943)
+avg rank for cka_rbf   (512 vs 2048): 0.9553 (std:0.10198814710202908),
+p=0.0054 (std:0.03961416086411117)
+
+
+-------------------------
+analysis for svcca with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6893 ± 0.4152
+p values: mean p=0.0448 ± 0.1453
+
+
+-------------------------
+analysis for svcca with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7104 ± 0.3964
+p values: mean p=0.0669 ± 0.2046
+
+
+-------------------------
+analysis for svcca with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7846 ± 0.3101
+p values: mean p=0.1007 ± 0.2607
+
+
+-------------------------
+analysis for svcca with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8294 ± 0.1845
+p values: mean p=0.0299 ± 0.1235
+
+
+-------------------------
+analysis for svcca with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8636 ± 0.1299
+p values: mean p=0.0102 ± 0.0509
+
+
+-------------------------
+analysis for svcca with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8920 ± 0.0918
+p values: mean p=0.0021 ± 0.0069
+avg rank for svcca     (64 vs 2048): 0.6893 (std:0.4152140603679557),
+p=0.0448 (std:0.14529985109934254)
+avg rank for svcca     (128 vs 2048): 0.7104 (std:0.39642057529101465),
+p=0.0669 (std:0.2046253202428092)
+avg rank for svcca     (256 vs 2048): 0.7846 (std:0.3101164440230128),
+p=0.1007 (std:0.2607179920524864)
+avg rank for svcca     (512 vs 2048): 0.8294 (std:0.18446597951016017),
+p=0.0299 (std:0.123496593334716)
+
+
+-------------------------
+analysis for cknna with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6808 ± 0.3725
+p values: mean p=0.0650 ± 0.1997
+
+
+-------------------------
+analysis for cknna with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6383 ± 0.4305
+p values: mean p=0.0465 ± 0.1320
+
+
+-------------------------
+analysis for cknna with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6475 ± 0.4425
+p values: mean p=0.0601 ± 0.1572
+
+
+-------------------------
+analysis for cknna with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8156 ± 0.2899
+p values: mean p=0.0703 ± 0.2082
+
+
+-------------------------
+analysis for cknna with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9073 ± 0.1515
+p values: mean p=0.0145 ± 0.0545
+
+
+-------------------------
+analysis for cknna with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9701 ± 0.0393
+p values: mean p=0.0001 ± 0.0003
+avg rank for cknna     (64 vs 2048): 0.6808 (std:0.37252208859146135),
+p=0.0650 (std:0.1997065751853495)
+avg rank for cknna     (128 vs 2048): 0.6383 (std:0.43048543557557295),
+p=0.0465 (std:0.13197141963550954)
+avg rank for cknna     (256 vs 2048): 0.6475 (std:0.44252381518104783),
+p=0.0601 (std:0.15722926367501414)
+avg rank for cknna     (512 vs 2048): 0.8156 (std:0.28989298686601983),
+p=0.0703 (std:0.20818268752097363)
+
+
+-------------------------
+analysis for cycle_knn with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: nan ± nan
+p values: mean p=nan ± nan
+
+
+-------------------------
+analysis for cycle_knn with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6497 ± 0.2962
+p values: mean p=0.0602 ± 0.1513
+
+
+-------------------------
+analysis for cycle_knn with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7189 ± 0.2556
+p values: mean p=0.0540 ± 0.1381
+
+
+-------------------------
+analysis for cycle_knn with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7702 ± 0.2644
+p values: mean p=0.0649 ± 0.1984
+
+
+-------------------------
+analysis for cycle_knn with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8432 ± 0.2211
+p values: mean p=0.0466 ± 0.1564
+
+
+-------------------------
+analysis for cycle_knn with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8957 ± 0.1634
+p values: mean p=0.0193 ± 0.0918
+avg rank for cycle_knn (64 vs 2048): 0.5632 (std:0.3451613731315335),
+p=0.0829 (std:0.150417821215506)
+avg rank for cycle_knn (128 vs 2048): 0.6466 (std:0.30173005662820396),
+p=0.0561 (std:0.14648323272777725)
+avg rank for cycle_knn (256 vs 2048): 0.7151 (std:0.2585389005801642),
+p=0.0496 (std:0.12267988973781982)
+avg rank for cycle_knn (512 vs 2048): 0.7689 (std:0.26690899811817714),
+p=0.0627 (std:0.19136637750679802)
+
+
+-------------------------
+analysis for procrustes with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9370 ± 0.0910
+p values: mean p=0.0011 ± 0.0033
+
+
+-------------------------
+analysis for procrustes with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9639 ± 0.0544
+p values: mean p=0.0001 ± 0.0005
+
+
+-------------------------
+analysis for procrustes with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9803 ± 0.0334
+p values: mean p=0.0000 ± 0.0002
+
+
+-------------------------
+analysis for procrustes with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9894 ± 0.0229
+p values: mean p=0.0000 ± 0.0001
+
+
+-------------------------
+analysis for procrustes with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9952 ± 0.0150
+p values: mean p=0.0000 ± 0.0000
+
+
+-------------------------
+analysis for procrustes with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9987 ± 0.0036
+p values: mean p=0.0000 ± 0.0000
+avg rank for procrustes (64 vs 2048): 0.9370 (std:0.0910025383210911),
+p=0.0011 (std:0.0033287757219309503)
+avg rank for procrustes (128 vs 2048): 0.9639 (std:0.0543585917614547),
+p=0.0001 (std:0.0004784539688663475)
+avg rank for procrustes (256 vs 2048): 0.9803 (std:0.03342669136140431),
+p=0.0000 (std:0.00019313556528158493)
+avg rank for procrustes (512 vs 2048): 0.9894 (std:0.022888930743419238),
+p=0.0000 (std:6.225765094576475e-05)
+
+
+-------------------------
+analysis for jaccard with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6593 ± 0.4271
+p values: mean p=0.0541 ± 0.1433
+
+
+-------------------------
+analysis for jaccard with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6615 ± 0.4293
+p values: mean p=0.0611 ± 0.1398
+
+
+-------------------------
+analysis for jaccard with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7085 ± 0.4118
+p values: mean p=0.0558 ± 0.1665
+
+
+-------------------------
+analysis for jaccard with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8586 ± 0.2291
+p values: mean p=0.0517 ± 0.1723
+
+
+-------------------------
+analysis for jaccard with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9077 ± 0.1381
+p values: mean p=0.0093 ± 0.0339
+
+
+-------------------------
+analysis for jaccard with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9646 ± 0.0529
+p values: mean p=0.0001 ± 0.0005
+avg rank for jaccard   (64 vs 2048): 0.6593 (std:0.4270556101572526),
+p=0.0541 (std:0.14334674156277427)
+avg rank for jaccard   (128 vs 2048): 0.6615 (std:0.42930410240926486),
+p=0.0611 (std:0.13977805100421628)
+avg rank for jaccard   (256 vs 2048): 0.7085 (std:0.4117603278680149),
+p=0.0558 (std:0.16653580242087582)
+avg rank for jaccard   (512 vs 2048): 0.8586 (std:0.22908738962164654),
+p=0.0517 (std:0.17229827755165739)
+
+
+-------------------------
+analysis for rsa with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6685 ± 0.3972
+p values: mean p=0.0828 ± 0.1707
+
+
+-------------------------
+analysis for rsa with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7340 ± 0.4083
+p values: mean p=0.0766 ± 0.2062
+
+
+-------------------------
+analysis for rsa with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.7736 ± 0.3857
+p values: mean p=0.0503 ± 0.1547
+
+
+-------------------------
+analysis for rsa with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8519 ± 0.2738
+p values: mean p=0.0260 ± 0.0778
+
+
+-------------------------
+analysis for rsa with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9520 ± 0.0629
+p values: mean p=0.0004 ± 0.0021
+
+
+-------------------------
+analysis for rsa with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9612 ± 0.0721
+p values: mean p=0.0013 ± 0.0090
+avg rank for rsa       (64 vs 2048): 0.6685 (std:0.3972189248288887),
+p=0.0828 (std:0.17074030813538293)
+avg rank for rsa       (128 vs 2048): 0.7340 (std:0.40833627072637196),
+p=0.0766 (std:0.20619718757504615)
+avg rank for rsa       (256 vs 2048): 0.7736 (std:0.38571684409747087),
+p=0.0503 (std:0.1547004514507207)
+avg rank for rsa       (512 vs 2048): 0.8519 (std:0.2737659471151046),
+p=0.0260 (std:0.07780586245474665)
+
+
+-------------------------
+analysis for r2 with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6054 ± 0.3950
+p values: mean p=0.0675 ± 0.1142
+
+
+-------------------------
+analysis for r2 with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6210 ± 0.3857
+p values: mean p=0.0934 ± 0.1914
+
+
+-------------------------
+analysis for r2 with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6624 ± 0.3245
+p values: mean p=0.1089 ± 0.2012
+
+
+-------------------------
+analysis for r2 with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.6095 ± 0.3773
+p values: mean p=0.1293 ± 0.2187
+
+
+-------------------------
+analysis for r2 with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: -0.3257 ± 0.3987
+p values: mean p=0.1883 ± 0.2007
+
+
+-------------------------
+analysis for r2 with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8602 ± 0.1717
+p values: mean p=0.0248 ± 0.1062
+avg rank for r2        (64 vs 2048): 0.6054 (std:0.3949539264817921),
+p=0.0675 (std:0.11422280964487562)
+avg rank for r2        (128 vs 2048): 0.6210 (std:0.38568281024177126),
+p=0.0934 (std:0.19136006508562994)
+avg rank for r2        (256 vs 2048): 0.6624 (std:0.3244750091252094),
+p=0.1089 (std:0.20118795959581387)
+avg rank for r2        (512 vs 2048): 0.6095 (std:0.37726866382527474),
+p=0.1293 (std:0.21867400344997937)
+
+
+-------------------------
+analysis for aligned_cosine_similarity with 64 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9332 ± 0.0858
+p values: mean p=0.0020 ± 0.0116
+
+
+-------------------------
+analysis for aligned_cosine_similarity with 128 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9522 ± 0.0627
+p values: mean p=0.0004 ± 0.0017
+
+
+-------------------------
+analysis for aligned_cosine_similarity with 256 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9722 ± 0.0372
+p values: mean p=0.0000 ± 0.0001
+
+
+-------------------------
+analysis for aligned_cosine_similarity with 512 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9854 ± 0.0166
+p values: mean p=0.0000 ± 0.0000
+
+
+-------------------------
+analysis for aligned_cosine_similarity with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9947 ± 0.0093
+p values: mean p=0.0000 ± 0.0000
+
+
+-------------------------
+analysis for aligned_cosine_similarity with 1536 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9974 ± 0.0056
+p values: mean p=0.0000 ± 0.0000
+avg rank for aligned_cosine_similarity (64 vs 2048): 0.9332 (std:0.08580800499658853),
+p=0.0020 (std:0.011612548522952394)
+avg rank for aligned_cosine_similarity (128 vs 2048): 0.9522 (std:0.06272413321763756),
+p=0.0004 (std:0.0016745667603137483)
+avg rank for aligned_cosine_similarity (256 vs 2048): 0.9722 (std:0.03723208921449297),
+p=0.0000 (std:0.00011557118503409362)
+avg rank for aligned_cosine_similarity (512 vs 2048): 0.9854 (std:0.016571548341720622),
+p=0.0000 (std:2.253745624562196e-06)
+avg rank for mknn      (512 vs 1024): 0.8814 (std:0.19884075943325336),
+p=0.0258 (std:0.0999431562466672)
+avg rank for mknn      (512 vs 1536): 0.8758 (std:0.21839196778898162),
+p=0.0326 (std:0.12629409073087425)
+avg rank for mknn      (512 vs 2048): 0.8666 (std:0.23166983494349586),
+p=0.0511 (std:0.17573407505682384)
+avg rank for cka       (512 vs 1024): 0.9798 (std:0.03524839537547633),
+p=0.0000 (std:0.00013005673427243566)
+avg rank for cka       (512 vs 1536): 0.9713 (std:0.05226507802952962),
+p=0.0002 (std:0.0016672389881982655)
+avg rank for cka       (512 vs 2048): 0.9646 (std:0.07378532827354128),
+p=0.0014 (std:0.010173652795149328)
+avg rank for cka_rbf   (512 vs 1024): 0.9794 (std:0.03728749885737701),
+p=0.0001 (std:0.0006931288343344325)
+avg rank for cka_rbf   (512 vs 1536): 0.9709 (std:0.04949992971116129),
+p=0.0001 (std:0.0006586778697725791)
+avg rank for cka_rbf   (512 vs 2048): 0.9553 (std:0.10198814710202908),
+p=0.0054 (std:0.03961416086411117)
+avg rank for svcca     (512 vs 1024): 0.8104 (std:0.19763989229241916),
+p=0.0412 (std:0.14492331318732263)
+avg rank for svcca     (512 vs 1536): 0.8231 (std:0.18017398412775545),
+p=0.0278 (std:0.08256444238391877)
+avg rank for svcca     (512 vs 2048): 0.8294 (std:0.18446597951016017),
+p=0.0299 (std:0.123496593334716)
+avg rank for cknna     (512 vs 1024): 0.8575 (std:0.23489257646123385),
+p=0.0371 (std:0.1567282219703436)
+avg rank for cknna     (512 vs 1536): 0.8274 (std:0.2769869820954323),
+p=0.0605 (std:0.17664565905786297)
+avg rank for cknna     (512 vs 2048): 0.8156 (std:0.28989298686601983),
+p=0.0703 (std:0.20818268752097363)
+avg rank for cycle_knn (512 vs 1024): 0.8734 (std:0.1307954589745004),
+p=0.0102 (std:0.045427941035074)
+avg rank for cycle_knn (512 vs 1536): 0.8458 (std:0.15423922616343605),
+p=0.0204 (std:0.10044987950125259)
+avg rank for cycle_knn (512 vs 2048): 0.7689 (std:0.26690899811817714),
+p=0.0627 (std:0.19136637750679802)
+avg rank for procrustes (512 vs 1024): 0.9955 (std:0.008246010178091786),
+p=0.0000 (std:1.2307843982553855e-07)
+avg rank for procrustes (512 vs 1536): 0.9917 (std:0.020630714298306964),
+p=0.0000 (std:6.227308081785296e-05)
+avg rank for procrustes (512 vs 2048): 0.9894 (std:0.022888930743419238),
+p=0.0000 (std:6.225765094576475e-05)
+avg rank for jaccard   (512 vs 1024): 0.8747 (std:0.21164927156910435),
+p=0.0310 (std:0.11983071686795502)
+avg rank for jaccard   (512 vs 1536): 0.8721 (std:0.21776049736101075),
+p=0.0285 (std:0.11744044279032588)
+avg rank for jaccard   (512 vs 2048): 0.8586 (std:0.22908738962164654),
+p=0.0517 (std:0.17229827755165739)
+avg rank for rsa       (512 vs 1024): 0.8554 (std:0.30318967226072846),
+p=0.0524 (std:0.1871954620243729)
+avg rank for rsa       (512 vs 1536): 0.8532 (std:0.2675032804257047),
+p=0.0465 (std:0.16353170778096446)
+avg rank for rsa       (512 vs 2048): 0.8519 (std:0.2737659471151046),
+p=0.0260 (std:0.07780586245474665)
+avg rank for r2        (512 vs 1024): -0.5574 (std:0.25726504135223993),
+p=0.1728 (std:0.2650774064455134)
+avg rank for r2        (512 vs 1536): 0.5714 (std:0.45105127096661324),
+p=0.1084 (std:0.2333093027685521)
+avg rank for r2        (512 vs 2048): 0.6095 (std:0.37726866382527474),
+p=0.1293 (std:0.21867400344997937)
+avg rank for aligned_cosine_similarity (512 vs 1024): 0.9897 (std:0.013501735063043148),
+p=0.0000 (std:7.024067211958531e-07)
+avg rank for aligned_cosine_similarity (512 vs 1536): 0.9876 (std:0.014636970696224551),
+p=0.0000 (std:7.412288091449106e-07)
+avg rank for aligned_cosine_similarity (512 vs 2048): 0.9854 (std:0.016571548341720622),
+p=0.0000 (std:2.253745624562196e-06)
+
+
+-------------------------
+analysis for mknn with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9140 ± 0.1288
+p values: mean p=0.0071 ± 0.0260
+
+
+-------------------------
+analysis for cka with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9771 ± 0.0635
+p values: mean p=0.0010 ± 0.0080
+
+
+-------------------------
+analysis for cka_rbf with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9744 ± 0.0766
+p values: mean p=0.0025 ± 0.0199
+
+
+-------------------------
+analysis for svcca with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8636 ± 0.1299
+p values: mean p=0.0102 ± 0.0509
+
+
+-------------------------
+analysis for cknna with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9073 ± 0.1515
+p values: mean p=0.0145 ± 0.0545
+
+
+-------------------------
+analysis for cycle_knn with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.8432 ± 0.2211
+p values: mean p=0.0466 ± 0.1564
+
+
+-------------------------
+analysis for procrustes with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9952 ± 0.0150
+p values: mean p=0.0000 ± 0.0000
+
+
+-------------------------
+analysis for jaccard with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9077 ± 0.1381
+p values: mean p=0.0093 ± 0.0339
+
+
+-------------------------
+analysis for rsa with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9520 ± 0.0629
+p values: mean p=0.0004 ± 0.0021
+
+
+-------------------------
+analysis for r2 with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: -0.3257 ± 0.3987
+p values: mean p=0.1883 ± 0.2007
+
+
+-------------------------
+analysis for aligned_cosine_similarity with 1024 vs. 2048
+Within-model layer ordering:
+Mean within-model: 0.9947 ± 0.0093
+p values: mean p=0.0000 ± 0.0000
+2025-10-26 15:42:52 - INFO  - metric_analysis.py:main:367 - -------------------------
+
+
+metric correlation analysis:
+2025-10-26 15:42:52 - INFO  - metric_analysis.py:compare_metrics_correlation:110 -
+==================================================
+2025-10-26 15:42:52 - INFO  - metric_analysis.py:compare_metrics_correlation:111 - Metric correlations at 1024 samples
+2025-10-26 15:42:52 - INFO  - metric_analysis.py:compare_metrics_correlation:116 - Spearman correlations between metrics:
+ mknn         vs cka         : r=0.956, p=0.0000
+ mknn         vs cka_rbf     : r=0.954, p=0.0000
+ mknn         vs svcca       : r=0.942, p=0.0000
+ mknn         vs cknna       : r=0.954, p=0.0000
+ mknn         vs cycle_knn   : r=0.914, p=0.0000
+ mknn         vs procrustes  : r=0.607, p=0.0000
+ mknn         vs jaccard     : r=1.000, p=0.0000
+ mknn         vs rsa         : r=0.929, p=0.0000
+ mknn         vs r2          : r=-0.696, p=0.0000
+ mknn         vs aligned_cosine_similarity: r=0.948, p=0.0000
+ cka          vs cka_rbf     : r=0.999, p=0.0000
+ cka          vs svcca       : r=0.907, p=0.0000
+ cka          vs cknna       : r=0.944, p=0.0000
+ cka          vs cycle_knn   : r=0.879, p=0.0000
+ cka          vs procrustes  : r=0.635, p=0.0000
+ cka          vs jaccard     : r=0.955, p=0.0000
+ cka          vs rsa         : r=0.942, p=0.0000
+ cka          vs r2          : r=-0.709, p=0.0000
+ cka          vs aligned_cosine_similarity: r=0.952, p=0.0000
+ cka_rbf      vs svcca       : r=0.900, p=0.0000
+ cka_rbf      vs cknna       : r=0.949, p=0.0000
+ cka_rbf      vs cycle_knn   : r=0.880, p=0.0000
+ cka_rbf      vs procrustes  : r=0.654, p=0.0000
+ cka_rbf      vs jaccard     : r=0.953, p=0.0000
+ cka_rbf      vs rsa         : r=0.937, p=0.0000
+ cka_rbf      vs r2          : r=-0.728, p=0.0000
+ cka_rbf      vs aligned_cosine_similarity: r=0.952, p=0.0000
+ svcca        vs cknna       : r=0.885, p=0.0000
+ svcca        vs cycle_knn   : r=0.892, p=0.0000
+ svcca        vs procrustes  : r=0.582, p=0.0000
+ svcca        vs jaccard     : r=0.941, p=0.0000
+ svcca        vs rsa         : r=0.900, p=0.0000
+ svcca        vs r2          : r=-0.637, p=0.0000
+ svcca        vs aligned_cosine_similarity: r=0.899, p=0.0000
+ cknna        vs cycle_knn   : r=0.884, p=0.0000
+ cknna        vs procrustes  : r=0.687, p=0.0000
+ cknna        vs jaccard     : r=0.954, p=0.0000
+ cknna        vs rsa         : r=0.902, p=0.0000
+ cknna        vs r2          : r=-0.762, p=0.0000
+ cknna        vs aligned_cosine_similarity: r=0.945, p=0.0000
+ cycle_knn    vs procrustes  : r=0.649, p=0.0000
+ cycle_knn    vs jaccard     : r=0.914, p=0.0000
+ cycle_knn    vs rsa         : r=0.856, p=0.0000
+ cycle_knn    vs r2          : r=-0.670, p=0.0000
+ cycle_knn    vs aligned_cosine_similarity: r=0.861, p=0.0000
+ procrustes   vs jaccard     : r=0.609, p=0.0000
+ procrustes   vs rsa         : r=0.549, p=0.0000
+ procrustes   vs r2          : r=-0.862, p=0.0000
+ procrustes   vs aligned_cosine_similarity: r=0.597, p=0.0000
+ jaccard      vs rsa         : r=0.928, p=0.0000
+ jaccard      vs r2          : r=-0.699, p=0.0000
+ jaccard      vs aligned_cosine_similarity: r=0.946, p=0.0000
+ rsa          vs r2          : r=-0.624, p=0.0000
+ rsa          vs aligned_cosine_similarity: r=0.914, p=0.0000
+ r2           vs aligned_cosine_similarity: r=-0.734, p=0.0000
+2025-10-26 15:42:56 - INFO  - metric_analysis.py:main:398 -
+
+-------------------------
+ now running k importantce on mknn!
+
+
+ knn_k=5: avg running time: 29.12s ± 1.96s over 69 models
+ knn_k=10: avg running time: 29.04s ± 2.05s over 69 models
+ knn_k=16: avg running time: 27.43s ± 2.05s over 69 models
+ knn_k=32: avg running time: 29.21s ± 1.76s over 69 models
+ knn_k=64: avg running time: 29.32s ± 2.10s over 69 models
+ knn_k=128: avg running time: 29.01s ± 2.57s over 69 models
+ knn_k=256: avg running time: 32.04s ± 1.96s over 69 models
+Spearman correlations between different K values:
+ K=  5 vs K= 10: r=0.9819, p=0.0000
+ K=  5 vs K= 16: r=0.9584, p=0.0000
+ K=  5 vs K= 32: r=0.9275, p=0.0000
+ K=  5 vs K= 64: r=0.9157, p=0.0000
+ K=  5 vs K=128: r=0.9083, p=0.0000
+ K=  5 vs K=256: r=0.9017, p=0.0000
+ K= 10 vs K= 16: r=0.9827, p=0.0000
+ K= 10 vs K= 32: r=0.9530, p=0.0000
+ K= 10 vs K= 64: r=0.9415, p=0.0000
+ K= 10 vs K=128: r=0.9336, p=0.0000
+ K= 10 vs K=256: r=0.9264, p=0.0000
+ K= 16 vs K= 32: r=0.9717, p=0.0000
+ K= 16 vs K= 64: r=0.9608, p=0.0000
+ K= 16 vs K=128: r=0.9548, p=0.0000
+ K= 16 vs K=256: r=0.9488, p=0.0000
+ K= 32 vs K= 64: r=0.9883, p=0.0000
+ K= 32 vs K=128: r=0.9833, p=0.0000
+ K= 32 vs K=256: r=0.9709, p=0.0000
+ K= 64 vs K=128: r=0.9913, p=0.0000
+ K= 64 vs K=256: r=0.9771, p=0.0000
+ K=128 vs K=256: r=0.9889, p=0.0000
+2025-10-26 19:41:02 - INFO  - metric_analysis.py:compare_knn_k_values:87 -
+Within-model K consistency (mean across models):
+ K=  5 vs K= 10: mean r=0.9463 ± 0.0499
+ K=  5 vs K= 16: mean r=0.9056 ± 0.0759
+ K=  5 vs K= 32: mean r=0.8150 ± 0.1949
+ K=  5 vs K= 64: mean r=0.7779 ± 0.2487
+ K=  5 vs K=128: mean r=0.7242 ± 0.3576
+ K=  5 vs K=256: mean r=0.7362 ± 0.3432
+ K= 10 vs K= 16: mean r=0.9451 ± 0.0659
+ K= 10 vs K= 32: mean r=0.8664 ± 0.1585
+ K= 10 vs K= 64: mean r=0.8257 ± 0.2249
+ K= 10 vs K=128: mean r=0.7720 ± 0.3266
+ K= 10 vs K=256: mean r=0.7841 ± 0.2980
+ K= 16 vs K= 32: mean r=0.9083 ± 0.1196
+ K= 16 vs K= 64: mean r=0.8617 ± 0.2001
+ K= 16 vs K=128: mean r=0.8137 ± 0.2990
+ K= 16 vs K=256: mean r=0.8187 ± 0.2725
+ K= 32 vs K= 64: mean r=0.9201 ± 0.1429
+ K= 32 vs K=128: mean r=0.8856 ± 0.2027
+ K= 32 vs K=256: mean r=0.8709 ± 0.2065
+ K= 64 vs K=128: mean r=0.9324 ± 0.1326
+ K= 64 vs K=256: mean r=0.8942 ± 0.1915
+ K=128 vs K=256: mean r=0.9455 ± 0.0855

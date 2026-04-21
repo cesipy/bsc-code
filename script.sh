@@ -1,32 +1,17 @@
 #!/usr/bin/env bash
+source venv310/bin/activate
 
-python src/evaluate.py # path is none per default.
-sleep 5s
-python src/main.py       # all tasks
-sleep 5s
-python src/evaluate.py --path res/checkpoints/pretrained_epoch1_task123.pt
-sleep 5s
-python src/evaluate.py --path res/checkpoints/pretrained_epoch4_task123.pt
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
+export TOKENIZERS_PARALLELISM=false
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+source venv310/bin/activate
 
-python src/evaluate.py --path res/checkpoints/pretrained_epoch1_task123.pt --use-constrastive
-sleep 5s
-python src/evaluate.py --path res/checkpoints/pretrained_epoch4_task123.pt --use-constrastive
-
-
-# python src/evaluate.py # path is none per default.
-sleep 5s
-python src/main.py  --no-mim
-sleep 5s
-python src/evaluate.py --path res/checkpoints/pretrained_epoch1_task12.pt
-sleep 5s
-python src/evaluate.py --path res/checkpoints/pretrained_epoch4_task12.pt
-
-
-
-# python src/evaluate.py # path is none per default.
-sleep 5s
-python src/main.py --no-mlm --no-mim      # all tasks
-sleep 5s
-python src/evaluate.py --path res/checkpoints/pretrained_epoch1_task1.pt
-sleep 5s
-python src/evaluate.py --path res/checkpoints/pretrained_epoch4_task1.pt
+# python src/experiment_tracker.py
+# python src/metric_analysis.py
+# python src/correlation_analysis2.py
+python src/pretraining_experiments.py
+# python src/main.py
+# python src/finetune_experiments.py
+# python src/finetune_only_baseline.py
+# python src/performance_metric_collection.py
+# python src/correlation_analysis3.py

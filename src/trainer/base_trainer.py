@@ -14,6 +14,8 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader, Dataset
 
 class BaseTrainer(ABC):
+    def __init__(self):
+        self.all_metrics = ["f1_score_macro", "accuracy", "auc"]
 
 
     @abstractmethod
@@ -47,18 +49,34 @@ class BaseTrainer(ABC):
     def evaluate(self, dataloader: DataLoader):
         pass
 
+    @abstractmethod
+    def get_performance_metric(self, dataloader:DataLoader, metric:str):
+        pass
+
     def get_final_representation(self, text_embedding: torch.tensor, image_embedding: torch.tensor,
         fusion_method=CLS_FUSION_METHOD) -> torch.tensor:
-        assert fusion_method in FUSION_METHODS
-        if fusion_method == "sum":
-            return text_embedding + image_embedding
-
-        elif fusion_method == "hadamard":
-            return text_embedding * image_embedding
-
-        elif fusion_method == "concat":
-            combined = torch.concat((text_embedding, image_embedding),1)
-            return combined
+        return get_final_representation(text_embedding, image_embedding, fusion_method)
 
         # TODO: problem with implementing this as the fc in the vilbert relies on the input size
 
+    @abstractmethod
+    def compute_cka_value(self, dataloader:DataLoader, num_batches:int):
+        pass
+
+    @abstractmethod
+    def compute_cka_loss(self, input_buffer, backward:bool):
+        pass
+
+
+def get_final_representation(text_embedding: torch.tensor, image_embedding: torch.tensor,
+    fusion_method=CLS_FUSION_METHOD) -> torch.tensor:
+    assert fusion_method in FUSION_METHODS
+    if fusion_method == "sum":
+        return text_embedding + image_embedding
+
+    elif fusion_method == "hadamard":
+        return text_embedding * image_embedding
+
+    elif fusion_method == "concat":
+        combined = torch.concat((text_embedding, image_embedding),1)
+        return combined

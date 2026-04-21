@@ -1,6 +1,7 @@
 import datetime
 import inspect
 import os
+import socket
 
 FILENAME_PREFIX = "logs/log_"
 
@@ -22,7 +23,12 @@ class Logger:
 
         os.makedirs("logs", exist_ok=True)
         today = datetime.datetime.today().strftime("%Y-%m-%d")
-        self.filename = FILENAME_PREFIX + today + ".txt"
+        if socket.gethostname().startswith("c703i-"):
+            gpu_name = socket.gethostname().replace("c703i-", "")
+            self.filename = FILENAME_PREFIX + today+ gpu_name  + ".txt"
+
+        else:
+            self.filename = FILENAME_PREFIX + today + ".txt"
         Logger._initialized = True
 
     def info(self, message: str) -> None:

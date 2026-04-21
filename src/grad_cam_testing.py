@@ -2,6 +2,7 @@ import torch
 import cv2
 import numpy as np
 import pytorch_grad_cam
+from trainer import get_final_representation
 
 from pytorch_grad_cam import (
     GradCAM, FEM, HiResCAM, ScoreCAM, GradCAMPlusPlus,
@@ -15,7 +16,7 @@ from pytorch_grad_cam.utils.image import (
 )
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget, ClassifierOutputReST
 
-
+from experiment_tracker import ExperimentConfig, ExperimentTracker
 from vilbert import ViLBERT
 from config import *
 
@@ -74,7 +75,7 @@ class ViLBERTWrapper(torch.nn.Module):
             image_pixel_values=image_pixel_values,
         )
 
-        combined = text_cls * vision_cls
+        combined = get_final_representation(text_cls, vision_cls)
         return self.model.fc(combined)
 
 def calculate_entropy(intermediate_result):
@@ -94,8 +95,8 @@ def analyse_batch(grayscale_cam, image_pixels_copy,text_list,  filename:str, lay
     for i in range(s):
         curr_grayscale_cam = grayscale_cam[i, :]
 
-        entr = calculate_entropy(curr_grayscale_cam)
-        entrs[i] = entr
+        # entr = calculate_entropy(curr_grayscale_cam)
+        # entrs[i] = entr
 
         current_text = text_list[i]
         with open(f"{dir}/{filename}_b{i}_text.txt", "w") as f:
@@ -117,91 +118,115 @@ def analyse_batch(grayscale_cam, image_pixels_copy,text_list,  filename:str, lay
 # .---------------------------------------------------------------
 utils.set_seeds(SEED)
 
-# train_dl, test_dl = datasets.get_hateful_memes_datasets(
-#     train_test_ratio=TRAIN_TEST_RATIO,
-#     batch_size=50,
-#     num_workers=NUM_WORKERS,
-#     pin_memory=PIN_MEMORY,
-#     prefetch_factor=PREFETCH,
-#     persistent_workers=PERSISTENT_WORKERS,
-#     use_train_augmentation=False,
+def analyze_model(
+    path,
+    model_name,
+    text_input,
+    image_pixels,
+    decoded_texts,
 
-# )
-hm_dl, dl, imdb_dl = datasets.get_alignment_dataloaders(
-    batch_size=50,
-    num_workers=NUM_WORKERS,
-    pin_memory=PIN_MEMORY,
-    prefetch_factor=PREFETCH,
+    ):
+    image_pixels_copy = image_pixels.clone()
+    model_vilbert = ViLBERT.load_model(load_path=path, device="cuda")
+    model = ViLBERTWrapper(model=model_vilbert, text_inputs=text_input)
+    for i in range(12):
+        target_layers = [ model.model.vit.blocks[i] ]
+        # target_layers_untrained = [ model_untrained.model.vit.blocks[i] ]
 
-)
-tok = datasets.BertTokenizerFast.from_pretrained("bert-base-uncased")
-train_item = next(iter(dl))
-text = "gun"
-# text_tokens = datasets.get_text_embedding(text=text, tokenizer=tok)
-# bs = train_item["img"]["pixel_values"].shape[0]
-# text_tokens = {k:v.expand(bs, -1) for k,v in text_tokens.items()}
+        #TODO: maybe use other method for it, in import there are many, also here:
+        # https://github.com/jacobgil/pytorch-grad-cam/blob/781dbc0d16ffa95b6d18b96b7b829840a82d93d1/cam.py#L67
 
-print(train_item.keys())    # dict_keys(['img', 'label', 'text'])
-print(train_item["img"]["pixel_values"].shape)   # torch.Size([2, 1, 3, 224, 224])
+        with GradCAM(model=model, target_layers=target_layers, reshape_transform=reshape_transform) as c:
+            grayscale_cam = c(input_tensor=image_pixels, targets=None)
+            analyse_batch(grayscale_cam=grayscale_cam,text_list=decoded_texts, image_pixels_copy=image_pixels_copy,layer_indx=i,filename=f"grad_cam_attention_{model_name}")
 
-
-# already tokenized and preprocessed for vit
-text_tokens = {k: v.squeeze(1) for k, v in train_item["text"].items()}
-decoded_texts = decode_batch_text(text_tokens, tok, dl.batch_size)
-
-print(text_tokens.keys())   # dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
-image_pixels = train_item["img"]["pixel_values"].squeeze(1)
-
-text_tokens_copy = {k: v.clone() for k, v in text_tokens.items()}
-image_pixels_copy = image_pixels.clone()
-
-print(f"text_token shape: {text_tokens['input_ids'].shape}, imgage_pixels shape: {image_pixels.shape}")
-
-config = ViLBERTConfig()
-model_vilbert_untrained = ViLBERT(config=config)
-
-
-model_vilbert = ViLBERT.load_model(load_path="res/checkpoints/hm_finetuned_e2.pt", )
-
-
-model = ViLBERTWrapper(model=model_vilbert, text_inputs=text_tokens)
-model_untrained = ViLBERTWrapper(model=model_vilbert_untrained, text_inputs=text_tokens_copy)
-
-# TODO: better fetching
-# clayers are not working,as they return tuple, grad-cam expects single tensor
-# target_layers = [model.model.vit.blocks[4], model.model.vit.blocks[5], model.model.vit.blocks[6]]
-# target_layers_untrained = [model_untrained.model.vit.blocks[4], model_untrained.model.vit.blocks[5], model_untrained.model.vit.blocks[6]]
-
-for i in range(12):
-    target_layers = [ model.model.vit.blocks[i] ]
-    target_layers_untrained = [ model_untrained.model.vit.blocks[i] ]
-
-    #TODO: maybe use other method for it, in import there are many, also here:
-    # https://github.com/jacobgil/pytorch-grad-cam/blob/781dbc0d16ffa95b6d18b96b7b829840a82d93d1/cam.py#L67
-
+    image_pixels_copy = image_pixels.clone()
+    target_layers = [ model.model.vit.blocks[i] for i in range(12)]
+    # + averaged
     with GradCAM(model=model, target_layers=target_layers, reshape_transform=reshape_transform) as c:
 
-
         grayscale_cam = c(input_tensor=image_pixels, targets=None)
-        analyse_batch(grayscale_cam=grayscale_cam,text_list=decoded_texts, image_pixels_copy=image_pixels_copy,layer_indx=i,filename= "grad_cam_attention_finetuned")
+        analyse_batch(grayscale_cam=grayscale_cam, image_pixels_copy=image_pixels_copy,layer_indx=None,
+            filename=f"grad_cam_attention_{model_name}_avg", text_list=decoded_texts.copy()
+        )
 
 
-    with GradCAM(model=model_untrained, target_layers=target_layers_untrained, reshape_transform=reshape_transform) as c:
+def main():
+    # train_dl, test_dl = datasets.get_hateful_memes_datasets(
+    #     train_test_ratio=TRAIN_TEST_RATIO,
+    #     batch_size=50,
+    #     num_workers=NUM_WORKERS,
+    #     pin_memory=PIN_MEMORY,
+    #     prefetch_factor=PREFETCH,
+    #     persistent_workers=PERSISTENT_WORKERS,
+    #     use_train_augmentation=False,
 
-        grayscale_cam = c(input_tensor=image_pixels_copy, targets=None)
-        analyse_batch(grayscale_cam=grayscale_cam, image_pixels_copy=image_pixels_copy,layer_indx=i,filename= "grad_cam_attention_untrained", text_list=decoded_texts)
+    # )
+    # hm_dl, dl, imdb_dl, upmc_dl = datasets.get_alignment_dataloaders(
+    #     batch_size=50,
+    #     num_workers=NUM_WORKERS,
+    #     pin_memory=PIN_MEMORY,
+    #     prefetch_factor=PREFETCH,
+    # )
+    t = ExperimentTracker()
+    dl = t.get_task_alignment_dataloader("hateful_memes", config=ViLBERTConfig(), batch_size=1)
+    tok = datasets.BertTokenizerFast.from_pretrained("bert-base-uncased")
+    train_i = iter(dl)
+    train_item_ = next(train_i)
+    train_item = next(train_i)
+
+    text = "what ' s better than winning a gold medal in this contest"
+    # text_tokens = datasets.get_text_embedding(text=text, tokenizer=tok)
+    # bs = train_item["img"]["pixel_values"].shape[0]
+    # text_tokens = {k:v.expand(bs, -1) for k,v in text_tokens.items()}
+
+    print(train_item.keys())    # dict_keys(['img', 'label', 'text'])
+    print(train_item["img"]["pixel_values"].shape)   # torch.Size([2, 1, 3, 224, 224])
 
 
-# one for all layers, is automatically averaged
-target_layers = [ model.model.vit.blocks[i] for i in range(12)]
-target_layers_untrained = [ model_untrained.model.vit.blocks[i] for i in range(12)]
+    # already tokenized and preprocessed for vit
+    text_tokens = {k: v.squeeze(1) for k, v in train_item["text"].items()}
+    decoded_texts = decode_batch_text(text_tokens, tok, dl.batch_size)
 
-with GradCAM(model=model, target_layers=target_layers, reshape_transform=reshape_transform) as c:
+    image_pixels = train_item["img"]["pixel_values"].squeeze(1)
 
-        grayscale_cam = c(input_tensor=image_pixels, targets=None)
-        analyse_batch(grayscale_cam=grayscale_cam, image_pixels_copy=image_pixels_copy,layer_indx=None,filename= "grad_cam_attention_finetuned", text_list=decoded_texts.copy())
+    text_tokens_copy = {k: v.clone() for k, v in text_tokens.items()}
+    image_pixels_copy = image_pixels.clone()
 
-with GradCAM(model=model_untrained, target_layers=target_layers_untrained, reshape_transform=reshape_transform) as c:
+    print(f"text_token shape: {text_tokens['input_ids'].shape}, imgage_pixels shape: {image_pixels.shape}")
 
-        grayscale_cam = c(input_tensor=image_pixels_copy, targets=None)
-        analyse_batch(grayscale_cam=grayscale_cam, image_pixels_copy=image_pixels_copy,layer_indx=None,filename= "grad_cam_attention_untrained", text_list=decoded_texts.copy())
+
+    path_late_fusion = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-061925_finetuned_hateful_memes.pt"
+    path_early_fusion = "res/checkpoints/20251013-010227_pretrained_late_fusion/20251022-145440_finetuned_hateful_memes.pt"
+
+    analyze_model(
+        path=path_early_fusion,
+        model_name="early_fusion",
+        text_input=text_tokens_copy,
+        image_pixels=image_pixels,
+        decoded_texts=decoded_texts,
+    )
+    analyze_model(
+        path=path_late_fusion,
+        model_name="late_fusion",
+        text_input=text_tokens_copy,
+        image_pixels=image_pixels,
+        decoded_texts=decoded_texts,
+    )
+
+
+    # one for all layers, is automatically averaged
+    # target_layers = [ model.model.vit.blocks[i] for i in range(12)]
+    # target_layers_untrained = [ model_untrained.model.vit.blocks[i] for i in range(12)]
+
+    # with GradCAM(model=model, target_layers=target_layers, reshape_transform=reshape_transform) as c:
+
+    #         grayscale_cam = c(input_tensor=image_pixels, targets=None)
+    #         analyse_batch(grayscale_cam=grayscale_cam, image_pixels_copy=image_pixels_copy,layer_indx=None,filename= "grad_cam_attention_finetuned", text_list=decoded_texts.copy())
+
+    # with GradCAM(model=model_untrained, target_layers=target_layers_untrained, reshape_transform=reshape_transform) as c:
+
+    #         grayscale_cam = c(input_tensor=image_pixels_copy, targets=None)
+    #         analyse_batch(grayscale_cam=grayscale_cam, image_pixels_copy=image_pixels_copy,layer_indx=None,filename= "grad_cam_attention_untrained", text_list=decoded_texts.copy())
+
+main()

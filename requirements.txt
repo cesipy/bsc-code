@@ -18,3 +18,9 @@ albumentations
 easy-vqa
 argcomplete
 grad-cam
+statsmodels
+pymp-pypi
+torchaudio
+lovely-tensors
+scikit-dimension
+scikit-learn

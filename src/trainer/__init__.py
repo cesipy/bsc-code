@@ -3,3 +3,4 @@ from .trainers import *
 from .vqa_trainer import VQATrainer
 from .upmc_trainer import UPMCTrainer
 from .hm_trainer import *
+from .base_trainer import *

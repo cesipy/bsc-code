@@ -8,6 +8,9 @@ import gc; import time
 from functools import wraps
 import matplotlib.pyplot as plt
 import albumentations as A
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import pearsonr, spearmanr
 
 from PIL import Image
 
@@ -19,6 +22,188 @@ from logger import Logger
 
 logger = Logger()
 
+def get_all_configs():
+    return [
+        "baseline", "bl_full_coattn", "early_fusion", "middle_fusion",
+        "late_fusion", "asymmetric_fusion", "optuna1", "optuna2"
+    ]
+
+def get_coattention_placements(config: str):
+    assert config in get_all_configs()
+    if config == "baseline":
+        return [], []
+    elif config == "bl_full_coattn":
+        return list(range(12)), list(range(12))
+    elif config == "early_fusion":
+        return [3, 4, 5], [3, 4, 5]
+    elif config == "middle_fusion":
+        return [6, 7, 8], [6, 7, 8]
+    elif config == "late_fusion":
+        return [9, 10, 11], [9, 10, 11]
+    elif config == "asymmetric_fusion":
+        return [6, 7, 8, 9], [3, 5, 7, 9]
+    elif config == "optuna1":
+        return [3, 6], [6, 8]
+    elif config == "optuna2":
+        return [7, 9, 10, 11], [6, 7, 9, 10]
+    else:
+        raise ValueError(f"Unknown config: {config}")
+
+
+def visualize_loss_cka(normal_losses, cka_losses):
+    """Visualize training loss alongside CKA loss"""
+    import matplotlib.pyplot as plt
+    import time
+
+    plt.figure(figsize=(12, 5))
+
+    # Plot 1: Normal losses
+    plt.subplot(1, 2, 1)
+    plt.plot(normal_losses, label='Training Loss', color='blue')
+    plt.title('Training Loss Over Time')
+    plt.xlabel('Batch (every 10)')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+
+    # Plot 2: CKA losses
+    plt.subplot(1, 2, 2)
+    plt.plot(cka_losses, label='CKA Loss', color='red')
+    plt.title('CKA Loss Over Time')
+    plt.xlabel('Batch (every 10)')
+    plt.ylabel('CKA Loss')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+
+    save_dir = "res/plots/loss-plots"
+    os.makedirs(save_dir, exist_ok=True)
+    tmsp = time.strftime("%Y%m%d-%H%M%S")
+    filename = os.path.join(save_dir, f"cka_loss_plot_{tmsp}.png")
+
+    plt.savefig(filename, dpi=150, bbox_inches='tight')
+    print(f"Saved CKA plot to {filename}")
+    plt.close()
+
+def visualize_correlation_matrix(result, metric="mknn", corr_func=pearsonr, save_path=None):
+    """Create and visualize a correlation matrix heatmap."""
+    sizes = sorted(result.keys())
+    n = len(sizes)
+    corr_matrix = np.zeros((n, n))
+    for i, size1 in enumerate(sizes):
+        for j, size2 in enumerate(sizes):
+            if i == j:
+                corr_matrix[i, j] = 1.0
+            else:
+                data1 = np.array(result[size1][metric])
+                data2 = np.array(result[size2][metric])
+                r, p = corr_func(data1, data2)
+                if p > 0.025:
+                    print(f"Warning: correlation between {size1} and {size2} for {metric} is not significant (p={p:.3f}, r={r:.3f})")
+                corr_matrix[i, j] = r
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    im = ax.imshow(corr_matrix, cmap="magma", vmin=-1, vmax=1, aspect='auto')
+    ax.set_xticks(np.arange(n))
+    ax.set_yticks(np.arange(n))
+    ax.set_xticklabels(sizes)
+    ax.set_yticklabels(sizes)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    cbar = plt.colorbar(im, ax=ax, label='Correlation Coefficient')
+    for i in range(n):
+        for j in range(n):
+            text = ax.text(j, i, f'{corr_matrix[i, j]:.2f}',
+                          ha="center", va="center", color="black", fontsize=10)
+
+    ax.set_title(f'{metric.upper()} Correlation Matrix ({corr_func.__name__})',
+                 fontsize=14, pad=20)
+    ax.set_xlabel('Sample Size', fontsize=12);ax.set_ylabel('Sample Size', fontsize=12)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight'); print(f"Saved to {save_path}")
+
+    # plt.show()
+    plt.close()
+
+    return corr_matrix
+
+def visualize_k_correlation_matrix(result, k_values, corr_func=spearmanr, save_path=None):
+    """Create correlation matrix heatmap for different K values."""
+    n = len(k_values)
+    corr_matrix = np.zeros((n, n))
+
+    for i, k1 in enumerate(k_values):
+        for j, k2 in enumerate(k_values):
+            if i == j:
+                corr_matrix[i, j] = 1.0
+            else:
+                data1 = np.array(result[k1]["mknn"])
+                data2 = np.array(result[k2]["mknn"])
+                r, p = corr_func(data1, data2)
+                if p > 0.025:
+                    print(f"Warning: K={k1} vs K={k2} not significant (p={p:.3f}, r={r:.3f})")
+                corr_matrix[i, j] = r
+
+    fig, ax = plt.subplots(figsize=(10, 8)); im = ax.imshow(corr_matrix, cmap="magma", vmin=-1, vmax=1, aspect='auto')
+    ax.set_xticks(np.arange(n));ax.set_yticks(np.arange(n))
+    ax.set_xticklabels([f'K={k}' for k in k_values]);ax.set_yticklabels([f'K={k}' for k in k_values])
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    cbar = plt.colorbar(im, ax=ax, label='Correlation Coefficient')
+    for i in range(n):
+        for j in range(n):
+            text = ax.text(j, i, f'{corr_matrix[i, j]:.2f}',
+                          ha="center", va="center", color="black", fontsize=10)
+
+    ax.set_title(f'MKNN: K-value Correlation Matrix ({corr_func.__name__})',
+                 fontsize=14, pad=20)
+    ax.set_xlabel('K value', fontsize=12);ax.set_ylabel('K value', fontsize=12);plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved to {save_path}")
+
+    plt.close()
+    return corr_matrix
+
+
+def visualize_metric_correlation_matrix(result, num_samples=512, metrics=None, corr_func=spearmanr, save_path=None):
+    """Create and visualize a correlation matrix heatmap between different metrics."""
+    if metrics is None:
+        metrics = ["mknn", "cka", "cka_rbf", "svcca", "cknna", "cycle_knn", "procrustes", "jaccard", "rsa", "r2"]
+
+    n = len(metrics)
+    corr_matrix = np.zeros((n, n))
+    for i, metric1 in enumerate(metrics):
+        for j, metric2 in enumerate(metrics):
+            if i == j:
+                corr_matrix[i, j] = 1.0
+            else:
+                data1 = np.array(result[num_samples][metric1])
+                data2 = np.array(result[num_samples][metric2])
+                r, p = corr_func(data1, data2)
+                if p > 0.025:
+                    print(f"Warning: correlation between {metric1} and {metric2} is not significant (p={p:.3f}, r={r:.3f})")
+                corr_matrix[i, j] = r
+    fig, ax = plt.subplots(figsize=(12, 10))
+    im = ax.imshow(corr_matrix, cmap="magma", vmin=-1, vmax=1, aspect='auto')
+    ax.set_xticks(np.arange(n));ax.set_yticks(np.arange(n))
+    ax.set_xticklabels(metrics);ax.set_yticklabels(metrics)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    cbar = plt.colorbar(im, ax=ax, label='Correlation Coefficient')
+    for i in range(n):
+        for j in range(n):
+            text = ax.text(j, i, f'{corr_matrix[i, j]:.2f}',
+                          ha="center", va="center", color="black", fontsize=9)
+    ax.set_title(f'Metric Correlation Matrix at {num_samples} samples ({corr_func.__name__})',
+                 fontsize=14, pad=20)
+    ax.set_xlabel('Metric', fontsize=12)
+    ax.set_ylabel('Metric', fontsize=12)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Saved to {save_path}")
+    return corr_matrix
 
 def visualize_loss(info_losses, normal_losses, total_losses):
     import matplotlib.pyplot as plt
@@ -59,6 +244,11 @@ def set_seeds(seed:int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True
+    torch.manual_seed(seed=seed)
+    random.seed(seed)
+    torch.use_deterministic_algorithms(True)        # wicthig!!
+    np.random.seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
     # with reproducability unfortuantely the below does not work.
     # various speedups for models, adapted from karpathy's gpt2 video
@@ -73,11 +263,6 @@ def set_seeds(seed:int):
     # torch.backends.cudnn.enabled = True
 
 
-    torch.manual_seed(seed=seed)
-    random.seed(seed)
-    # torch.use_deterministic_algorithms(True)
-    np.random.seed(seed)
-    torch.cuda.manual_seed_all(seed)
 
 def get_seeded_generator(seed:int):
     g = torch.Generator()
@@ -91,6 +276,54 @@ def worker_init_fn(worker_id):
     random.seed(worker_seed)
 
     A.core.serialization.SERIALIZABLE_REGISTRY['random'] = random.Random(worker_seed)
+
+class EarlyStopping:
+    def __init__(
+        self,
+        patience:int,
+        continue_thresh:float=0.001,
+        mode:str="min",      # min for loss, max for acc
+    ):
+
+        self.patience = patience
+        self.continue_thresh = continue_thresh
+        self.mode = mode
+
+        self.best_score = float("inf") if mode == "min" else -float("inf")
+        self.p_counter = 0
+        self.best_epoch = -1
+
+
+    def _is_better(self, curr_score:float):
+        if self.mode ==  "min":
+            return curr_score < self.best_score
+        else:
+            return curr_score > self.best_score
+
+    def _is_actually_better(self, curr_score:float):
+        """not used anymore"""
+        if self.mode ==  "min":
+            return curr_score < self.best_score
+        else:
+            return curr_score > self.best_score
+
+
+    def __call__(self, score:float, epoch:int):
+
+        if self._is_better(curr_score=score):
+            self.best_score = score
+            self.best_epoch = epoch
+            self.p_counter = 0
+            return False    # do not stop
+        else:
+            self.p_counter += 1
+            if self.p_counter >= self.patience:
+                return True
+            return False
+
+
+
+
 
 
 

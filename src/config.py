@@ -1,4 +1,5 @@
 import os
+import socket
 from typing import Optional
 
 
@@ -48,6 +49,9 @@ else:
 USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
 NUM_SAMPLES_CC = 500_000
+
+OPTIMIZE_CKA = False
+OPTIMIZE_CKA_LAMBDA = 0.2
 # --------------------------------------------------
 # data specific
 IMG_SIZE = (224, 224)
@@ -60,14 +64,27 @@ NUM_WORKERS = 4
 PREFETCH = 3
 PERSISTENT_WORKERS = False
 PIN_MEMORY = False
+
+
+#hateful memes specific, for the weighted loss; hardcoded as this is easier to do!
+POS_COUNT_HM = 3019
+NEG_COUNT_HM = 5481
 # --------------------------------------------------
 # for the src/evaluate.py part; finetunes on hateful memes or mmimdb
 DOWNSTREAM_EPOCHS = 9
 DOWNSTREAM_LR     = 3.4e-5
 
-if machine == "remote":
+good_gpus = [0,1,9,10,11,12]  # gpus with 24gb vram
+gpu_prefix = "c703i-gpu"
+if socket.gethostname() == "c703i-gpu5":
+    BATCH_SIZE_DOWNSTREAM = 4
+    GRADIENT_ACCUMULATION_DOWNSTREAM = 128
+    print("on gpu5!")
+if socket.gethostname() == "c703i-gpu10" or socket.gethostname() == "703i-gpu11"  \
+    or int(socket.gethostname().replace(gpu_prefix, ""))in good_gpus:
     BATCH_SIZE_DOWNSTREAM = 24
     GRADIENT_ACCUMULATION_DOWNSTREAM = 22
+    print("on good gpu!")
 else:
     BATCH_SIZE_DOWNSTREAM = 8
     GRADIENT_ACCUMULATION_DOWNSTREAM = 64
@@ -75,10 +92,12 @@ else:
 # analysis.py
 if machine == "remote":
     BATCH_SIZE_ANALYSIS = 128
+elif socket.gethostname() == "c703i-gpu5":
+    BATCH_SIZE_ANALYSIS = 64
 else:
     BATCH_SIZE_ANALYSIS = 128
 
-KNN_K = 15      #value for k in knn
+KNN_K = 32      #value for k in knn
 NUM_SAMPLES_CLS =   2000
 NUM_SAMPLES_FULL_SEQ= 200 # lower, as this is full seq; mainly used for cka
 
@@ -93,8 +112,27 @@ MIN_LR_FRACTION   = 0.2    #fraction of original lr => min_lr
 
 # --------------------------------------------------
 
-
-
+#early stopping
+USE_EARLY_STOPPING = True
+ES_CONTINUE_THRESH = 0.001
+ES_PATIENCE = 3
+ES_MODE = "max"  # min for loss, max for acc
+# --------------------------------------------------
+# finetune checkpoints directory
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-234252_pretrained_early_fusion/"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251011-234349_pretrained_middle_fusion"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251013-010227_pretrained_late_fusion"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251014-034432_pretrained_asymmetric_fusion"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251015-081211_pretrained_optuna1"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251016-062038_pretrained_optuna2"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-085859_pretrained_baseline"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251028_finetune_comparison"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251025-105249_pretrained_bl_full_coattn"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251102-122009_pretrained_early_fusion_cka"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251111-222754_pretrained_hybrid1"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251113-080744_pretrained_hybrid2"
 
 class ViLBERTConfig:
     def __init__(
