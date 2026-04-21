@@ -1,22 +1,23 @@
 # TODOs
 
+**immediate:**
+
+- [ ] analysis of pretrained models: discrepancies in end representation of streams
 
 - [ ] what are my baselines: VILT vs uninitialized bert
 	- [ ] how to use baseline that is not using fusion?
 		- eg: fusion from hadamard product at the end... so only no coatts has still fusion. way to finetune without having to use the final concat/fusion
-- [ ] adamw adjusted to the typical vilbert params: https://github.com/facebookresearch/vilbert-multi-task/blob/f22b84a9918a9aea2106e14ac1f6b32ad71492e3/train_concap.py#L465
 
-- [ ] Statistical test: do cross-attention layers have significantly lower entropy (more focused)?
-- [ ] attn entropy:
-- Analyzing Multi-Head Self-Attention
-- What Does BERT Look At?
-- Is Attention Interpretable?
-- Probing Multimodal Embeddings for Linguistic Properties
+- [ ] attn entropy: (partially done)
+	- Analyzing Multi-Head Self-Attention
+	- What Does BERT Look At?
+	- Is Attention Interpretable?
+	- Probing Multimodal Embeddings for Linguistic Properties
 
 - [ ] gradient based attribution
-- Grad-CAM: Visual Explanations from Deep Networks
-- Generic Attention-model Explainability for Interpreting Bi-Modal Transformers
-- Transformer Interpretability Beyond Attention Visualization"
+	- Grad-CAM: Visual Explanations from Deep Networks
+	- Generic Attention-model Explainability for Interpreting Bi-Modal Transformers
+	- Transformer Interpretability Beyond Attention Visualization"
 
 - [ ] uinfy weighted loss for infonce in trainers
 - [ ] tools to look into:
@@ -34,35 +35,8 @@
 	- [ ] pruning
 	- [ ] in ep_tracker: disable multiobjective or disable pruning
 
-	- [ ] is my current setup even the right one?
-		- [ ] optimize for alignment, not for loss
-
-
-- [ ] arparse for experimenttracker: whenever I want to test alignment
-
-
-
-- [x] implement experiment tracker
-	- [ ] use test sets for alignment; no training on it. - currently on mmimdb, not on hm, still TODO!
-	- [x] abstract class für trainer; hm, und mmimdb anpassen
-
-
-
-
-- [ ] check if cka is right..
-	- [ ] try with bigger bs for the data collection
-- [x] self.fc outside of forward - refactor
-- [x] add parameter how many samples to collect for visualization
-	- [ ] more runs and avg out
-- [ ] comparison of full-seq to cls.
-	- [ ] training seemed to be more centered towards cls token alignment
-
 
 - [ ] problem with contrastive term in pretraining: combined approach!
-
-
-
-- [x] add dropout in attention
 - [ ] caching , [mmap](https://github.com/DACUS1995/pytorch-mmap-dataset/blob/main/pytorch_mmap_dataset/dataset.py)
 
 - [ ] is residual handling in crossattention correct?
@@ -89,6 +63,23 @@
 
 
 ## past TODOs
+- [x] adamw adjusted to the typical vilbert params: https://github.com/facebookresearch/vilbert-multi-task/blob/f22b84a9918a9aea2106e14ac1f6b32ad71492e3/train_concap.py#L465
+- [x] Statistical test: do cross-attention layers have significantly lower entropy (more focused)?
+- [x] implement experiment tracker
+	- [x] use test sets for alignment; no training on it. - currently on mmimdb, not on hm, still TODO!
+	- [x] abstract class für trainer; hm, und mmimdb anpassen
+
+- [x] pretrain vs non-pretrain: run the same experiments on finetune-only!
+
+- [x] pretrain für starke MM-imdb. optuna 1 ist stark für hateful_memes, optuna2 ist guter kompromiss => optuna 3 fehlt!
+- [x] still optuna 3 needed! good archicture for mm_imdb alone!
+
+- [x] correlation analysis of metrics on all new architectures
+- [x] is finetuned good performance indicator for pretraining good performance?
+    => no it was not!
+- [x] convert all torchvision to albuminations + seeding
+
+- [x] https://docs.pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 - [x] variable cka in analysis.
 - [x] fix the alignment string to have same lenght
 - [x] `src/evaluate.py` more flexible

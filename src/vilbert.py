@@ -2,10 +2,6 @@ import torch; from torch import nn
 from transformers import (
     #BERT stuff
     BertModel,
-    BertConfig,
-    BertTokenizer,
-    BertTokenizerFast,
-
     # ViT stuff
     ViTConfig,
     ViTModel,
@@ -164,7 +160,6 @@ class ViLBERT(nn.Module):
             nn.Dropout(self.config.dropout_prob),
             nn.Linear(FC_HIDDEN_DIM, 1),
         )
-        # TODO: unify, here i do multiplication in the other not
         # for mmimdb
         self.fc_imdb = nn.Sequential(
             nn.Linear(input_dim, FC_HIDDEN_DIM),
@@ -445,7 +440,6 @@ class ViLBERT(nn.Module):
                 vision_embeddings,
                 text_mask=extended_attention_mask,
             )
-
 
             # print(f"\trunning cross attention in layer {count}")
 
