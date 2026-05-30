@@ -151,7 +151,6 @@ def main():
         v_biattns = modl.config.vision_cross_attention_layers
 
         tasks = ["hateful_memes", "upmc_food", "mm_imdb"]
-
         seeds = [1568, 1569, 1570]
 
         c = 1
