@@ -26,8 +26,6 @@ def get_task(path) -> str:
 
 
 
-
-
 def main():
     t = ExperimentTracker()
     dirs = [
@@ -50,7 +48,7 @@ def main():
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                 model = vilbert.ViLBERT.load_model(path, device=device)
                 config = model.config
-                
+
                 dl = t.get_task_alignment_dataloader(
                     task=task,
                     config=config)
