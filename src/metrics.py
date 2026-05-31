@@ -86,6 +86,31 @@ class AlignmentMetrics:
 
 
     @staticmethod
+    def mutual_knn_tensor(feats_A, feats_B, topk=32, temp=0.07):
+        """
+        Differentiable surrogate for mutual KNN using soft neighbor distributions.
+
+        Returns a scalar tensor (higher = better agreement) suitable for backprop.
+        """
+        # normalize feature vectors
+        A = torch.nn.functional.normalize(feats_A, p=2, dim=1)
+        B = torch.nn.functional.normalize(feats_B, p=2, dim=1)
+
+        # similarity matrix
+        sim = torch.mm(A, B.T)  # [N, N]
+
+        # soft neighbor distributions with temperature
+        pA = torch.softmax(sim / temp, dim=1)
+        pB = torch.softmax(sim / temp, dim=0)
+
+        # per-sample mutual agreement (sum of elementwise product)
+        mutual_per_sample = (pA * pB).sum(dim=1)
+
+        # mean agreement
+        return mutual_per_sample.mean()
+
+
+    @staticmethod
     def lcs_knn(feats_A, feats_B, topk):
         knn_A = compute_nearest_neighbors(feats_A, topk)
         knn_B = compute_nearest_neighbors(feats_B, topk)

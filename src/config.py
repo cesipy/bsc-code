@@ -52,6 +52,10 @@ NUM_SAMPLES_CC = 500_000
 
 OPTIMIZE_CKA = False
 OPTIMIZE_CKA_LAMBDA = 0.2
+# optimize mutual k-NN (differentiable surrogate)
+OPTIMIZE_MUTUAL_KNN = True
+OPTIMIZE_MUTUAL_KNN_LAMBDA = 0.2
+MUTUAL_KNN_TEMP = 0.07
 # --------------------------------------------------
 # data specific
 IMG_SIZE = (224, 224)
