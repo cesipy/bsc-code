@@ -17,17 +17,28 @@ activate-global-python-argcomplete       # tab completion for evaluate.py
 ## Key Commands
 
 ```bash
-# Pretraining
-python src/pretraining_experiments.py         # all fusion configs
-python src/pretrain.py                         # single run (all tasks)
-python src/pretrain.py --no-mim               # skip Masked Image Modeling
-python src/pretrain.py --no-mlm               # skip Masked Language Modeling
-python src/pretrain.py --no-ap                # skip Alignment Prediction
+# Full pipeline via CLI (pretrain + finetune)
+python src/main.py --fusion late              # named preset
+python src/main.py --t-ids 9 10 11 --v-ids 9 10 11 --name my_run
+python src/main.py --fusion late --pt-epochs 7 --ft-epochs 4 --seed 1567
+python src/main.py --fusion late --pretrain-only          # skip finetuning
+python src/main.py --fusion late --pretrain-path res/checkpoints/pretrains/<ckpt>.pt  # skip pretrain
+python src/main.py --fusion late --tasks hateful_memes upmc_food
+python src/main.py --help                     # full option list
 
-# Finetuning
-python src/finetune_experiments.py            # multi-seed, all tasks
+# Sweep scripts (multi-config / multi-seed)
+python src/pretraining_experiments.py         # pretrain all fusion variants
+python src/finetune_experiments.py            # multi-seed finetune from a checkpoint
+
+# Single-run entry points
+python src/pretrain.py                         # single pretrain (all tasks)
+python src/pretrain.py --no-mim               # skip Masked Image Modeling
 python src/finetune.py --task hateful_memes
 python src/finetune.py --task hateful_memes --path res/checkpoints/pretrains/<ckpt>.pt
+
+# Experiment tracking
+mlflow ui                                      # open dashboard at http://localhost:5000
+# runs are logged automatically; tracking data lives in mlruns/ at the project root
 
 # Hyperparameter / NAS optimization
 python src/hyperparameter_optimizer.py
@@ -45,7 +56,7 @@ python src/download_cc.py                     # downloads Conceptual Captions
 |---|---|
 | `src/vilbert.py` | Main `ViLBERT` model; coordinates BERT (text) + timm ViT (vision) streams and injects cross-attention blocks |
 | `src/attention.py` | Custom `Attention_Block`, `CrossAttention`, `CrossAttentionBlock`, `DualAttention_Block`, `FeedForward_Block` |
-| `src/config.py` | All hyperparameters and `ViLBERTConfig` dataclass; detects `MACHINE_TYPE` env var (`local` vs `remote`) for batch sizes |
+| `src/config.py` | `ViLBERTConfig` dataclass — single source of truth for model + training config; `detect_hardware()` sets batch sizes from `MACHINE_TYPE` env var + GPU hostname |
 | `src/task.py` | `Task` enum: `ALIGNMENT_PREDICTION`, `MASKED_LM`, `MASKED_IM` |
 
 **Cross-attention placement** is controlled by two index lists in `ViLBERTConfig`:
@@ -92,7 +103,7 @@ PYTHONPATH=$(pwd)/src pytest -m "not integration"
 | `tests/test_attention.py` | — | attention block shapes / dtypes / golden values |
 | `tests/test_vilbert_arch.py` | — | cross-attention routing, forward shapes, golden forward values |
 | `tests/test_metrics.py` | — | alignment metric properties (CKA, mKNN, SVCCA, Procrustes, …) |
-| `tests/test_config_mapping.py` | — | `ExperimentConfig`→`ViLBERTConfig` field mapping + LR scheduler shape |
+| `tests/test_config_mapping.py` | — | `ViLBERTConfig` field storage, defaults, batch-size decoupling, `to_dict`/`from_dict` round-trip + LR scheduler shape |
 | `tests/test_serialization.py` | — | `save_model`/`load_model` round-trip preserves weights + cross-attn placement |
 | `tests/test_trainers.py` | — | smoke (one step, finite loss, head updates) **+** behavioural guards: `__init__` optimizer/device contract, `setup_scheduler` step math, grad-accum step cadence, scheduler LR written to optimizer |
 | `tests/test_trainer_correctness.py` | — | gradient flow into cross-attn + backbones, loss-fn oracles + head output dims, `evaluate()` no-grad/arity contract, train-epoch determinism |
@@ -113,19 +124,40 @@ PYTHONPATH=$(pwd)/src pytest -m integration tests/test_pipeline.py -v
 
 **Determinism requirements:**
 - `NUM_WORKERS=0`, `PREFETCH=None` in `config.py` — multiprocessing workers introduce non-determinism via OS scheduling
-- `pretrain_batch_size` and `gradient_accumulation` must be pinned explicitly in `ExperimentConfig` (not left to machine-detected defaults) so results match across machines
+- `pretrain_batch_size` and `gradient_accumulation` must be pinned explicitly in `ViLBERTConfig` (not left to machine-detected defaults) so results match across machines
 - Tests pin `pretrain_batch_size=24, gradient_accumulation=22` matching the 24 GB GPU defaults
 
-## Configurable batch sizes and analysis size
+## Config: one dataclass, everything in one place
 
-`ExperimentConfig` has two separate batch size fields:
-- `pretrain_batch_size` — used during pretraining (machine-detected default: 20 remote / 8 local)
-- `batch_size` — used during finetuning / downstream (machine-detected default: 24 on good GPUs)
+`ViLBERTConfig` (in `src/config.py`) is the single config object passed everywhere. There is no separate `ExperimentConfig`. Key fields:
 
-Both `run_pretrain()` and `run_finetune()` accept `alignment_analysis_size: int` (default `ALIGNMENT_ANALYSIS_SIZE=1024`). Pass a smaller value (e.g. `128`) to speed up testing without changing training results.
+| Field | Default (remote/local) | Notes |
+|---|---|---|
+| `text_cross_attention_layers` | `[6..11]` | Layer indices for text→vision cross-attn |
+| `vision_cross_attention_layers` | `[0..5]` | Layer indices for vision→text cross-attn |
+| `pretrain_batch_size` | 20 / 8 | Pretraining physical batch |
+| `gradient_accumulation` | 26 / 64 | Simulated batch ≈ 512 (remote) / 128 (local) |
+| `batch_size` | 24 / 8 | Downstream finetuning batch |
+| `learning_rate` | 1e-4 | Pretrain LR; override per-run |
+| `epochs` | 5 | Override per-run |
+| `seed` | 13310 | Pin explicitly for reproducibility |
+| `num_workers` / `prefetch` | 0 / None | Keep at 0/None for determinism |
+
+`ViLBERTConfig.to_dict()` / `from_dict()` handle serialisation (checkpoint save/load, result JSON).
+
+## Experiment tracking (MLflow)
+
+Every `run_pretrain()` and `run_finetune()` call automatically logs to MLflow:
+- **Params**: all `ViLBERTConfig` fields
+- **Metrics**: per-epoch train/val losses and accuracies
+- **Tags**: `type`, `checkpoint_path`, `t_ids`, `v_ids`, `pretrained_from`
+
+```bash
+mlflow ui      # dashboard at http://localhost:5000
+```
+
+Tracking data lives in `mlruns/` at the project root. Each run also returns `training_results["mlflow_run_id"]` for programmatic lookup.
 
 ## Environment
 
-Set `MACHINE_TYPE=remote` on university GPU servers to use larger batch sizes (`BATCH_SIZE_PRETRAIN=20`, `BATCH_SIZE_DOWNSTREAM=24`). Locally it defaults to smaller batches.
-
-The code auto-detects the GPU hostname (`c703i-gpuN`) to select appropriate batch sizes.
+Set `MACHINE_TYPE=remote` on university GPU servers to use larger batch sizes (`BATCH_SIZE_PRETRAIN=20`, `BATCH_SIZE_DOWNSTREAM=24`). Hardware detection is done once at import time via `detect_hardware()` in `config.py` — robust to unknown hostnames.
