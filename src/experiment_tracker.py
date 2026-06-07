@@ -2,6 +2,7 @@ import time
 import os
 from typing import Tuple, Optional
 import json
+import mlflow
 import numpy as np
 import copy
 
@@ -791,6 +792,19 @@ class ExperimentTracker:
             config=experiment_config,
             filename=filename,
         )
+        checkpoint_path = training_results.get(tasks[0], {}).get("model_path", "") if tasks else ""
+        run_id = self._log_to_mlflow(
+            run_type="finetune",
+            config=experiment_config,
+            training_results=training_results,
+            checkpoint_path=checkpoint_path,
+            tasks=tasks,
+            pretrained_from=pretrained_model_path,
+        )
+        training_results["mlflow_run_id"] = run_id
+        info_str = f"MLflow run: {run_id}"
+        logger.info(info_str); print(info_str)
+
         return training_results
 
     def _initialize_results_dict(self, epochs, tasks=None ):
@@ -888,6 +902,50 @@ class ExperimentTracker:
 
 
 
+    def _log_to_mlflow(
+        self,
+        run_type: str,
+        config: ViLBERTConfig,
+        training_results: dict,
+        checkpoint_path: str,
+        tasks: list,
+        pretrained_from: Optional[str] = None,
+    ) -> str:
+        """Log a completed run to MLflow. Returns the run_id."""
+        mlflow.set_experiment("vilbert-alignment-probing")
+        with mlflow.start_run() as run:
+            mlflow.set_tag("type", run_type)
+            mlflow.set_tag("checkpoint_path", checkpoint_path)
+            mlflow.set_tag("t_ids", str(config.text_cross_attention_layers))
+            mlflow.set_tag("v_ids", str(config.vision_cross_attention_layers))
+            if pretrained_from:
+                mlflow.set_tag("pretrained_from", pretrained_from)
+
+            # log all config fields as params (lists → string repr)
+            for k, v in config.to_dict().items():
+                if k == "depth":
+                    continue  # derived, not a real param
+                mlflow.log_param(k, str(v) if isinstance(v, (list, tuple)) else v)
+
+            # log per-epoch metrics
+            if run_type == "pretrain":
+                for epoch, metrics in training_results.get("pretraining", {}).get("training", {}).items():
+                    if metrics:
+                        for k, v in metrics.items():
+                            mlflow.log_metric(k, v, step=int(epoch))
+            else:
+                for task in tasks:
+                    for epoch, metrics in training_results.get(task, {}).get("training", {}).items():
+                        if metrics:
+                            for k, v in metrics.items():
+                                mlflow.log_metric(f"{task}/{k}", v, step=int(epoch))
+                    final = training_results.get(task, {}).get("final_test", {})
+                    for k, v in (final or {}).items():
+                        if v is not None:
+                            mlflow.log_metric(f"{task}/test_{k}", float(v))
+
+            return run.info.run_id
+
     def save_results(self, training_results: dict, config: ViLBERTConfig, filename:str):
         def convert_to_native(obj):
             if isinstance(obj, dict):
@@ -899,20 +957,14 @@ class ExperimentTracker:
             elif isinstance(obj, np.ndarray):
                 return obj.tolist()
             return obj
-        # JSON keys kept stable (t_biattention_ids/dropout) for back-compat with
-        # existing result files and train_from_config; values come from ViLBERTConfig.
-        training_results["config"] = {
-            "t_biattention_ids": config.text_cross_attention_layers,
-            "v_biattention_ids": config.vision_cross_attention_layers,
-            "epochs": config.epochs,
-            "batch_size": config.batch_size,
-            "gradient_accumulation": config.gradient_accumulation,
-            "learning_rate": config.learning_rate,
-            "seed": config.seed,
-            "train_test_ratio": config.train_test_ratio,
-            "use_contrastive_loss": config.use_contrastive_loss,
-            "dropout": config.dropout_prob,
-        }
+
+        # Full config dict — plus backward-compat aliases used by train_from_config
+        config_dict = config.to_dict()
+        config_dict["t_biattention_ids"] = config.text_cross_attention_layers
+        config_dict["v_biattention_ids"] = config.vision_cross_attention_layers
+        config_dict["dropout"] = config.dropout_prob
+        training_results["config"] = config_dict
+
         filename += ".json"
         filename = os.path.join(self.save_dir, filename)
         with open(filename, "w") as f:
@@ -1120,10 +1172,19 @@ class ExperimentTracker:
         self.save_results(
             training_results=training_results,
             config=experiment_config,
-            filename=f"pretraining_{task_string}_{tmsp}"
-            )
-
+            filename=f"pretraining_{task_string}_{tmsp}",
+        )
         training_results["model_path"] = save_path
+        run_id = self._log_to_mlflow(
+            run_type="pretrain",
+            config=experiment_config,
+            training_results=training_results,
+            checkpoint_path=save_path,
+            tasks=["pretraining"],
+        )
+        training_results["mlflow_run_id"] = run_id
+        info_str = f"MLflow run: {run_id}"
+        logger.info(info_str); print(info_str)
 
         return training_results
 
