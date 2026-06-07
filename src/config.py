@@ -1,11 +1,9 @@
 import os
 import socket
+from dataclasses import dataclass, field
 from typing import Optional
 
-
 from task import Task
-
-machine = os.environ.get("MACHINE_TYPE", "local")  # local or remote: local - my gaming pc (16gb), remote - university gpu (24gb)
 
 SEED = 13310  #TODO INTEGRATE EVERYWHERE
 
@@ -39,12 +37,6 @@ FUSION_METHODS = ["sum", "hardamard", "concat"]
 # pretraining
 PRETRAIN_LEARNING_RATE = 1e-4
 PRETRAIN_EPOCHS = 5 # TODO
-if machine == "remote":
-    BATCH_SIZE_PRETRAIN = 20
-    GRADIENT_ACCUMULATION = 26  # simulated batches of 512, similar to the og vilbert paper
-else:
-    BATCH_SIZE_PRETRAIN = 8
-    GRADIENT_ACCUMULATION = 64    # simulated batches of 128
 
 USE_CONTRASTIVE_LOSS=False
 FREEZE_UNIMODAL_ENCODERS = False
@@ -78,32 +70,79 @@ NEG_COUNT_HM = 5481
 DOWNSTREAM_EPOCHS = 9
 DOWNSTREAM_LR     = 3.4e-5
 
-_GOOD_GPUS = [0,1,9,6,7,10,11,12]  # gpus with 24gb vram
+# --------------------------------------------------
+# hardware detection: one place decides machine type, batch sizes and grad
+# accumulation. Robust to unknown hostnames (no crash) and to the gpu5 case.
+_GOOD_GPUS = [0, 1, 9, 6, 7, 10, 11, 12]  # gpus with 24gb vram
 _GPU_PREFIX = "c703i-gpu"
-if socket.gethostname() == "c703i-gpu5":
-    BATCH_SIZE_DOWNSTREAM = 4
-    GRADIENT_ACCUMULATION_DOWNSTREAM = 128
-    print("on gpu5!")
-if socket.gethostname() == "c703i-gpu10" or socket.gethostname() == "703i-gpu11"  \
-    or int(socket.gethostname().replace(_GPU_PREFIX, ""))in _GOOD_GPUS:
-    BATCH_SIZE_DOWNSTREAM = 24
-    GRADIENT_ACCUMULATION_DOWNSTREAM = 22
-    print("on good gpu!")
-else:
-    BATCH_SIZE_DOWNSTREAM = 8
-    GRADIENT_ACCUMULATION_DOWNSTREAM = 64
+
+
+def _gpu_index(hostname: str) -> Optional[int]:
+    """Return the trailing GPU number for a `c703i-gpuN` host, else None."""
+    if not hostname.startswith(_GPU_PREFIX):
+        return None
+    try:
+        return int(hostname[len(_GPU_PREFIX):])
+    except ValueError:
+        return None
+
+
+def detect_hardware():
+    """
+    Decide machine type + batch/accumulation sizes from MACHINE_TYPE and the
+    GPU hostname. Returns a dict; never raises on an unrecognised host.
+    """
+    machine = os.environ.get("MACHINE_TYPE", "local")  # local (16gb) / remote (24gb)
+    gpu = _gpu_index(socket.gethostname())
+
+    # pretraining sizes follow the machine type
+    if machine == "remote":
+        batch_pretrain, grad_pretrain = 20, 26  # simulated batches ~512, like the og vilbert paper
+    else:
+        batch_pretrain, grad_pretrain = 8, 64   # simulated batches ~128
+
+    # downstream sizes follow the specific GPU
+    if gpu == 5:
+        batch_down, grad_down = 4, 128          # gpu5 has less vram
+    elif gpu in _GOOD_GPUS:
+        batch_down, grad_down = 24, 22
+    else:
+        batch_down, grad_down = 8, 64
+
+    # analysis batch: remote always 128, gpu5 64, else 128
+    if machine == "remote":
+        batch_analysis = 128
+    elif gpu == 5:
+        batch_analysis = 64
+    else:
+        batch_analysis = 128
+
+    return {
+        "machine": machine,
+        "batch_size_pretrain": batch_pretrain,
+        "gradient_accumulation": grad_pretrain,
+        "batch_size_downstream": batch_down,
+        "gradient_accumulation_downstream": grad_down,
+        "batch_size_analysis": batch_analysis,
+    }
+
+
+_HW = detect_hardware()
+machine                          = _HW["machine"]
+BATCH_SIZE_PRETRAIN              = _HW["batch_size_pretrain"]
+GRADIENT_ACCUMULATION            = _HW["gradient_accumulation"]
+BATCH_SIZE_DOWNSTREAM            = _HW["batch_size_downstream"]
+GRADIENT_ACCUMULATION_DOWNSTREAM = _HW["gradient_accumulation_downstream"]
+BATCH_SIZE_ANALYSIS              = _HW["batch_size_analysis"]
+print(f"[config] machine={machine}, host={socket.gethostname()}, "
+      f"pretrain_bs={BATCH_SIZE_PRETRAIN}, downstream_bs={BATCH_SIZE_DOWNSTREAM}")
+
 # --------------------------------------------------
 # analysis.py
-if machine == "remote":
-    BATCH_SIZE_ANALYSIS = 128
-elif socket.gethostname() == "c703i-gpu5":
-    BATCH_SIZE_ANALYSIS = 64
-else:
-    BATCH_SIZE_ANALYSIS = 128
-
 KNN_K = 32      #value for k in knn
 NUM_SAMPLES_CLS =   2000
 NUM_SAMPLES_FULL_SEQ= 200 # lower, as this is full seq; mainly used for cka
+ALIGNMENT_ANALYSIS_SIZE = 1024   # samples used for the layer-wise alignment analysis
 
 FC_HIDDEN_DIM = 512       # what hidden size in fc head
 
@@ -139,55 +178,69 @@ FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251111-222754_pretrained_hybrid1"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251113-080744_pretrained_hybrid2"
 
+
+@dataclass
 class ViLBERTConfig:
-    def __init__(
-        self,
-        embedding_dim=EMBEDDING_DIM,
-        vocab_size=VOCAB_SIZE,
-        num_hidden_layers=NUM_HIDDEN_LAYERS,
-        num_attention_heads=NUM_ATTENTION_HEADS,
-        dropout_prob=DROPOUT_PROB,
-        learning_rate=PRETRAIN_LEARNING_RATE,
-        img_size=IMG_SIZE,
-        preprocessed_path=PREPROCESSED_PATH,
-        train_test_ratio=TRAIN_TEST_RATIO,
-        batch_size=BATCH_SIZE_PRETRAIN,
-        pretrain_batch_size=BATCH_SIZE_PRETRAIN,
-        gradient_accumulation=GRADIENT_ACCUMULATION,
-        pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
-        text_cross_attention_layers: list[int] = T_BIATTENTION_IDS,
-        vision_cross_attention_layers: list[int] = V_BIATTENTION_IDS,
-        seed:int = SEED,
-        use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS,
-        num_bi_attention_heads: int = NUM_BI_ATTENTION_HEADS,
-        epochs: int = PRETRAIN_EPOCHS,
-        # num_workers: int = NUM_WORKERS,
-    ):
-        assert len(text_cross_attention_layers) == len(vision_cross_attention_layers)
-        self.embedding_dim = embedding_dim
-        self.vocab_size = vocab_size
-        self.num_hidden_layers = num_hidden_layers
-        self.num_attention_heads = num_attention_heads
-        self.dropout_prob = dropout_prob
-        self.learning_rate = learning_rate
-        self.img_size = img_size
-        self.preprocessed_path = preprocessed_path
-        self.train_test_ratio = train_test_ratio
-        self.batch_size = batch_size
-        self.pretrain_batch_size = pretrain_batch_size
-        self.gradient_accumulation = gradient_accumulation
-        self.depth = DEPTH + len(text_cross_attention_layers)  # total number of layers in transformer
-        self.pretraining_tasks = pretraining_tasks
-        self.seed = seed
-        self.text_cross_attention_layers = text_cross_attention_layers
-        self.vision_cross_attention_layers = vision_cross_attention_layers
-        self.use_contrastive_loss = use_contrastive_loss
-        self.num_bi_attention_heads = num_bi_attention_heads
-        self.epochs = epochs
-        # self.num_workers = num_workers
+    """
+    Single source of truth for model + training configuration.
+
+    Replaces the old ViLBERTConfig/ExperimentConfig split: experiment runners
+    build this directly. Dataloader knobs (num_workers, prefetch, …) and the
+    machine type live here too, defaulting to the module-level globals.
+    """
+    # model architecture
+    embedding_dim: int = EMBEDDING_DIM
+    vocab_size: int = VOCAB_SIZE
+    num_hidden_layers: int = NUM_HIDDEN_LAYERS
+    num_attention_heads: int = NUM_ATTENTION_HEADS
+    num_bi_attention_heads: int = NUM_BI_ATTENTION_HEADS
+    dropout_prob: float = DROPOUT_PROB
+    img_size: tuple = IMG_SIZE
+
+    # cross-attention placement
+    text_cross_attention_layers: list = field(default_factory=lambda: list(T_BIATTENTION_IDS))
+    vision_cross_attention_layers: list = field(default_factory=lambda: list(V_BIATTENTION_IDS))
+
+    # training
+    learning_rate: float = PRETRAIN_LEARNING_RATE
+    epochs: int = PRETRAIN_EPOCHS
+    seed: int = SEED
+    train_test_ratio: float = TRAIN_TEST_RATIO
+    use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS
+    batch_size: int = BATCH_SIZE_DOWNSTREAM           # downstream / finetune batch
+    pretrain_batch_size: int = BATCH_SIZE_PRETRAIN
+    gradient_accumulation: int = GRADIENT_ACCUMULATION
+    pretraining_tasks: list = field(
+        default_factory=lambda: [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]
+    )
+
+    # dataloader knobs (previously bare module globals)
+    num_workers: int = NUM_WORKERS
+    prefetch: Optional[int] = PREFETCH
+    persistent_workers: bool = PERSISTENT_WORKERS
+    pin_memory: bool = PIN_MEMORY
+
+    # analysis
+    batch_size_analysis: int = BATCH_SIZE_ANALYSIS
+    alignment_analysis_size: int = ALIGNMENT_ANALYSIS_SIZE
+
+    # data / misc
+    preprocessed_path: str = PREPROCESSED_PATH
+    machine: str = machine
+
+    # computed (not a constructor argument)
+    depth: int = field(init=False)
+
+    def __post_init__(self):
+        assert len(self.text_cross_attention_layers) == len(self.vision_cross_attention_layers)
+        if self.text_cross_attention_layers:
+            assert max(self.text_cross_attention_layers) <= 12
+        if self.vision_cross_attention_layers:
+            assert max(self.vision_cross_attention_layers) <= 12
         assert len(self.text_cross_attention_layers) <= DEPTH
+        self.depth = DEPTH + len(self.text_cross_attention_layers)
 
-
+    # dict-like interface (used by experiment_tracker.save_results and serialization)
     def items(self):
         return vars(self).items()
 
@@ -197,43 +250,46 @@ class ViLBERTConfig:
     def values(self):
         return vars(self).values()
 
-    def __str__(self, ):
-        return f"ViLBERTConfig({', '.join([f'{k}={v}' for k, v in self.items()])})"
+    def __str__(self):
+        return f"ViLBERTConfig({', '.join(f'{k}={v}' for k, v in self.items())})"
 
-    def to_dict(self,):
-        config_dict = self.__dict__.copy()
-        config_dict["pretraining_tasks"] = [task.value for task in config_dict["pretraining_tasks"]]
-
-        return config_dict
+    def to_dict(self) -> dict:
+        d = vars(self).copy()
+        d["pretraining_tasks"] = [t.value for t in d["pretraining_tasks"]]
+        return d
 
     @classmethod
-    def from_dict(cls, config_dict):
-        pretraining_tasks = config_dict.get("pretraining_tasks", [])
-        pretraining_tasks = [Task(task) for task in pretraining_tasks]
-
-        config = cls(
-            embedding_dim=config_dict.get("embedding_dim", EMBEDDING_DIM),
-            vocab_size=config_dict.get("vocab_size", VOCAB_SIZE),
-            num_hidden_layers=config_dict.get("num_hidden_layers", NUM_HIDDEN_LAYERS),
-            num_attention_heads=config_dict.get("num_attention_heads", NUM_ATTENTION_HEADS),
-            dropout_prob=config_dict.get("dropout_prob", DROPOUT_PROB),
-            learning_rate=config_dict.get("learning_rate", PRETRAIN_LEARNING_RATE),
-            img_size=config_dict.get("img_size", IMG_SIZE),
-            preprocessed_path=config_dict.get("preprocessed_path", PREPROCESSED_PATH),
-            train_test_ratio=config_dict.get("train_test_ratio", TRAIN_TEST_RATIO),
-            batch_size=config_dict.get("batch_size", BATCH_SIZE_PRETRAIN),
-            depth=config_dict.get("depth", DEPTH),
-            pretraining_tasks=pretraining_tasks,
-            text_cross_attention_layers=config_dict.get("text_cross_attention_layers", T_BIATTENTION_IDS),
-            vision_cross_attention_layers=config_dict.get("vision_cross_attention_layers", V_BIATTENTION_IDS),
-            seed=config_dict.get("seed", SEED),
-            # num_workers=config_dict.get("num_workers", NUM_WORKERS),
+    def from_dict(cls, d: dict) -> "ViLBERTConfig":
+        tasks = [Task(t) for t in d.get("pretraining_tasks", [])]
+        return cls(
+            embedding_dim=d.get("embedding_dim", EMBEDDING_DIM),
+            vocab_size=d.get("vocab_size", VOCAB_SIZE),
+            num_hidden_layers=d.get("num_hidden_layers", NUM_HIDDEN_LAYERS),
+            num_attention_heads=d.get("num_attention_heads", NUM_ATTENTION_HEADS),
+            num_bi_attention_heads=d.get("num_bi_attention_heads", NUM_BI_ATTENTION_HEADS),
+            dropout_prob=d.get("dropout_prob", DROPOUT_PROB),
+            img_size=d.get("img_size", IMG_SIZE),
+            text_cross_attention_layers=d.get("text_cross_attention_layers", list(T_BIATTENTION_IDS)),
+            vision_cross_attention_layers=d.get("vision_cross_attention_layers", list(V_BIATTENTION_IDS)),
+            learning_rate=d.get("learning_rate", PRETRAIN_LEARNING_RATE),
+            epochs=d.get("epochs", PRETRAIN_EPOCHS),
+            seed=d.get("seed", SEED),
+            train_test_ratio=d.get("train_test_ratio", TRAIN_TEST_RATIO),
+            use_contrastive_loss=d.get("use_contrastive_loss", USE_CONTRASTIVE_LOSS),
+            batch_size=d.get("batch_size", BATCH_SIZE_DOWNSTREAM),
+            pretrain_batch_size=d.get("pretrain_batch_size", BATCH_SIZE_PRETRAIN),
+            gradient_accumulation=d.get("gradient_accumulation", GRADIENT_ACCUMULATION),
+            pretraining_tasks=tasks,
+            num_workers=d.get("num_workers", NUM_WORKERS),
+            prefetch=d.get("prefetch", PREFETCH),
+            persistent_workers=d.get("persistent_workers", PERSISTENT_WORKERS),
+            pin_memory=d.get("pin_memory", PIN_MEMORY),
+            batch_size_analysis=d.get("batch_size_analysis", BATCH_SIZE_ANALYSIS),
+            alignment_analysis_size=d.get("alignment_analysis_size", ALIGNMENT_ANALYSIS_SIZE),
+            preprocessed_path=d.get("preprocessed_path", PREPROCESSED_PATH),
         )
-        return config
-
 
 
 if __name__ == "__main__":
     config = ViLBERTConfig()
-
     print(len(config.__dict__))

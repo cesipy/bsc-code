@@ -9,7 +9,7 @@ import pytest
 import experiment_tracker
 from config import (
     OPTIMIZE_CKA, OPTIMIZE_MUTUAL_KNN,
-    _GOOD_GPUS, _GPU_PREFIX,
+    _GOOD_GPUS, _GPU_PREFIX, ViLBERTConfig,
 )
 
 SEED = 1567
@@ -46,9 +46,9 @@ def test_pretrain_integration():
     """
 
     t = experiment_tracker.ExperimentTracker()
-    pretrain_config = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=T_BIATTN_IDS,
-        v_biattention_ids=V_BIATTN_IDS,
+    pretrain_config = ViLBERTConfig(
+        text_cross_attention_layers=T_BIATTN_IDS,
+        vision_cross_attention_layers=V_BIATTN_IDS,
         use_contrastive_loss=False,
         epochs=1,
         learning_rate=1e-4,
@@ -166,9 +166,9 @@ def test_full_pipeline():
     """
     # tests pretrain + finetune
     t = experiment_tracker.ExperimentTracker()
-    pretrain_config = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=T_BIATTN_IDS,
-        v_biattention_ids=V_BIATTN_IDS,
+    pretrain_config = ViLBERTConfig(
+        text_cross_attention_layers=T_BIATTN_IDS,
+        vision_cross_attention_layers=V_BIATTN_IDS,
         use_contrastive_loss=False,
         epochs=1,
         learning_rate=1e-4,
@@ -176,9 +176,9 @@ def test_full_pipeline():
         pretrain_batch_size=24,
         gradient_accumulation=22,
     )
-    finetune_config = experiment_tracker.ExperimentConfig(
-        t_biattention_ids=T_BIATTN_IDS,
-        v_biattention_ids=V_BIATTN_IDS,
+    finetune_config = ViLBERTConfig(
+        text_cross_attention_layers=T_BIATTN_IDS,
+        vision_cross_attention_layers=V_BIATTN_IDS,
         epochs=1,
         learning_rate=3.2e-5,
         seed=SEED,

@@ -123,20 +123,19 @@ def main():
     for config in configs:
         info_str = f"{'-'*25}\ntraining with coattn placements of {config['t_biattention_ids']} (text) and {config['v_biattention_ids']} (vision)"
         print(info_str); logger.info(info_str)
-        pretrain_config = experiment_tracker.ExperimentConfig(
-            t_biattention_ids=config["t_biattention_ids"],
-            v_biattention_ids=config["v_biattention_ids"],
+        pretrain_config = ViLBERTConfig(
+            text_cross_attention_layers=config["t_biattention_ids"],
+            vision_cross_attention_layers=config["v_biattention_ids"],
             use_contrastive_loss=False,
             epochs=pt_epochs,
             learning_rate=1e-4,
             seed=seed,
         )
 
-
         # for health checking, proper analysis afterwards
-        finetune_config_hm = experiment_tracker.ExperimentConfig(
-            t_biattention_ids=config["t_biattention_ids"],
-            v_biattention_ids=config["v_biattention_ids"],
+        finetune_config_hm = ViLBERTConfig(
+            text_cross_attention_layers=config["t_biattention_ids"],
+            vision_cross_attention_layers=config["v_biattention_ids"],
             use_contrastive_loss=False,
             epochs=ft_epochs,
             learning_rate=3e-5,

@@ -1,7 +1,6 @@
 import time
 import os
 from typing import Tuple, Optional
-import dataclasses
 import json
 import numpy as np
 import copy
@@ -29,34 +28,8 @@ LR_ = 4e-5
 USE_CONTRASTIVE_LOSS_ = False
 
 
-ALIGNMENT_ANALYSIS_SIZE = 1024
 SKIP_ALIGNMENT = False
-
-
-@dataclasses.dataclass
-class ExperimentConfig:
-    t_biattention_ids: list
-    v_biattention_ids: list
-    use_contrastive_loss: bool
-
-    epochs: int = EPOCHS_
-    batch_size: int = BATCH_SIZE_DOWNSTREAM
-    pretrain_batch_size: int = BATCH_SIZE_PRETRAIN
-    gradient_accumulation: int = GRADIENT_ACCUMULATION_DOWNSTREAM
-    learning_rate: float = DOWNSTREAM_LR
-    seed:int = SEED
-    train_test_ratio: float = TRAIN_TEST_RATIO
-    dropout:float = DROPOUT_PROB
-    
-
-
-
-    def __post_init__(self):
-        if self.t_biattention_ids:
-            assert 12 >= max(self.t_biattention_ids)
-        if self.v_biattention_ids:
-            assert 12 >= max(self.v_biattention_ids)
-        assert len(self.t_biattention_ids) == len(self.v_biattention_ids)
+# ALIGNMENT_ANALYSIS_SIZE now lives in config.py (imported via `from config import *`)
 
 """
 training_results = {
@@ -187,9 +160,9 @@ class ExperimentTracker:
             t_biattention_ids, v_biattention_ids = self.get_coattn_configs(trial)
             print("t_biattention_ids:", t_biattention_ids)
             print("v_biattention_ids:", v_biattention_ids)
-            config = ExperimentConfig(
-                t_biattention_ids=t_biattention_ids,
-                v_biattention_ids=v_biattention_ids,
+            config = ViLBERTConfig(
+                text_cross_attention_layers=t_biattention_ids,
+                vision_cross_attention_layers=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
                 use_contrastive_loss=USE_CONTRASTIVE_LOSS_,
@@ -278,9 +251,9 @@ class ExperimentTracker:
 
             print("t_biattention_ids:", t_biattention_ids)
             print("v_biattention_ids:", v_biattention_ids)
-            config = ExperimentConfig(
-                t_biattention_ids=t_biattention_ids,
-                v_biattention_ids=v_biattention_ids,
+            config = ViLBERTConfig(
+                text_cross_attention_layers=t_biattention_ids,
+                vision_cross_attention_layers=v_biattention_ids,
                 epochs=epochs,
                 learning_rate=lr,
                 use_contrastive_loss=USE_CONTRASTIVE_LOSS_,
@@ -363,9 +336,9 @@ class ExperimentTracker:
                 if trial.suggest_categorical(f"layer_{i}", [True, False]):
                     coattn_layers.append(i)
 
-            config = ExperimentConfig(
-                cross_attention_layers=coattn_layers,
-                depth=depth,
+            config = ViLBERTConfig(
+                text_cross_attention_layers=coattn_layers,
+                vision_cross_attention_layers=coattn_layers,
             )
 
             # return self._run_trial(config, trial)
@@ -428,27 +401,27 @@ class ExperimentTracker:
                 model=model,
                 config=model.config,
                 use_contrastive_loss=model.config.use_contrastive_loss,
-                gradient_accumulation=GRADIENT_ACCUMULATION
+                gradient_accumulation=model.config.gradient_accumulation,
             )
         elif task == "mm_imdb":
             trainer = MM_IMDB_Trainer(
                 model=model,
                 config=model.config,
                 use_contrastive_loss=model.config.use_contrastive_loss,
-                gradient_accumulation=GRADIENT_ACCUMULATION
+                gradient_accumulation=model.config.gradient_accumulation,
             )
         elif task == "upmc_food":
             trainer = UPMCTrainer(
                 model=model,
                 config=model.config,
                 use_contrastive_loss=model.config.use_contrastive_loss,
-                gradient_accumulation=GRADIENT_ACCUMULATION
+                gradient_accumulation=model.config.gradient_accumulation,
             )
         elif task =="easy_vqa":
             trainer = VQATrainer(
                 model=model,
                 config=model.config,
-                gradient_accumulation=GRADIENT_ACCUMULATION,
+                gradient_accumulation=model.config.gradient_accumulation,
             )
         else:
             raise ValueError(f"unknown task: {task}")
@@ -470,11 +443,11 @@ class ExperimentTracker:
         if task == "hateful_memes":
             train_loader, val_loader = datasets.get_hateful_memes_datasets(
                 train_test_ratio=config.train_test_ratio,
-                batch_size=BATCH_SIZE_DOWNSTREAM,
-                num_workers=NUM_WORKERS,
-                pin_memory=PIN_MEMORY,
-                prefetch_factor=PREFETCH,
-                persistent_workers=PERSISTENT_WORKERS,
+                batch_size=config.batch_size,
+                num_workers=config.num_workers,
+                pin_memory=config.pin_memory,
+                prefetch_factor=config.prefetch,
+                persistent_workers=config.persistent_workers,
                 use_train_augmentation=True,
                 seed=config.seed
             )
@@ -482,11 +455,11 @@ class ExperimentTracker:
         elif task == "mm_imdb":
             train_loader, val_loader = datasets.get_mmimdb_datasets(
                 train_test_ratio=config.train_test_ratio,
-                batch_size=BATCH_SIZE_DOWNSTREAM,
-                num_workers=NUM_WORKERS,
-                pin_memory=PIN_MEMORY,
-                prefetch_factor=PREFETCH,
-                persistent_workers=PERSISTENT_WORKERS,
+                batch_size=config.batch_size,
+                num_workers=config.num_workers,
+                pin_memory=config.pin_memory,
+                prefetch_factor=config.prefetch,
+                persistent_workers=config.persistent_workers,
                 use_train_augmentation=True,
                 seed=config.seed,
             )
@@ -494,21 +467,21 @@ class ExperimentTracker:
         elif task == "upmc_food":
             train_loader, val_loader = datasets.get_upmc_datasets(
                 train_test_ratio=config.train_test_ratio,
-                batch_size=BATCH_SIZE_DOWNSTREAM,
-                num_workers=NUM_WORKERS,
-                pin_memory=PIN_MEMORY,
-                prefetch_factor=PREFETCH,
-                persistent_workers=PERSISTENT_WORKERS,
+                batch_size=config.batch_size,
+                num_workers=config.num_workers,
+                pin_memory=config.pin_memory,
+                prefetch_factor=config.prefetch,
+                persistent_workers=config.persistent_workers,
                 use_train_augmentation=True,
                 seed=config.seed,
             )
         elif task == "easy_vqa":
             train_loader, val_loader = datasets.get_easyvqa_datasets(
-                batch_size=BATCH_SIZE_DOWNSTREAM,
-                num_workers=NUM_WORKERS,
-                pin_memory=PIN_MEMORY,
-                prefetch_factor=PREFETCH,
-                persistent_workers=PERSISTENT_WORKERS,
+                batch_size=config.batch_size,
+                num_workers=config.num_workers,
+                pin_memory=config.pin_memory,
+                prefetch_factor=config.prefetch,
+                persistent_workers=config.persistent_workers,
                 seed=config.seed,
                 # use_train_augmentation=True,
             )
@@ -716,15 +689,15 @@ class ExperimentTracker:
         return training_results
 
 
-    def _get_filename(self, config: ExperimentConfig):
+    def _get_filename(self, config: ViLBERTConfig):
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         # coattn_pix: str =""
-        if config.v_biattention_ids  == []:
+        if config.vision_cross_attention_layers  == []:
             coattn_fix = "no_coattn"
         else:
             coattn_fix = "coattn_"
             #TODO: only temporary, fix!
-            for i in config.v_biattention_ids:
+            for i in config.vision_cross_attention_layers:
                 coattn_fix += str(i)
                 coattn_fix += "-"
             coattn_fix = coattn_fix[:-1]
@@ -735,7 +708,7 @@ class ExperimentTracker:
 
 
     def _run_task(self, training_results: dict,
-        task_name: str, experiment_config:ExperimentConfig,
+        task_name: str, experiment_config:ViLBERTConfig,
         filename: str, run_visualizations:bool,
         run_alignment_analysis:bool,
         tmsp: Optional[str] = None,
@@ -744,7 +717,7 @@ class ExperimentTracker:
         ):
         assert task_name in tasklib.all_task_list
 
-        config = self.create_config(experiment_config)
+        config = experiment_config
 
         print(f"Saving results to {filename}")
         logger.info(f"saving results to {filename}")
@@ -772,7 +745,7 @@ class ExperimentTracker:
 
     def run_finetune(
         self,
-        experiment_config: ExperimentConfig,
+        experiment_config: ViLBERTConfig,
         run_visualizations:bool=False,
         run_alignment_analysis:bool=False,
         tasks:list[str]=["hateful_memes", "mm_imdb", "upmc_food"],
@@ -801,8 +774,8 @@ class ExperimentTracker:
                 info_str = f"Loaded pretrained model from {pretrained_model_path} for task {task}"
                 print(info_str)
                 logger.info(info_str)
-                assert pretrained_model.config.text_cross_attention_layers == experiment_config.t_biattention_ids
-                assert pretrained_model.config.vision_cross_attention_layers == experiment_config.v_biattention_ids
+                assert pretrained_model.config.text_cross_attention_layers == experiment_config.text_cross_attention_layers
+                assert pretrained_model.config.vision_cross_attention_layers == experiment_config.vision_cross_attention_layers
 
             training_results = self._run_task(
                 task_name=task, experiment_config=experiment_config,
@@ -882,24 +855,6 @@ class ExperimentTracker:
         model = ViLBERT(config=config)
         return model
 
-    def create_config(self, experiment_config: ExperimentConfig):
-        config = ViLBERTConfig()
-        config.text_cross_attention_layers = experiment_config.t_biattention_ids
-        config.vision_cross_attention_layers = experiment_config.v_biattention_ids
-
-        config.epochs = experiment_config.epochs
-        config.batch_size = experiment_config.batch_size
-        config.pretrain_batch_size = experiment_config.pretrain_batch_size
-        config.gradient_accumulation = experiment_config.gradient_accumulation
-        config.learning_rate = experiment_config.learning_rate
-        config.seed = experiment_config.seed
-        config.train_test_ratio = experiment_config.train_test_ratio
-        config.dropout_prob = experiment_config.dropout
-        config.use_contrastive_loss = experiment_config.use_contrastive_loss
-
-
-        return config
-
     def train_from_config(self, config_pth:str, task:str):
         assert os.path.exists(config_pth)
         assert task in ["hateful_memes", "mm_imdb"]
@@ -907,32 +862,19 @@ class ExperimentTracker:
         with open(config_pth, "r") as f:
             content = json.load(f)
 
-        t_biattention_ids = content["t_biattention_ids"]
-        v_biattention_ids = content["v_biattention_ids"]
-
-        epochs = content["epochs"]
-        batch_size = content["batch_size"]
-        gradient_accumulation = content["gradient_accumulation"]
-        learning_rate = content["learning_rate"]
-        seed = content["seed"]
-        train_test_ratio = content["train_test_ratio"]
-        use_contrastive_loss = content.get("use_contrastive_loss", False)
-        dropout = content.get("dropout", 0.1)
-
-        exp_config = ExperimentConfig(
-            t_biattention_ids=t_biattention_ids,
-            v_biattention_ids=v_biattention_ids,
-            epochs=epochs,
-            batch_size=batch_size,
-            gradient_accumulation=gradient_accumulation,
-            learning_rate=learning_rate,
-            seed=seed,
-            train_test_ratio=train_test_ratio,
-            use_contrastive_loss=use_contrastive_loss,
-            dropout=dropout
+        exp_config = ViLBERTConfig(
+            text_cross_attention_layers=content["t_biattention_ids"],
+            vision_cross_attention_layers=content["v_biattention_ids"],
+            epochs=content["epochs"],
+            batch_size=content["batch_size"],
+            gradient_accumulation=content["gradient_accumulation"],
+            learning_rate=content["learning_rate"],
+            seed=content["seed"],
+            train_test_ratio=content["train_test_ratio"],
+            use_contrastive_loss=content.get("use_contrastive_loss", False),
+            dropout_prob=content.get("dropout", 0.1),
         )
 
-        config: ViLBERTConfig = self.create_config(exp_config)
         training_results = self.run_finetune(
             experiment_config=exp_config,
             run_visualizations=True,
@@ -946,7 +888,7 @@ class ExperimentTracker:
 
 
 
-    def save_results(self, training_results: dict, config: ExperimentConfig, filename:str):
+    def save_results(self, training_results: dict, config: ViLBERTConfig, filename:str):
         def convert_to_native(obj):
             if isinstance(obj, dict):
                 return {k: convert_to_native(v) for k, v in obj.items()}
@@ -957,9 +899,11 @@ class ExperimentTracker:
             elif isinstance(obj, np.ndarray):
                 return obj.tolist()
             return obj
+        # JSON keys kept stable (t_biattention_ids/dropout) for back-compat with
+        # existing result files and train_from_config; values come from ViLBERTConfig.
         training_results["config"] = {
-            "t_biattention_ids": config.t_biattention_ids,
-            "v_biattention_ids": config.v_biattention_ids,
+            "t_biattention_ids": config.text_cross_attention_layers,
+            "v_biattention_ids": config.vision_cross_attention_layers,
             "epochs": config.epochs,
             "batch_size": config.batch_size,
             "gradient_accumulation": config.gradient_accumulation,
@@ -967,7 +911,7 @@ class ExperimentTracker:
             "seed": config.seed,
             "train_test_ratio": config.train_test_ratio,
             "use_contrastive_loss": config.use_contrastive_loss,
-            "dropout": config.dropout,
+            "dropout": config.dropout_prob,
         }
         filename += ".json"
         filename = os.path.join(self.save_dir, filename)
@@ -998,10 +942,10 @@ class ExperimentTracker:
             =  datasets.get_dataloaders_pretrain(
             train_data=train_data,
             val_data=val_data,
-            num_workers=NUM_WORKERS,
-            prefetch=PREFETCH,
-            persistent_workers=PERSISTENT_WORKERS,
-            pin_memory=PIN_MEMORY,
+            num_workers=config.num_workers,
+            prefetch=config.prefetch,
+            persistent_workers=config.persistent_workers,
+            pin_memory=config.pin_memory,
             batch_size=config.pretrain_batch_size,
             seed=config.seed,
         )
@@ -1111,7 +1055,7 @@ class ExperimentTracker:
 
     def run_pretrain(
         self,
-        experiment_config: ExperimentConfig,
+        experiment_config: ViLBERTConfig,
         tasks:Optional[list[Task]]=[Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],
         run_visualizations:bool=False,
         run_alignment_analysis:bool=False,
@@ -1123,7 +1067,7 @@ class ExperimentTracker:
         run pretraining with a given config.
 
         Args:
-            experiment_config: ExperimentConfig, configuration for the experiment
+            experiment_config: ViLBERTConfig, configuration for the experiment
             run_visualizations: bool, whether to run visualizations(CKA, mKNN, ... within model) after each epoch (+initialized only)
             run_alignment_analysis: bool, whether to run alignment analysis after each epoch
             tiny_fraction: bool, whether to use a tiny fraction of the data for quick testing/debugging. Only 800 samples
@@ -1165,11 +1109,10 @@ class ExperimentTracker:
 
 
 
-        config:ViLBERTConfig = self.create_config(experiment_config=experiment_config)
+        config: ViLBERTConfig = experiment_config
         #manually add the pretraining specific configs
         config.pretraining_tasks = tasks
         assert config.pretraining_tasks != None
-        assert config.learning_rate == experiment_config.learning_rate
 
         training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations, alignment_analysis_size=alignment_analysis_size)
 
@@ -1272,57 +1215,55 @@ class ExperimentTracker:
         assert task in ["hateful_memes", "mm_imdb", "upmc_food"]
         assert dataset in [ "test", "val" ]
 
+        cfg = model.config
         dl = datasets.get_task_test_dataset(
             task=task,
-            batch_size=BATCH_SIZE_DOWNSTREAM,
-            num_workers=NUM_WORKERS,
-            pin_memory=PIN_MEMORY,
-            prefetch_factor=PREFETCH,
-            persistent_workers=PERSISTENT_WORKERS,
-            seed=model.config.seed,
+            batch_size=cfg.batch_size,
+            num_workers=cfg.num_workers,
+            pin_memory=cfg.pin_memory,
+            prefetch_factor=cfg.prefetch,
+            persistent_workers=cfg.persistent_workers,
+            seed=cfg.seed,
         )
-        # print(f"len of {dataset} dataset for {task}: {len(dl.dataset)}")
 
         if task == "hateful_memes":
             _, val_loader = datasets.get_hateful_memes_datasets(
-                train_test_ratio=TRAIN_TEST_RATIO,
-                batch_size=BATCH_SIZE_DOWNSTREAM,
-                num_workers=NUM_WORKERS,
-                pin_memory=PIN_MEMORY,
-                prefetch_factor=PREFETCH,
-                persistent_workers=PERSISTENT_WORKERS,
+                train_test_ratio=cfg.train_test_ratio,
+                batch_size=cfg.batch_size,
+                num_workers=cfg.num_workers,
+                pin_memory=cfg.pin_memory,
+                prefetch_factor=cfg.prefetch,
+                persistent_workers=cfg.persistent_workers,
                 use_train_augmentation=False,
-                seed=model.config.seed
+                seed=cfg.seed,
             )
             trainer = HatefulMemesTrainer(
                 model=model,
-                config=model.config,
-                gradient_accumulation=GRADIENT_ACCUMULATION,
-                use_contrastive_loss=model.config.use_contrastive_loss,
+                config=cfg,
+                gradient_accumulation=cfg.gradient_accumulation,
+                use_contrastive_loss=cfg.use_contrastive_loss,
             )
             if dataset == "test":
                 loss, acc, auc = trainer.evaluate(dl)
             else:
                 loss, acc, auc = trainer.evaluate(val_loader)
 
-
-
         elif task == "mm_imdb":
             _, val_loader = datasets.get_mmimdb_datasets(
-                train_test_ratio=TRAIN_TEST_RATIO,
-                batch_size=BATCH_SIZE_DOWNSTREAM,
-                num_workers=NUM_WORKERS,
-                pin_memory=PIN_MEMORY,
-                prefetch_factor=PREFETCH,
-                persistent_workers=PERSISTENT_WORKERS,
+                train_test_ratio=cfg.train_test_ratio,
+                batch_size=cfg.batch_size,
+                num_workers=cfg.num_workers,
+                pin_memory=cfg.pin_memory,
+                prefetch_factor=cfg.prefetch,
+                persistent_workers=cfg.persistent_workers,
                 use_train_augmentation=False,
-                seed=model.config.seed,
+                seed=cfg.seed,
             )
             trainer = MM_IMDB_Trainer(
                 model=model,
-                config=model.config,
-                gradient_accumulation=GRADIENT_ACCUMULATION,
-                use_contrastive_loss=model.config.use_contrastive_loss,
+                config=cfg,
+                gradient_accumulation=cfg.gradient_accumulation,
+                use_contrastive_loss=cfg.use_contrastive_loss,
             )
             if dataset == "test":
                 loss, acc = trainer.evaluate(dl)
@@ -1331,20 +1272,20 @@ class ExperimentTracker:
 
         elif task == "upmc_food":
             _, val_loader = datasets.get_upmc_datasets(
-                train_test_ratio=TRAIN_TEST_RATIO,
-                batch_size=BATCH_SIZE_DOWNSTREAM,
-                num_workers=NUM_WORKERS,
-                pin_memory=PIN_MEMORY,
-                prefetch_factor=PREFETCH,
-                persistent_workers=PERSISTENT_WORKERS,
+                train_test_ratio=cfg.train_test_ratio,
+                batch_size=cfg.batch_size,
+                num_workers=cfg.num_workers,
+                pin_memory=cfg.pin_memory,
+                prefetch_factor=cfg.prefetch,
+                persistent_workers=cfg.persistent_workers,
                 use_train_augmentation=False,
-                seed=model.config.seed,
+                seed=cfg.seed,
             )
             trainer = UPMCTrainer(
                 model=model,
-                config=model.config,
-                gradient_accumulation=GRADIENT_ACCUMULATION,
-                use_contrastive_loss=model.config.use_contrastive_loss,
+                config=cfg,
+                gradient_accumulation=cfg.gradient_accumulation,
+                use_contrastive_loss=cfg.use_contrastive_loss,
             )
             if dataset == "test":
                 loss, acc = trainer.evaluate(dl)
