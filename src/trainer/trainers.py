@@ -289,8 +289,8 @@ class PretrainingTrainer:
                 # print(f"contrastive loss: {loss_contrastive}")
                 loss = loss + 0.3* loss_contrastive
 
-        if OPTIMIZE_CKA:
-            # save inputs for recomputation of cka
+        if OPTIMIZE_CKA or OPTIMIZE_MUTUAL_KNN:
+            # save inputs for recomputation of CKA / mutual-kNN
             self.input_buffer.append({
                 'text': {k: v.detach() for k, v in text.items()},
                 'image': {k: v.detach() for k, v in image.items()}
@@ -496,10 +496,16 @@ class PretrainingTrainer:
                     buffer_cka_loss = []
 
             if (batch_indx+1) % self.gradient_accumulation == 0 or (batch_indx + 1) == total_batches:
-                if OPTIMIZE_CKA and self.input_buffer:
-                    avg_cka_loss = self.compute_cka_loss(self.input_buffer)
-                    # print(f"avg cka loss: {avg_cka_loss}")
-                    self.input_buffer = []
+                if (OPTIMIZE_CKA or OPTIMIZE_MUTUAL_KNN) and self.input_buffer:
+                    try:
+                        if OPTIMIZE_CKA:
+                            avg_cka_loss = self.compute_cka_loss(self.input_buffer)
+                        if OPTIMIZE_MUTUAL_KNN:
+                            avg_mutual_knn = self.compute_mutual_knn_loss(self.input_buffer)
+                        # print(f"avg cka loss: {avg_cka_loss}")
+                        self.input_buffer = []
+                    except Exception as e:
+                        print(f"Error computing CKA/Mutual-kNN loss: {e}")
 
 
                 lr = self.scheduler.get_lr()
@@ -716,6 +722,56 @@ class PretrainingTrainer:
 
         avg_cka = total_cka / num_chunks
         return avg_cka
+
+
+    def compute_mutual_knn_loss(self, input_buffer, backward=True):
+        """Compute differentiable mutual-kNN loss over buffered inputs."""
+        assert len(input_buffer) > 0
+        chunk_size = 4
+        total_mutual = 0
+        num_chunks = 0
+        for i in range(0, len(input_buffer), chunk_size):
+            chunk_inputs = input_buffer[i : i + chunk_size]
+
+            text_embeds_list = []
+            vision_embeds_list = []
+
+            for inputs in chunk_inputs:
+                with torch.amp.autocast(device_type=self.device):
+                    text_emb, img_emb = self.model.forward_pretrain(
+                        text_input_ids=inputs['text']['input_ids'],
+                        text_attention_mask=inputs['text']['attention_mask'],
+                        text_token_type_ids=inputs['text'].get('token_type_ids'),
+                        image_pixel_values=inputs['image']['pixel_values'],
+                        image_attention_mask=inputs['image'].get('attention_mask'),
+                        tasks=["alignment_prediction"],
+                    )
+                    text_embeds_list.append(text_emb)
+                    vision_embeds_list.append(img_emb)
+
+            text_embeddings = torch.cat(text_embeds_list, dim=0)
+            vision_embeddings = torch.cat(vision_embeds_list, dim=0)
+
+            mutual_val = AlignmentMetrics.mutual_knn_tensor(
+                text_embeddings, vision_embeddings, topk=KNN_K, temp=MUTUAL_KNN_TEMP
+            )
+
+            if backward:
+                mutual_loss = -OPTIMIZE_MUTUAL_KNN_LAMBDA * mutual_val
+                scaled_mutual_loss = self.scaler.scale(mutual_loss)
+                scaled_mutual_loss.backward()
+
+            total_mutual += mutual_val.item()
+            num_chunks += 1
+
+            del text_embeds_list, vision_embeds_list, text_embeddings, vision_embeddings
+            if backward:
+                del mutual_val, mutual_loss, scaled_mutual_loss
+            with torch.no_grad():
+                torch.cuda.empty_cache()
+
+        avg_mutual = total_mutual / num_chunks
+        return avg_mutual
 
     def compute_cka_value(self, dataloader: DataLoader, num_batches: int = None):
         """Compute CKA value for validation (no backward pass)"""

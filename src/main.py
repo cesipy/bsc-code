@@ -29,29 +29,7 @@ pt_epochs = 7
 
 
 def main():
-
-    path_prefix = "single_plots/dim_red"
-    dim_red.main()
-    # results = metric_evolution.load_results("metric_evolution/pretrained_early_fusion/intra_modal_results_cka.json")
-    # metric_evolution.plot_intra_modal_metrics_single(results,
-    #     t_biattn_ids=[3, 4, 5], v_biattn_ids=[3, 4, 5],
-    #     save_path=os.path.join(path_prefix, "early_fusion.png")
-    # )
-
-    # results = metric_evolution.load_results("metric_evolution/pretrained_middle_fusion/intra_modal_results_cka.json")
-    # metric_evolution.plot_intra_modal_metrics_single(results,
-    #     t_biattn_ids=[6,7,8], v_biattn_ids=[6,7,8],
-    #     save_path=os.path.join(path_prefix, "middle_fusion.png")
-    # )
-
-    # results = metric_evolution.load_results("metric_evolution/pretrained_late_fusion/intra_modal_results_cka.json")
-    # metric_evolution.plot_intra_modal_metrics_single(results,
-    #     t_biattn_ids=[9,10,11], v_biattn_ids=[9,10,11],
-    #     save_path=os.path.join(path_prefix, "late_fusion.png")
-    # )
-    exit()
-
-
+    # this does pretraining + finetune for a given set of configurations.
     t = experiment_tracker.ExperimentTracker()
 
     configs = [

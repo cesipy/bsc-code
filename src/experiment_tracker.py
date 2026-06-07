@@ -41,11 +41,13 @@ class ExperimentConfig:
 
     epochs: int = EPOCHS_
     batch_size: int = BATCH_SIZE_DOWNSTREAM
+    pretrain_batch_size: int = BATCH_SIZE_PRETRAIN
     gradient_accumulation: int = GRADIENT_ACCUMULATION_DOWNSTREAM
     learning_rate: float = DOWNSTREAM_LR
     seed:int = SEED
     train_test_ratio: float = TRAIN_TEST_RATIO
     dropout:float = DROPOUT_PROB
+    
 
 
 
@@ -519,6 +521,7 @@ class ExperimentTracker:
         task: str,
         config: ViLBERTConfig,
         batch_size = BATCH_SIZE_ANALYSIS,
+        num_samples: int = ALIGNMENT_ANALYSIS_SIZE,
     ):
         if task == "hateful_memes":
             alignment_dataloader, _, _,_ = datasets.get_alignment_dataloaders(
@@ -527,7 +530,7 @@ class ExperimentTracker:
                 pin_memory=False,
                 prefetch_factor=None,
                 seed=config.seed,
-                num_samples=ALIGNMENT_ANALYSIS_SIZE
+                num_samples=num_samples
             )
         elif task == "mm_imdb":
             _, _, alignment_dataloader,_ = datasets.get_alignment_dataloaders(
@@ -536,7 +539,7 @@ class ExperimentTracker:
                 pin_memory=False,
                 prefetch_factor=None,
                 seed=config.seed,
-                num_samples=ALIGNMENT_ANALYSIS_SIZE
+                num_samples=num_samples
             )
         # TODO: currently there is no alignment dataloader for upmc
         elif task == "upmc_food":
@@ -546,7 +549,7 @@ class ExperimentTracker:
                 pin_memory=False,
                 prefetch_factor=None,
                 seed=config.seed,
-                num_samples=ALIGNMENT_ANALYSIS_SIZE
+                num_samples=num_samples
             )
         elif task == "easy_vqa":
             # TODO: also just uses cc right now, needs proper dataset!
@@ -556,7 +559,7 @@ class ExperimentTracker:
                 pin_memory=False,
                 prefetch_factor=None,
                 seed=config.seed,
-                num_samples=ALIGNMENT_ANALYSIS_SIZE
+                num_samples=num_samples
             )
         else:
             raise ValueError(f"unknown task: {task}")
@@ -575,7 +578,7 @@ class ExperimentTracker:
         skip_alignment_analysis: bool = False,
         tmsp: Optional[str] = None,
         pretrained_model=None,
-
+        alignment_analysis_size: int = ALIGNMENT_ANALYSIS_SIZE,
     ):
         assert task in tasklib.all_task_list
 
@@ -586,7 +589,7 @@ class ExperimentTracker:
         trainer = self.get_task_trainer(task=task,model=model)
 
         train_loader, val_loader = self.get_task_dataloader(task=task, config=config)
-        alignment_dataloader = self.get_task_alignment_dataloader(task=task, config=config)
+        alignment_dataloader = self.get_task_alignment_dataloader(task=task, config=config, num_samples=alignment_analysis_size)
 
         if USE_EARLY_STOPPING:
             if task == "hateful_memes":
@@ -736,7 +739,8 @@ class ExperimentTracker:
         filename: str, run_visualizations:bool,
         run_alignment_analysis:bool,
         tmsp: Optional[str] = None,
-        pretrained_model=None
+        pretrained_model=None,
+        alignment_analysis_size: int = ALIGNMENT_ANALYSIS_SIZE,
         ):
         assert task_name in tasklib.all_task_list
 
@@ -758,8 +762,8 @@ class ExperimentTracker:
             run_visualization=run_visualizations,
             skip_alignment_analysis=not run_alignment_analysis,
             tmsp=tmsp,
-            pretrained_model=pretrained_model
-
+            pretrained_model=pretrained_model,
+            alignment_analysis_size=alignment_analysis_size,
         )
         return training_results
 
@@ -773,6 +777,7 @@ class ExperimentTracker:
         run_alignment_analysis:bool=False,
         tasks:list[str]=["hateful_memes", "mm_imdb", "upmc_food"],
         pretrained_model_path: Optional[str] = None,
+        alignment_analysis_size: int = ALIGNMENT_ANALYSIS_SIZE,
     ) -> dict:
         print(f"seed = {experiment_config.seed}")
         logger.info(f"seed = {experiment_config.seed}")
@@ -804,7 +809,8 @@ class ExperimentTracker:
                 filename=filename, run_visualizations=run_visualizations,
                 training_results=training_results,
                 run_alignment_analysis=run_alignment_analysis, tmsp=tmsp,
-                pretrained_model=pretrained_model
+                pretrained_model=pretrained_model,
+                alignment_analysis_size=alignment_analysis_size,
             )
 
         self.save_results(
@@ -883,6 +889,7 @@ class ExperimentTracker:
 
         config.epochs = experiment_config.epochs
         config.batch_size = experiment_config.batch_size
+        config.pretrain_batch_size = experiment_config.pretrain_batch_size
         config.gradient_accumulation = experiment_config.gradient_accumulation
         config.learning_rate = experiment_config.learning_rate
         config.seed = experiment_config.seed
@@ -973,6 +980,7 @@ class ExperimentTracker:
         train_data, val_data,
         run_visualizations:bool=False,
         run_alignment_analysis:bool=False,
+        alignment_analysis_size:int=ALIGNMENT_ANALYSIS_SIZE,
     ) -> Tuple[dict, str, str]:
 
         task_string = ""
@@ -994,7 +1002,7 @@ class ExperimentTracker:
             prefetch=PREFETCH,
             persistent_workers=PERSISTENT_WORKERS,
             pin_memory=PIN_MEMORY,
-            batch_size=BATCH_SIZE_PRETRAIN,
+            batch_size=config.pretrain_batch_size,
             seed=config.seed,
         )
 
@@ -1020,7 +1028,7 @@ class ExperimentTracker:
             num_workers=4,
             pin_memory=False,
             prefetch_factor=4,
-            num_samples=ALIGNMENT_ANALYSIS_SIZE,
+            num_samples=alignment_analysis_size,
             seed=config.seed
         )
 
@@ -1109,6 +1117,7 @@ class ExperimentTracker:
         run_alignment_analysis:bool=False,
         tiny_fraction:bool=False,
         num_samples:int=NUM_SAMPLES_CC,
+        alignment_analysis_size:int=ALIGNMENT_ANALYSIS_SIZE,
     ) -> dict:
         """
         run pretraining with a given config.
@@ -1149,7 +1158,7 @@ class ExperimentTracker:
             f"loaded from {path} and {val_path}, \n"
             f"training_data points: {len(train_data)}, val_data points: {len(val_data)}\n"
             f"seed: {experiment_config.seed}, lr: {experiment_config.learning_rate}, \n"
-            f"batch_size: {BATCH_SIZE_PRETRAIN}, simulated batch_size: {BATCH_SIZE_PRETRAIN * GRADIENT_ACCUMULATION}, bs-analysis: {BATCH_SIZE_ANALYSIS}\n"
+            f"batch_size: {experiment_config.pretrain_batch_size}, simulated batch_size: {experiment_config.pretrain_batch_size * experiment_config.gradient_accumulation}, bs-analysis: {BATCH_SIZE_ANALYSIS}\n"
         )
         logger.info(info_str)
         print(info_str)
@@ -1162,7 +1171,7 @@ class ExperimentTracker:
         assert config.pretraining_tasks != None
         assert config.learning_rate == experiment_config.learning_rate
 
-        training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations)
+        training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations, alignment_analysis_size=alignment_analysis_size)
 
 
         self.save_results(

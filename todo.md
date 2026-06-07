@@ -1,5 +1,15 @@
 # TODOs
 
+- [ ] refactor the strucuture of the repo
+	- special 
+- [ ] how to make training easier, more modular
+- [ ] implement cycke-knns
+	- [ ] analyze other metrics
+
+- [ ] optimize for mknn maybe
+
+## historical
+
 **immediate:**
 
 - [ ] analysis of pretrained models: discrepancies in end representation of streams

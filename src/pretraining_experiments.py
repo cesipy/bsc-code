@@ -143,7 +143,6 @@ def main():
             seed=seed,
         )
 
-
         results_pretrain = t.run_pretrain(
             experiment_config=pretrain_config,
             # run_alignment_analysis=True,
