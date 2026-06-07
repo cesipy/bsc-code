@@ -290,7 +290,23 @@ optuna-dashboard sqlite:///res/hyperparameter_optimization/optuna_study.db
 
 
 
+## Testing
+
+Integration tests cover the full pretrain $\Rightarrow$ finetune pipeline. They require a 24 GB GPU node:
+
+```bash
+# integration tests only (requires 24 GB GPU node, roughly 45 min)
+python -m pytest integration tests/test_pipeline.py -v
+
+# all other tests, skips integration tests
+python -m pytest  "not integration" tests/
+```
+
+- `test_pretrain_integration` — pretraining with alignment analysis (~16 min)
+- `test_full_pipeline` — pretrain + hateful memes finetuning end-to-end (~45 min)
+
+Determinism is achieved via `NUM_WORKERS=0` and explicit batch size pinning in `ExperimentConfig`. Golden values are recorded in the test docstrings.
+
 ## Next Steps
 
 This thesis produced interesting results, that can be used for further experimentation.
-
