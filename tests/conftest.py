@@ -3,6 +3,13 @@ import os
 import pytest
 import torch
 
+from unittest.mock import patch
+from transformers import BertConfig, BertModel
+import timm
+import vilbert as vilbert_mod
+from config import ViLBERTConfig
+
+
 # Fallback path setup in case pytest.ini pythonpath is not picked up
 _src = os.path.join(os.path.dirname(__file__), '..', 'src')
 if _src not in sys.path:
@@ -98,3 +105,43 @@ def golden_inputs():
     types = torch.zeros(1, TEXT_SEQ_LEN, dtype=torch.long)
     img   = torch.randn(1, 3, 224, 224)
     return ids, mask, types, img
+
+
+# ---------------------------------------------------------------------------
+# Fresh-model factory for trainer / serialization tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def make_fresh_vilbert() -> tuple[vilbert_mod.ViLBERT, "ViLBERTConfig"]:
+    """
+    Returns make(t_ids, v_ids, **cfg_kwargs) -> (model, config).
+
+    Unlike the session-scoped random_bert/random_vit fixtures, this builds
+    FRESH BERT + ViT weights on every call. Trainer/serialization tests run
+    backward passes and optimizer steps that mutate weights in place, so they
+    must not share the session models that the golden-value tests rely on.
+    """
+
+    def _build(t_ids, v_ids, seed=0, **cfg_kwargs):
+        torch.manual_seed(seed)
+        bert = BertModel(BertConfig(
+            hidden_size=768, num_hidden_layers=12, num_attention_heads=12,
+            intermediate_size=256, vocab_size=30522,
+        ))
+        vit = timm.create_model(
+            "vit_base_patch16_224", pretrained=False, num_classes=0, global_pool="",
+        )
+        with patch("vilbert.BertModel") as MockBertCls, \
+             patch("vilbert.timm") as mock_timm:
+            MockBertCls.from_pretrained.return_value = bert
+            mock_timm.create_model.return_value       = vit
+            cfg = ViLBERTConfig(
+                text_cross_attention_layers=t_ids,
+                vision_cross_attention_layers=v_ids,
+                **cfg_kwargs,
+            )
+            model = vilbert_mod.ViLBERT(cfg)
+        return model, cfg
+
+    tupl = _build
+    return tupl

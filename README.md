@@ -296,10 +296,10 @@ Integration tests cover the full pretrain $\Rightarrow$ finetune pipeline. They 
 
 ```bash
 # integration tests only (requires 24 GB GPU node, roughly 45 min)
-python -m pytest integration tests/test_pipeline.py -v
+PTHONPATH=$(pwd)/src pytest -m integration tests/test_pipeline.py -v
 
 # all other tests, skips integration tests
-python -m pytest  "not integration" tests/
+PTHONPATH=$(pwd)/src pytest -m "not integration" tests/
 ```
 
 - `test_pretrain_integration` — pretraining with alignment analysis (~16 min)

@@ -95,6 +95,7 @@ PYTHONPATH=$(pwd)/src pytest -m "not integration"
 | `tests/test_config_mapping.py` | — | `ExperimentConfig`→`ViLBERTConfig` field mapping + LR scheduler shape |
 | `tests/test_serialization.py` | — | `save_model`/`load_model` round-trip preserves weights + cross-attn placement |
 | `tests/test_trainers.py` | — | smoke (one step, finite loss, head updates) **+** behavioural guards: `__init__` optimizer/device contract, `setup_scheduler` step math, grad-accum step cadence, scheduler LR written to optimizer |
+| `tests/test_trainer_correctness.py` | — | gradient flow into cross-attn + backbones, loss-fn oracles + head output dims, `evaluate()` no-grad/arity contract, train-epoch determinism |
 | `tests/test_pipeline.py` | `integration` | full pretrain / pretrain+finetune end-to-end |
 
 The architecture/metric/trainer/config tests use **random-weight** BERT+ViT built in-process (no HF/timm download). `tests/conftest.py` provides `random_bert`/`random_vit` (session-scoped, for shape/golden tests) and `make_fresh_vilbert` (fresh weights per call, for tests that mutate weights via backward/step).

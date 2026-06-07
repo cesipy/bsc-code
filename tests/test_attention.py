@@ -255,7 +255,7 @@ class TestCrossAttentionBlockGolden:
 
 
 class TestFeedForwardBlockGolden:
-    """FeedForward_Block — point-wise FFN with GeLU."""
+    """FeedForward_Block; point-wise FFN with GeLU"""
 
     def test_token0_values(self):
         torch.manual_seed(2)
