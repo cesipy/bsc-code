@@ -53,7 +53,7 @@ NUM_SAMPLES_CC = 500_000
 OPTIMIZE_CKA = False
 OPTIMIZE_CKA_LAMBDA = 0.2
 # optimize mutual k-NN (differentiable surrogate)
-OPTIMIZE_MUTUAL_KNN = True
+OPTIMIZE_MUTUAL_KNN = False
 OPTIMIZE_MUTUAL_KNN_LAMBDA = 0.2
 MUTUAL_KNN_TEMP = 0.07
 # --------------------------------------------------
@@ -64,8 +64,8 @@ TRAIN_TEST_RATIO = 0.8
 # what length for text tokens; is the same as num_patches + 1: 16*16 patches + cls
 TOKENIZER_MAX_LEN = 197
 #all the torch dataset/dataloader stuff
-NUM_WORKERS = 4
-PREFETCH = 3
+NUM_WORKERS = 0
+PREFETCH = None
 PERSISTENT_WORKERS = False
 PIN_MEMORY = False
 
@@ -78,14 +78,14 @@ NEG_COUNT_HM = 5481
 DOWNSTREAM_EPOCHS = 9
 DOWNSTREAM_LR     = 3.4e-5
 
-good_gpus = [0,1,9,10,11,12]  # gpus with 24gb vram
-gpu_prefix = "c703i-gpu"
+_GOOD_GPUS = [0,1,9,6,7,10,11,12]  # gpus with 24gb vram
+_GPU_PREFIX = "c703i-gpu"
 if socket.gethostname() == "c703i-gpu5":
     BATCH_SIZE_DOWNSTREAM = 4
     GRADIENT_ACCUMULATION_DOWNSTREAM = 128
     print("on gpu5!")
 if socket.gethostname() == "c703i-gpu10" or socket.gethostname() == "703i-gpu11"  \
-    or int(socket.gethostname().replace(gpu_prefix, ""))in good_gpus:
+    or int(socket.gethostname().replace(_GPU_PREFIX, ""))in _GOOD_GPUS:
     BATCH_SIZE_DOWNSTREAM = 24
     GRADIENT_ACCUMULATION_DOWNSTREAM = 22
     print("on good gpu!")
@@ -134,7 +134,8 @@ ES_MODE = "max"  # min for loss, max for acc
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251028_finetune_comparison"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251025-105249_pretrained_bl_full_coattn"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
-FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251102-122009_pretrained_early_fusion_cka"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
+# FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251102-122009_pretrained_early_fusion_cka"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251111-222754_pretrained_hybrid1"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251113-080744_pretrained_hybrid2"
 
@@ -151,6 +152,7 @@ class ViLBERTConfig:
         preprocessed_path=PREPROCESSED_PATH,
         train_test_ratio=TRAIN_TEST_RATIO,
         batch_size=BATCH_SIZE_PRETRAIN,
+        pretrain_batch_size=BATCH_SIZE_PRETRAIN,
         gradient_accumulation=GRADIENT_ACCUMULATION,
         pretraining_tasks: list = [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM],  # default tasks to pretrain on
         text_cross_attention_layers: list[int] = T_BIATTENTION_IDS,
@@ -159,6 +161,7 @@ class ViLBERTConfig:
         use_contrastive_loss: bool = USE_CONTRASTIVE_LOSS,
         num_bi_attention_heads: int = NUM_BI_ATTENTION_HEADS,
         epochs: int = PRETRAIN_EPOCHS,
+        # num_workers: int = NUM_WORKERS,
     ):
         assert len(text_cross_attention_layers) == len(vision_cross_attention_layers)
         self.embedding_dim = embedding_dim
@@ -171,6 +174,7 @@ class ViLBERTConfig:
         self.preprocessed_path = preprocessed_path
         self.train_test_ratio = train_test_ratio
         self.batch_size = batch_size
+        self.pretrain_batch_size = pretrain_batch_size
         self.gradient_accumulation = gradient_accumulation
         self.depth = DEPTH + len(text_cross_attention_layers)  # total number of layers in transformer
         self.pretraining_tasks = pretraining_tasks
@@ -180,6 +184,7 @@ class ViLBERTConfig:
         self.use_contrastive_loss = use_contrastive_loss
         self.num_bi_attention_heads = num_bi_attention_heads
         self.epochs = epochs
+        # self.num_workers = num_workers
         assert len(self.text_cross_attention_layers) <= DEPTH
 
 
@@ -222,6 +227,7 @@ class ViLBERTConfig:
             text_cross_attention_layers=config_dict.get("text_cross_attention_layers", T_BIATTENTION_IDS),
             vision_cross_attention_layers=config_dict.get("vision_cross_attention_layers", V_BIATTENTION_IDS),
             seed=config_dict.get("seed", SEED),
+            # num_workers=config_dict.get("num_workers", NUM_WORKERS),
         )
         return config
 
