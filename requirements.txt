@@ -25,4 +25,5 @@ torchaudio==2.6.0+cu124
 lovely-tensors
 scikit-dimension
 scikit-learn
-pytestmlflow
+pytest
+mlflow

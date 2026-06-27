@@ -3,7 +3,7 @@ import os, json
 import numpy as np
 import torch
 
-from  experiment_tracker import ExperimentTracker, ExperimentConfig
+from experiment_tracker import ExperimentTracker
 
 import analysis
 import datasets

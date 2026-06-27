@@ -115,7 +115,7 @@ def main():
         )
         results_pretrain = t.run_pretrain(
             experiment_config=pretrain_config,
-            run_alignment_analysis=True,
+            # run_alignment_analysis=True,
             num_samples=args.num_samples,
             alignment_analysis_size=args.alignment_analysis_size,
         )

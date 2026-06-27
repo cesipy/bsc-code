@@ -24,7 +24,7 @@ class Logger:
         os.makedirs("logs", exist_ok=True)
         today = datetime.datetime.today().strftime("%Y-%m-%d")
         if socket.gethostname().startswith("c703i-"):
-            gpu_name = socket.gethostname().replace("c703i-", "")
+            gpu_name = socket.gethostname().replace("c703i-", "")       # obviously works only on university gpu
             self.filename = FILENAME_PREFIX + today+ gpu_name  + ".txt"
 
         else:
