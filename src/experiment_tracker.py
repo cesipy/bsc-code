@@ -7,12 +7,20 @@ import numpy as np
 import copy
 
 import torch
-
-
 import optuna; from optuna import pruners
 
 
-from config import *
+from config import (
+    SEED, ViLBERTConfig, BATCH_SIZE_ANALYSIS, ALIGNMENT_ANALYSIS_SIZE, USE_EARLY_STOPPING,
+    ES_MODE, ES_PATIENCE, ES_CONTINUE_THRESH,
+    OPTIMIZE_CKA,
+    FINETUNE_CHECKPOINTS_DIR,
+    KNN_K,
+    FREEZE_UNIMODAL_ENCODERS,
+    Task,
+    NUM_SAMPLES_CC,
+    MLFLOW_TRACKING_URI,MLFLOW_EXPERIMENT_NAME
+)
 from trainer import HatefulMemesTrainer, PretrainingTrainer, UPMCTrainer, MM_IMDB_Trainer, VQATrainer
 
 from vilbert import ViLBERT
@@ -21,8 +29,10 @@ import datasets
 from logger import Logger
 import analysis
 import task as tasklib
+import external_libs_utils as elu
 
 logger = Logger()
+
 #specific to that file
 EPOCHS_ = 15
 LR_ = 4e-5
@@ -72,7 +82,7 @@ class ExperimentTracker:
         os.makedirs(self.save_dir, exist_ok=True)
         os.makedirs(self.visualization_dir, exist_ok=True)
 
-
+    # throw out optuna stuff
     def get_biattentions(self, num_coattn_layers:int, t_center:float,t_spread:float,v_center:float,v_spread:float):
         """ more sophisticated approach for parametrized coattention construction.
 
@@ -127,8 +137,6 @@ class ExperimentTracker:
         v_spread = trial.suggest_float("v_spread", 1.0, 4.0)
 
         return self.get_biattentions(num_coattn_layers, t_center, t_spread, v_center, v_spread)
-
-
 
 
     def construct_coattn_configs(self, strat:str) -> Tuple[list, list]:
@@ -628,6 +636,20 @@ class ExperimentTracker:
             if val_dict.get("auc") is not None:
                 training_results[task]["training"][i+1]["val_auc"] = val_dict["auc"]
 
+            # live per-epoch logging to the run opened by run_finetune (no-op if
+            # called outside an active MLflow run, e.g. some unit tests)
+            if mlflow.active_run() is not None:
+                step = i + 1
+                mlflow.log_metric(f"{task}/train_loss", train_loss, step=step)
+                mlflow.log_metric(f"{task}/val_loss", val_dict["loss"], step=step)
+                mlflow.log_metric(f"{task}/val_acc", val_dict["acc"], step=step)
+                mlflow.log_metric(f"{task}/test_loss", test_dict["loss"], step=step)
+                mlflow.log_metric(f"{task}/test_acc", test_dict["acc"], step=step)
+                if val_dict.get("auc") is not None:
+                    mlflow.log_metric(f"{task}/val_auc", val_dict["auc"], step=step)
+                if test_dict.get("auc") is not None:
+                    mlflow.log_metric(f"{task}/test_auc", test_dict["auc"], step=step)
+
             if USE_EARLY_STOPPING:
                 if task == "hateful_memes" and val_dict.get("auc") is not None:
                     val = val_dict["auc"]
@@ -766,41 +788,52 @@ class ExperimentTracker:
 
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs, tasks=tasks)
 
-        for task in tasks:
-            pretrained_model = None
-            if pretrained_model_path:
-                assert os.path.exists(pretrained_model_path)
-                print(f"loading pretrained model from {pretrained_model_path}")
-                pretrained_model = ViLBERT.load_model(pretrained_model_path, device= "cuda" if torch.cuda.is_available() else "cpu")
-                info_str = f"Loaded pretrained model from {pretrained_model_path} for task {task}"
-                print(info_str)
-                logger.info(info_str)
-                assert pretrained_model.config.text_cross_attention_layers == experiment_config.text_cross_attention_layers
-                assert pretrained_model.config.vision_cross_attention_layers == experiment_config.vision_cross_attention_layers
-
-            training_results = self._run_task(
-                task_name=task, experiment_config=experiment_config,
-                filename=filename, run_visualizations=run_visualizations,
-                training_results=training_results,
-                run_alignment_analysis=run_alignment_analysis, tmsp=tmsp,
-                pretrained_model=pretrained_model,
-                alignment_analysis_size=alignment_analysis_size,
+        # One long-running MLflow run for the whole call: params are logged up
+        # front and per-epoch metrics stream in live (see run_single_experiment),
+        # so the UI updates during training and a crash keeps partial history.
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        experiment_id = elu.get_or_create_experiment_id(MLFLOW_EXPERIMENT_NAME)
+        with mlflow.start_run(experiment_id=experiment_id) as run:
+            run_id = run.info.run_id
+            self._log_run_params(
+                run_type="finetune",
+                config=experiment_config,
+                tasks=tasks,
+                pretrained_from=pretrained_model_path,
             )
+            info_str = f"MLflow run started: {run_id}"
+            logger.info(info_str); print(info_str)
 
-        self.save_results(
-            training_results=training_results,
-            config=experiment_config,
-            filename=filename,
-        )
-        checkpoint_path = training_results.get(tasks[0], {}).get("model_path", "") if tasks else ""
-        run_id = self._log_to_mlflow(
-            run_type="finetune",
-            config=experiment_config,
-            training_results=training_results,
-            checkpoint_path=checkpoint_path,
-            tasks=tasks,
-            pretrained_from=pretrained_model_path,
-        )
+            for task in tasks:
+                pretrained_model = None
+                if pretrained_model_path:
+                    assert os.path.exists(pretrained_model_path)
+                    print(f"loading pretrained model from {pretrained_model_path}")
+                    pretrained_model = ViLBERT.load_model(pretrained_model_path, device= "cuda" if torch.cuda.is_available() else "cpu")
+                    info_str = f"Loaded pretrained model from {pretrained_model_path} for task {task}"
+                    print(info_str)
+                    logger.info(info_str)
+                    assert pretrained_model.config.text_cross_attention_layers == experiment_config.text_cross_attention_layers
+                    assert pretrained_model.config.vision_cross_attention_layers == experiment_config.vision_cross_attention_layers
+
+                training_results = self._run_task(
+                    task_name=task, experiment_config=experiment_config,
+                    filename=filename, run_visualizations=run_visualizations,
+                    training_results=training_results,
+                    run_alignment_analysis=run_alignment_analysis, tmsp=tmsp,
+                    pretrained_model=pretrained_model,
+                    alignment_analysis_size=alignment_analysis_size,
+                )
+
+            self.save_results(
+                training_results=training_results,
+                config=experiment_config,
+                filename=filename,
+            )
+            checkpoint_path = training_results.get(tasks[0], {}).get("model_path", "") if tasks else ""
+            mlflow.set_tag("checkpoint_path", checkpoint_path)
+            self._log_final_test_metrics(training_results=training_results, tasks=tasks)
+
         training_results["mlflow_run_id"] = run_id
         info_str = f"MLflow run: {run_id}"
         logger.info(info_str); print(info_str)
@@ -901,50 +934,33 @@ class ExperimentTracker:
 
 
 
-
-    def _log_to_mlflow(
+    def _log_run_params(
         self,
         run_type: str,
         config: ViLBERTConfig,
-        training_results: dict,
-        checkpoint_path: str,
         tasks: list,
         pretrained_from: Optional[str] = None,
-    ) -> str:
-        """Log a completed run to MLflow. Returns the run_id."""
-        mlflow.set_experiment("vilbert-alignment-probing")
-        with mlflow.start_run() as run:
-            mlflow.set_tag("type", run_type)
-            mlflow.set_tag("checkpoint_path", checkpoint_path)
-            mlflow.set_tag("t_ids", str(config.text_cross_attention_layers))
-            mlflow.set_tag("v_ids", str(config.vision_cross_attention_layers))
-            if pretrained_from:
-                mlflow.set_tag("pretrained_from", pretrained_from)
+    ) -> None:
+        """Log params + tags onto the active MLflow run (called once at start)."""
+        mlflow.set_tag("type", run_type)
+        mlflow.set_tag("t_ids", str(config.text_cross_attention_layers))
+        mlflow.set_tag("v_ids", str(config.vision_cross_attention_layers))
+        if pretrained_from:
+            mlflow.set_tag("pretrained_from", pretrained_from)
 
-            # log all config fields as params (lists → string repr)
-            for k, v in config.to_dict().items():
-                if k == "depth":
-                    continue  # derived, not a real param
-                mlflow.log_param(k, str(v) if isinstance(v, (list, tuple)) else v)
+        # log all config fields as params (lists → string repr)
+        for k, v in config.to_dict().items():
+            if k == "depth":
+                continue  # derived, not a real param
+            mlflow.log_param(k, str(v) if isinstance(v, (list, tuple)) else v)
 
-            # log per-epoch metrics
-            if run_type == "pretrain":
-                for epoch, metrics in training_results.get("pretraining", {}).get("training", {}).items():
-                    if metrics:
-                        for k, v in metrics.items():
-                            mlflow.log_metric(k, v, step=int(epoch))
-            else:
-                for task in tasks:
-                    for epoch, metrics in training_results.get(task, {}).get("training", {}).items():
-                        if metrics:
-                            for k, v in metrics.items():
-                                mlflow.log_metric(f"{task}/{k}", v, step=int(epoch))
-                    final = training_results.get(task, {}).get("final_test", {})
-                    for k, v in (final or {}).items():
-                        if v is not None:
-                            mlflow.log_metric(f"{task}/test_{k}", float(v))
-
-            return run.info.run_id
+    def _log_final_test_metrics(self, training_results: dict, tasks: list) -> None:
+        """Log final test metrics as run summary onto the active MLflow run."""
+        for task in tasks:
+            final = training_results.get(task, {}).get("final_test", {})
+            for k, v in (final or {}).items():
+                if v is not None:
+                    mlflow.log_metric(f"{task}/final_test_{k}", float(v))
 
     def save_results(self, training_results: dict, config: ViLBERTConfig, filename:str):
         def convert_to_native(obj):
@@ -1083,6 +1099,11 @@ class ExperimentTracker:
                 "val_loss_mim": v_loss_mim,
             }
 
+            # live per-epoch logging to the run opened by run_pretrain
+            if mlflow.active_run() is not None:
+                for k, v in training_results["pretraining"]["training"][epoch+1].items():
+                    mlflow.log_metric(k, v, step=epoch+1)
+
             if run_alignment_analysis:
                 alignment_metrics = self._analyse_alignment(model=model, dataloader=cc_dataloader)
                 training_results["pretraining"]["alignment"][epoch+1] = alignment_metrics
@@ -1166,22 +1187,26 @@ class ExperimentTracker:
         config.pretraining_tasks = tasks
         assert config.pretraining_tasks != None
 
-        training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations, alignment_analysis_size=alignment_analysis_size)
+        # Open the MLflow run before training so _run_pretrain streams per-epoch
+        # metrics into it live (see the log_metric block in its epoch loop).
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        experiment_id = elu.get_or_create_experiment_id(MLFLOW_EXPERIMENT_NAME)
+        with mlflow.start_run(experiment_id=experiment_id) as run:
+            run_id = run.info.run_id
+            self._log_run_params(run_type="pretrain", config=experiment_config, tasks=["pretraining"])
+            info_str = f"MLflow run started: {run_id}"
+            logger.info(info_str); print(info_str)
 
+            training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations, alignment_analysis_size=alignment_analysis_size)
 
-        self.save_results(
-            training_results=training_results,
-            config=experiment_config,
-            filename=f"pretraining_{task_string}_{tmsp}",
-        )
-        training_results["model_path"] = save_path
-        run_id = self._log_to_mlflow(
-            run_type="pretrain",
-            config=experiment_config,
-            training_results=training_results,
-            checkpoint_path=save_path,
-            tasks=["pretraining"],
-        )
+            self.save_results(
+                training_results=training_results,
+                config=experiment_config,
+                filename=f"pretraining_{task_string}_{tmsp}",
+            )
+            training_results["model_path"] = save_path
+            mlflow.set_tag("checkpoint_path", save_path)
+
         training_results["mlflow_run_id"] = run_id
         info_str = f"MLflow run: {run_id}"
         logger.info(info_str); print(info_str)

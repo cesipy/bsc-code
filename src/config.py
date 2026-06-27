@@ -71,6 +71,15 @@ DOWNSTREAM_EPOCHS = 9
 DOWNSTREAM_LR     = 3.4e-5
 
 # --------------------------------------------------
+# mlflow tracking
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MLFLOW_TRACKING_URI = f"sqlite:///{os.path.join(_PROJECT_ROOT, 'mlflow.db')}"
+MLFLOW_EXPERIMENT_NAME = "vilbert-alignment-probing"
+
+
+
+
+# --------------------------------------------------
 # hardware detection: one place decides machine type, batch sizes and grad
 # accumulation. Robust to unknown hostnames (no crash) and to the gpu5 case.
 _GOOD_GPUS = [0, 1, 9, 6, 7, 10, 11, 12]  # gpus with 24gb vram
