@@ -1,7 +1,9 @@
 *.DS_Store
 *.log
 *.vscode
+.idea/
 venv*
+.venv*
 res/data/conceptual-captions/images
 res/data/hateful_memes_data/img
 res/data/hateful_memes_data_old
