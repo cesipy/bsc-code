@@ -28,62 +28,6 @@ from datasets import MM_IMDB_Dataset; import datasets
 from config import *
 from logger import Logger
 
-from abc import ABC, abstractmethod
-class Model(nn.Module, ABC):
-
-    def __init__(self, config):
-        super(Model, self).__init__()
-
-        self.config = config
-        # loads pretrained transformers, no head for task. with transformers.BertFor.... I
-        # could download pretrained transformers for specific tasks
-        self.bert = BertModel.from_pretrained("google-bert/bert-base-uncased")
-
-        # apparently transformers vit implementatins is flawed.
-        # self.vit = ViTModel.from_pretrained("google/vit-base-patch16-224")
-        self.vit = timm.create_model(
-            VIT_MODEL_NAME,
-            pretrained=True,
-            num_classes=0,       # num_classes=0 removes head
-            global_pool="",      # we need whole sequence for mim
-        )
-
-        # pretrain heads
-        self.alignment_fc = nn.Linear(2*self.config.embedding_dim , 1)
-        self.mlm = nn.Linear(self.config.embedding_dim, self.bert.config.vocab_size)    #30522
-
-        # for hateful memes
-        self.fc = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, 1),
-        )
-
-        # TODO: unify, here i do multiplication in the other not
-        # for mmimdb
-        self.fc_imdb = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, MM_IMDB_NUM_GENRES),
-        )
-        self.fc_vqa = nn.Sequential(
-            nn.Linear(self.config.embedding_dim, FC_HIDDEN_DIM),
-            nn.ReLU(inplace=True),
-            nn.Dropout(self.config.dropout_prob),
-            nn.Linear(FC_HIDDEN_DIM, EASY_VQA_NUM_CLASSES),
-        )
-
-
-
-
-    @abstractmethod
-    def forward(self, *args, **kwargs):
-        pass
-
-
-
 class VisionEmbeddings(nn.Module):
     """Process ViT outputs into ViLBERT format"""
     def __init__(self,):
@@ -121,20 +65,11 @@ class ViLBERT(nn.Module):
         self.vision_embeddings = VisionEmbeddings()
 
 
-        # bad naming, copied from og-vilbert
-        # self.v_biattention_ids = [4, 7, 10, 11]
-        # self.t_biattention_ids = [6, 8, 10, 11]
         self.v_biattention_ids = config.vision_cross_attention_layers
         self.t_biattention_ids = config.text_cross_attention_layers
         assert len(self.v_biattention_ids) == len(self.t_biattention_ids)
 
-        # for freezing, TODO
-        self.fixed_t_layer = 3
-        self.fixed_v_layer = 3
-        self.depth = config.depth       # TODO: problem here
-        self.depth = 12
-        # there are the original 12 layers per encoder
-        # self.depth = config.depth + len(self.v_biattention_ids)
+        self.depth = 12  # base transformer depth (cross-attn layers are on top)
 
         self.config = config
         self.c_layers = nn.ModuleList()
@@ -253,20 +188,6 @@ class ViLBERT(nn.Module):
         tmp_t = []
         tmp_v = []
         for v_layer_id, t_layer_id in zip(self.v_biattention_ids, self.t_biattention_ids):
-            # needed for freezing layers
-            # v_end = v_layer_id
-            # t_end = t_layer_id
-            # print(f"v_start: {v_start}, v_end: {v_end}, t_start: {t_start}, t_end: {t_end}")
-            # # for idx in range(t_start, t_end)
-            # for idx in range (t_start, self.fixed_t_layer):
-            #     with torch.no_grad():
-            #         text_embedding = self.bert_layers[idx](
-            #             text_embedding,
-            #             attention_mask=text_attention_mask,
-            #         )[0]
-            #         t_start = self.fixed_t_layer
-            #         print(f"Text only layer {idx} done")
-            # print(f"v_layer_id: {v_layer_id, t_layer_id}")
             for i in range(t_start, t_layer_id):
                 text_embedding = self.bert_layers[i](
                     text_embedding,
@@ -300,21 +221,6 @@ class ViLBERT(nn.Module):
                 vision_embeddings,
                 text_mask=extended_attention_mask,
             )
-            ## skip coats for now
-            # dict_entry_t = {
-            #     "layer": f"c{count}",
-            #     "text_embedding": text_embedding.clone(),
-            #     "is_cross_attention": True
-            # }
-            # dict_entry_v = {
-            #     "layer": f"c{count}",
-            #     "vision_embedding": vision_embeddings.clone(),
-            #     "is_cross_attention": True
-            # }
-            # if save_intermediate_representations:
-            #     tmp_t.append(dict_entry_t)
-            #     tmp_v.append(dict_entry_v)
-
 
             t_start = t_layer_id
             v_start = v_layer_id
@@ -410,14 +316,7 @@ class ViLBERT(nn.Module):
         t_start = 0
         count   = 0
 
-        tmp_t = []
-        tmp_v = []
-
-        # print(f"len bertlayers: {len(self.bert_layers)}")
-
         for v_layer_id, t_layer_id in zip(self.v_biattention_ids, self.t_biattention_ids):
-            # print(f"v_layer_id: {v_layer_id, t_layer_id}")
-
             bound_t = min(t_layer_id, layer_n)
             bound_v = min(v_layer_id, layer_n)
             for i in range(t_start, bound_t):
@@ -469,9 +368,6 @@ class ViLBERT(nn.Module):
         output_hidden_states=False,
         save_intermediate_representations=False,
     ):
-        #TODO: debugging
-        # save_intermediate_representations= True
-
         if save_intermediate_representations:
             text_embedding, image_embedding, save_intermediate_representations = self.forward_coattention(
                 text_input_ids=text_input_ids,

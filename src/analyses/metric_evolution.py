@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt; import json
 
-from  experiment_tracker import ExperimentTracker, ExperimentConfig
+from experiment_tracker import ExperimentTracker
 
 import analysis
 import datasets

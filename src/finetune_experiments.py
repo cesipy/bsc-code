@@ -59,13 +59,13 @@ def main():
         for seed in seeds:
             info_str=f"{c:2}/{len(tasks)*len(seeds)}: finetuning on {task} with seed {seed}"
             print(info_str); logger.info(info_str)
-            e_conf = experiment_tracker.ExperimentConfig(
-                t_biattention_ids=t_biattns,
-                v_biattention_ids=v_biattns,
+            e_conf = ViLBERTConfig(
+                text_cross_attention_layers=t_biattns,
+                vision_cross_attention_layers=v_biattns,
                 epochs=15,
                 learning_rate=3.2e-5 if task == "hateful_memes" else 4e-5,
                 seed=seed,
-                use_contrastive_loss=False
+                use_contrastive_loss=False,
             )
             res = t.run_finetune(experiment_config=e_conf,
                 # run_alignment_analysis=True,

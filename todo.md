@@ -1,12 +1,13 @@
 # TODOs
 
 - [ ] refactor the strucuture of the repo
-	- special 
+	- special
 - [ ] how to make training easier, more modular
 - [ ] implement cycke-knns
 	- [ ] analyze other metrics
 
 - [ ] optimize for mknn maybe
+- [ ] merge together configs and clean up
 
 ## historical
 

@@ -89,6 +89,27 @@ For the basic evaluation program `argcomplete` is installed. This is for tab com
 activate-global-python-argcomplete
 ```
 
+### Running experiments
+
+The recommended entry point is `src/main.py`, which takes a fusion preset or explicit layer indices and runs the full pretrain → finetune pipeline:
+
+```bash
+# use a named preset (see PRESETS dict in main.py for the full list)
+python src/main.py --fusion late
+
+# explicit layer indices
+python src/main.py --t-ids 9 10 11 --v-ids 9 10 11 --name my_run
+
+# common flags
+python src/main.py --fusion late --pt-epochs 7 --ft-epochs 4 --seed 1567
+python src/main.py --fusion late --pretrain-only          # stop after pretraining
+python src/main.py --fusion late --pretrain-path res/checkpoints/pretrains/<ckpt>.pt  # skip pretrain
+python src/main.py --fusion late --tasks hateful_memes upmc_food
+python src/main.py --help
+```
+
+The sweep scripts `src/pretraining_experiments.py` and `src/finetune_experiments.py` orchestrate multi-config / multi-seed runs and work the same way internally.
+
 ### Pretraining
 
 The main scripts used for all experiments in this thesis are `src/pretraining_experiments.py` and `src/finetune_experiments.py`. These orchestrate the full pipeline across all fusion configurations and downstream tasks via `ExperimentTracker`. The lower-level `src/pretrain.py` and `src/finetune.py` exist as standalone entry points but were not the primary way experiments were run.
@@ -149,6 +170,60 @@ Key hyperparameters in `src/config.py`:
 
 
 
+
+## Configuration
+
+All hyperparameters live in a single `ViLBERTConfig` dataclass (`src/config.py`). There is no separate per-experiment config — you create one `ViLBERTConfig` and pass it to `run_pretrain()` / `run_finetune()`.
+
+```python
+from config import ViLBERTConfig
+
+cfg = ViLBERTConfig(
+    text_cross_attention_layers=[9, 10, 11],   # Late fusion
+    vision_cross_attention_layers=[9, 10, 11],
+    learning_rate=1e-4,
+    epochs=7,
+    seed=1567,
+    pretrain_batch_size=20,   # physical batch during pretraining
+    gradient_accumulation=26, # simulated batch ≈ 512
+    batch_size=24,            # downstream / finetuning batch
+)
+```
+
+Key fields:
+
+| Field | Remote default | Local default | Notes |
+|---|---|---|---|
+| `text_cross_attention_layers` | `[6..11]` | same | Layer indices for bidirectional cross-attn |
+| `vision_cross_attention_layers` | `[0..5]` | same | |
+| `pretrain_batch_size` | 20 | 8 | Physical batch during pretraining |
+| `gradient_accumulation` | 26 | 64 | Simulated batch ≈ 512 / 128 |
+| `batch_size` | 24 | 8 | Downstream finetuning batch |
+| `learning_rate` | 1e-4 | same | Override per-run |
+| `seed` | 13310 | same | Pin explicitly for reproducibility |
+| `num_workers` / `prefetch` | 0 / None | same | Keep at 0/None for determinism |
+
+Batch sizes are set automatically by `detect_hardware()` in `config.py` based on the `MACHINE_TYPE` environment variable and the GPU hostname (`c703i-gpuN`). Set `MACHINE_TYPE=remote` on the university servers.
+
+`ViLBERTConfig.to_dict()` / `from_dict()` handle serialization for checkpoint save/load and result JSON files.
+
+## Experiment Tracking
+
+Every `run_pretrain()` and `run_finetune()` call automatically logs to **MLflow**:
+
+- **Params** — all `ViLBERTConfig` fields (cross-attention placement, LR, epochs, batch sizes, seed, …)
+- **Metrics** — per-epoch training/validation losses and accuracy; final test metrics
+- **Tags** — run type (`pretrain`/`finetune`), checkpoint path, layer indices, `pretrained_from`
+
+```bash
+# start the UI (tracking data lives in mlruns/ at the project root)
+mlflow ui
+# open http://localhost:5000 in a browser
+```
+
+Each call also returns `training_results["mlflow_run_id"]` so you can look up a specific run programmatically or link a pretrain run to its downstream finetune runs.
+
+Result JSON files are saved in `res/experiments/` and checkpoints in `res/checkpoints/`. The MLflow UI lets you filter/compare runs by any config param (e.g. all late-fusion runs) or sort by val AUC.
 
 ## Implementation Decisions
 
@@ -305,7 +380,7 @@ PTHONPATH=$(pwd)/src pytest -m "not integration" tests/
 - `test_pretrain_integration` — pretraining with alignment analysis (~16 min)
 - `test_full_pipeline` — pretrain + hateful memes finetuning end-to-end (~45 min)
 
-Determinism is achieved via `NUM_WORKERS=0` and explicit batch size pinning in `ExperimentConfig`. Golden values are recorded in the test docstrings.
+Determinism is achieved via `NUM_WORKERS=0` and explicit batch size pinning in `ViLBERTConfig`. Golden values are recorded in the test docstrings.
 
 ## Next Steps
 

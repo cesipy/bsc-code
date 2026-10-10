@@ -10,7 +10,7 @@ import vilbert
 import datasets
 import trainer
 from config import *
-from experiment_tracker import ExperimentTracker, ExperimentConfig
+from experiment_tracker import ExperimentTracker
 from logger import Logger
 import analysis
 import utils_plotting
@@ -224,6 +224,7 @@ def probe_model_single(path: str, task:str, plots=True):
     model = vilbert.ViLBERT.load_model(load_path=path,
         device=device).to(device)
 
+    # has to be adjusted, this is an artefact from 
     conf = ExperimentConfig(
         t_biattention_ids=model.t_biattention_ids,
         v_biattention_ids=model.v_biattention_ids,
