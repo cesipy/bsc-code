@@ -170,6 +170,14 @@ ES_CONTINUE_THRESH = 0.001
 ES_PATIENCE = 3
 ES_MODE = "max"  # min for loss, max for acc
 # --------------------------------------------------
+# checkpoint write destinations.
+#
+# These must stay distinct: pretraining writes into PRETRAIN_CHECKPOINTS_DIR and
+# finetuning writes into FINETUNE_CHECKPOINTS_DIR. When both pointed at plain
+# "res/checkpoints/" the two kinds of checkpoint interleaved in one directory,
+# which is how the 2026-06 sweep ended up finetuning already-finetuned models.
+PRETRAIN_CHECKPOINTS_DIR = "res/checkpoints/pretrains"
+
 # finetune checkpoints directory
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251010-234252_pretrained_early_fusion/"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251011-234349_pretrained_middle_fusion"
@@ -182,10 +190,16 @@ ES_MODE = "max"  # min for loss, max for acc
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251028_finetune_comparison"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251025-105249_pretrained_bl_full_coattn"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251030-192145_pretrained_latefusion_cka"
-FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/"
+FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/finetunes"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251102-122009_pretrained_early_fusion_cka"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251111-222754_pretrained_hybrid1"
 # FINETUNE_CHECKPOINTS_DIR = "res/checkpoints/20251113-080744_pretrained_hybrid2"
+
+assert os.path.normpath(PRETRAIN_CHECKPOINTS_DIR) != os.path.normpath(FINETUNE_CHECKPOINTS_DIR), (
+    "PRETRAIN_CHECKPOINTS_DIR and FINETUNE_CHECKPOINTS_DIR must differ, otherwise "
+    "finetuned checkpoints land next to pretrained ones and can be picked up as "
+    "pretraining inputs"
+)
 
 
 @dataclass
@@ -223,7 +237,7 @@ class ViLBERTConfig:
         default_factory=lambda: [Task.ALIGNMENT_PREDICTION, Task.MASKED_LM, Task.MASKED_IM]
     )
 
-    # dataloader knobs (previously bare module globals)
+    # dataloader knobs
     num_workers: int = NUM_WORKERS
     prefetch: Optional[int] = PREFETCH
     persistent_workers: bool = PERSISTENT_WORKERS
@@ -239,6 +253,8 @@ class ViLBERTConfig:
 
     # computed (not a constructor argument)
     depth: int = field(init=False)
+
+    testing: bool = False # indicate tests to decide if to track
 
     def __post_init__(self):
         assert len(self.text_cross_attention_layers) == len(self.vision_cross_attention_layers)
