@@ -409,6 +409,14 @@ def calculate_metrics(text_embeddings, vision_embeddings, knn_k):
     unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(norm_t, norm_v)
     svcca = metrics.AlignmentMetrics.svcca(norm_t, norm_v, cca_dim=10)
 
+    # metric used in wittgenstein-hypothesis paper
+    delta_cycle_knn = (
+        metrics.AlignmentMetrics.cycle_knn(
+            feats_A=norm_t, feats_B=norm_v, topk=knn_k) -
+        metrics.AlignmentMetrics.cycle_knn(
+            feats_A=norm_v, feats_B=norm_t, topk=knn_k
+        )
+    )
     # cka = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings)
     # cka_rbf = metrics.AlignmentMetrics.cka(text_embeddings, vision_embeddings, kernel_metric="rbf")
     # unbiased_cka = metrics.AlignmentMetrics.unbiased_cka(text_embeddings, vision_embeddings)
@@ -421,7 +429,8 @@ def calculate_metrics(text_embeddings, vision_embeddings, knn_k):
         "cka_rbf": cka_rbf,
         "unbiased_cka": unbiased_cka,
         "svcca": svcca,
-        "cknna": cknna
+        "cknna": cknna,
+        "delta_cycle_knn": delta_cycle_knn,
     }
 
 def calculate_main_metrics(text_embeddings, vision_embeddings, k=KNN_K) -> dict:
@@ -841,25 +850,53 @@ def cka_custom(X, Y):
 
 
 if __name__ == "__main__":
-    # data1 = torch.rand( 250, 768)
-    # data2 = torch.rand( 250,768)
-    # start = time.time()
-    # mknn = mutual_knn_alignment(Z1=data1, Z2=data2, k=5)
-    # end = time.time()
-    # diff_cpu = end - start
 
-    # start = time.time()
-    # mknn_gpu = mutual_knn_alignment_gpu(Z1=data1, Z2=data2, k=5)
-    # end = time.time()
-    # diff_gpu = end - start
+    def delta_null(A, B, k, n_perm=20):
+        out = []
+        for _ in range(n_perm):
+            Bp = B[torch.randperm(B.shape[0], device=B.device)]
+            out.append(metrics.AlignmentMetrics.cycle_knn(A, Bp, topk=k)
+                    - metrics.AlignmentMetrics.cycle_knn(Bp, A, topk=k))
+        return torch.tensor(out).mean().item(), torch.tensor(out).std().item()
 
-    # print(f"mknn: {mknn}, mknn_gpu: {mknn_gpu}, diff = {mknn-mknn_gpu}")
-    # print(f"cpu time: {diff_cpu}, gpu time: {diff_gpu}")
+    tensor1 = torch.randn( 5000, 768)
+    tensor2 = torch.rand( 5000, 768)
 
-    # mknn_sim = mutual_knn_alignment(Z1=data1, Z2=data1, k=5)
-    # mknn_sim_gpu = mutual_knn_alignment_gpu(Z1=data1, Z2=data1, k=5)
-    # print(f"mknn identical: {mknn_sim}, mknn_gpu identical: {mknn_sim_gpu}, diff = {mknn_sim-mknn_sim_gpu}")
+    start = time.time()
+    results = calculate_metrics(
+        text_embeddings=tensor1,
+        vision_embeddings=tensor2,
+        knn_k=KNN_K,
+    )
 
+    results_identical = calculate_metrics(
+        text_embeddings=tensor1,
+        vision_embeddings=tensor1,
+        knn_k=KNN_K,
+    )
+
+    end = time.time()
+
+    print(f"results different {results}")
+    print(f"results identical {results_identical}")
+    print(f"runtime in {end-start}")
+
+    t1_norm = F.normalize(tensor1, dim=-1)
+    t2_norm = F.normalize(tensor2, dim=-1)
+
+    t1_t2_cycle_knn = metrics.AlignmentMetrics.cycle_knn(
+        feats_A=t1_norm, feats_B=t2_norm, topk=KNN_K
+    )
+    t2_t1_cycle_knn = metrics.AlignmentMetrics.cycle_knn(
+        feats_A=t2_norm, feats_B=t1_norm, topk=KNN_K
+    )
+
+    print(f"t1_t2_cknn: {t1_t2_cycle_knn}\nt2_t1_cknn: {t2_t1_cycle_knn}")
+    print(f"permutations: {delta_null(A=t1_norm, B=t2_norm, k=32)}")
+
+    # -----
+    import sys
+    sys.exit()
     data1 = torch.rand( 10000, 768)
     data2 = torch.rand( 10000,768)
 
