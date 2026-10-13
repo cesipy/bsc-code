@@ -24,6 +24,11 @@ assert int(socket.gethostname().replace(_GPU_PREFIX, "")) in _GOOD_GPUS, "run te
 
 
 
+def _check_alignment(layer: dict, cka, mknn, svcca, procrustes):
+    assert layer["cka"]        == pytest.approx(cka,        rel=1e-3)
+    assert layer["mknn"]       == pytest.approx(mknn,       rel=1e-3)
+    assert layer["svcca"]      == pytest.approx(svcca,      rel=1e-3)
+    assert layer["procrustes"] == pytest.approx(procrustes, rel=1e-3)
 
 @pytest.mark.integration
 def test_pretrain_integration():
@@ -78,12 +83,6 @@ def test_pretrain_integration():
         "val_loss_mlm":   9.361643956466155,
         "val_loss_mim":   7.29743764210831,
     }, rel=1e-3)
-
-    def _check_alignment(layer: dict, cka, mknn, svcca, procrustes):
-        assert layer["cka"]        == pytest.approx(cka,        rel=1e-3)
-        assert layer["mknn"]       == pytest.approx(mknn,       rel=1e-3)
-        assert layer["svcca"]      == pytest.approx(svcca,      rel=1e-3)
-        assert layer["procrustes"] == pytest.approx(procrustes, rel=1e-3)
 
     # ---- alignment metrics: epoch 0 (untrained) ----
     # Model weights are init-seed-dependent, not batch-size-dependent, so exact
@@ -175,6 +174,7 @@ def test_full_pipeline():
         seed=SEED,
         pretrain_batch_size=24,
         gradient_accumulation=22,
+        testing=True,
     )
     finetune_config = ViLBERTConfig(
         text_cross_attention_layers=T_BIATTN_IDS,
@@ -183,6 +183,7 @@ def test_full_pipeline():
         learning_rate=3.2e-5,
         seed=SEED,
         use_contrastive_loss=False,
+        testing=True,
     )
 
     results_pretrain = t.run_pretrain(

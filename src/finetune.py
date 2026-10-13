@@ -120,8 +120,10 @@ def finetune_down_stream_task(
         cc_dataloader=dataloader_cc,
     )
 
-    checkpoints_path = "res/checkpoints"
-    trainer.model.save_model(save_path=checkpoints_path + f"/{task_name}_finetuned.pt")
+    os.makedirs(FINETUNE_CHECKPOINTS_DIR, exist_ok=True)
+    trainer.model.save_model(
+        save_path=os.path.join(FINETUNE_CHECKPOINTS_DIR, f"{task_name}_finetuned.pt")
+    )
 
     # TODO: fix alignment dataset, add easy vqa
 

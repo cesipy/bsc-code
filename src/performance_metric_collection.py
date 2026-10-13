@@ -1,5 +1,9 @@
+import json
 import os
+from pathlib import Path
+
 import numpy as np
+from mlflow.tracking import MlflowClient
 
 from logger import Logger
 import task as tasklib
@@ -22,6 +26,70 @@ def print_initial_info(model_paths):
 
 
 logger = Logger()
+
+
+def collect_final_metrics(checkpoints: dict[str, str], mlflow_run_ids=None):
+    """Evaluate this run's task -> finetuned checkpoint mapping on the test sets.
+
+    Uses the same metrics as the thesis collector below, without directory
+    scanning or a three-seed requirement. MM-IMDB accuracy is Hamming accuracy;
+    its macro-F1 uses sigmoid probabilities > 0.5 over the full test set.
+    Returns task -> metrics and saves each result beside its checkpoint.
+    """
+    task_metrics = {
+        "hateful_memes": ("accuracy", "f1_score_macro", "auc"),
+        "mm_imdb": ("accuracy", "f1_score_macro", "auc"),
+        "upmc_food": ("accuracy", "f1_score_macro"),
+    }
+    unsupported = set(checkpoints) - set(task_metrics)
+    if unsupported:
+        raise ValueError(f"Unsupported final evaluation tasks: {sorted(unsupported)}")
+
+    run_ids = mlflow_run_ids or {}
+    client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI) if any(run_ids.values()) else None
+    exp_t = experiment_tracker.ExperimentTracker()
+    results = {}
+    for task, checkpoint in checkpoints.items():
+        path = Path(checkpoint)
+        info_str = f"Collecting final test metrics for {task}: {path}"
+        print(info_str); logger.info(info_str)
+        dl = datasets.get_task_test_dataset(
+            task=task,
+            batch_size=BATCH_SIZE_DOWNSTREAM,
+            # MM-IMDB opens HDF5 in the parent; keep final evaluation in-process.
+            num_workers=0,
+            pin_memory=PIN_MEMORY,
+            prefetch_factor=None,
+            persistent_workers=False,
+            seed=1,
+        )
+        trainer = exp_t.get_task_trainer(
+            task=task,
+            model=ViLBERT.load_model(load_path=str(path), device="cpu"),
+        )
+        try:
+            metrics = {
+                metric: float(trainer.get_performance_metric(dataloader=dl, metric=metric))
+                for metric in task_metrics[task]
+            }
+        finally:
+            # Release the model and dataset before loading the next checkpoint.
+            del trainer, dl
+
+        results[task] = metrics
+        metrics_path = path.with_suffix(".metrics.json")
+        with metrics_path.open("w") as f:
+            json.dump({"task": task, "model_path": str(path), "split": "test",
+                       "metrics": metrics}, f, indent=2)
+            f.write("\n")
+        for metric, value in metrics.items():
+            info_str = f"Final test {task} - {metric}: {value}"
+            print(info_str); logger.info(info_str)
+            if client is not None and run_ids.get(task):
+                client.log_metric(run_ids[task], f"{task}/final_test_{metric}", value)
+        info_str = f"Final test metrics saved to {metrics_path}"
+        print(info_str); logger.info(info_str)
+    return results
 
 
 

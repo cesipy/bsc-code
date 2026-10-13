@@ -17,6 +17,7 @@ warnings.filterwarnings("ignore")
 
 logger = Logger()
 
+
 # Named fusion presets — covers the variants used in the thesis.
 # Use --fusion <name> or --t-ids / --v-ids for ad-hoc placement.
 PRESETS = {
@@ -38,9 +39,10 @@ def parse_args():
     fusion = p.add_mutually_exclusive_group(required=True)
     fusion.add_argument("--fusion", choices=list(PRESETS),
                         help="Named fusion preset")
+    # can be used then with --t-ids 1 2 3
     fusion.add_argument("--t-ids", nargs="+", type=int, metavar="IDX",
                         help="Text cross-attention layer indices (pair with --v-ids)")
-
+    # can be used with --v ids 3 4 5
     p.add_argument("--v-ids", nargs="+", type=int, metavar="IDX",
                    help="Vision cross-attention layer indices (required with --t-ids)")
     p.add_argument("--name", default=None,
@@ -51,6 +53,7 @@ def parse_args():
     p.add_argument("--ft-epochs", type=int, default=1, metavar="N",
                    help="Finetuning epochs per task (default: 1)")
     p.add_argument("--seed", type=int, default=1567)
+    # use --tasks hateful_memes upmc_food mm_imdb
     p.add_argument("--tasks", nargs="+", default=["hateful_memes"],
                    choices=["hateful_memes", "upmc_food", "mm_imdb"],
                    help="Downstream tasks for finetuning")
@@ -112,6 +115,11 @@ def main():
             seed=args.seed,
             pretrain_batch_size=args.batch_size,
             gradient_accumulation=args.grad_accum,
+            # for faster training
+            num_workers=1,
+            prefetch=2,
+            persistent_workers=False,
+            pin_memory=True,
         )
         results_pretrain = t.run_pretrain(
             experiment_config=pretrain_config,
@@ -119,11 +127,10 @@ def main():
             num_samples=args.num_samples,
             alignment_analysis_size=args.alignment_analysis_size,
         )
+        # pretrain path is overwritten if we have a pretarining
         pretrained_path = results_pretrain["model_path"]
 
-        print("\n=== PRETRAIN RESULTS (copy into test) ===")
-        print(json.dumps(results_pretrain, indent=2, default=str))
-        print("=========================================\n")
+
         info_str = f"pretrained model saved to {pretrained_path}"
         print(info_str); logger.info(info_str)
 
@@ -138,8 +145,11 @@ def main():
     modl = ViLBERT.load_model(pretrained_path)
     t_biattns = modl.config.text_cross_attention_layers
     v_biattns = modl.config.vision_cross_attention_layers
+    del modl
 
     paths = [pretrained_path]
+    finetuned_paths = {}
+    mlflow_run_ids = {}
     for i, task in enumerate(args.tasks):
         info_str = f"{i+1}/{len(args.tasks)}: finetuning on {task} with seed {args.seed}"
         print(info_str); logger.info(info_str)
@@ -148,7 +158,7 @@ def main():
             text_cross_attention_layers=t_biattns,
             vision_cross_attention_layers=v_biattns,
             epochs=args.ft_epochs,
-            learning_rate=3.2e-5 if task == "hateful_memes" else 4e-5,
+            learning_rate=3.2e-5 if task == "hateful_memes" else 4e-5,      # TODO: put somewhere else, but keep fixed
             seed=args.seed,
             use_contrastive_loss=False,
         )
@@ -159,7 +169,14 @@ def main():
             tasks=[task],
         )
         paths.append(res[task]["model_path"])
-        print(res)
+        finetuned_paths[task] = res[task]["model_path"]
+        if res.get("mlflow_run_id"):
+            mlflow_run_ids[task] = res["mlflow_run_id"]
+
+    performance_metric_collection.collect_final_metrics(
+        checkpoints=finetuned_paths,
+        mlflow_run_ids=mlflow_run_ids,
+    )
 
     info_str = f"finished with paths: {paths}"
     print(info_str); logger.info(info_str)

@@ -1,5 +1,6 @@
 import time
 import os
+import contextlib
 from typing import Tuple, Optional
 import json
 import mlflow
@@ -15,6 +16,7 @@ from config import (
     ES_MODE, ES_PATIENCE, ES_CONTINUE_THRESH,
     OPTIMIZE_CKA,
     FINETUNE_CHECKPOINTS_DIR,
+    PRETRAIN_CHECKPOINTS_DIR,
     KNN_K,
     FREEZE_UNIMODAL_ENCODERS,
     Task,
@@ -668,16 +670,6 @@ class ExperimentTracker:
                     info_str = f"Early stopping at epoch {i+1}. Best {metric_name}: {early_stopper.best_score:.4f} at epoch {early_stopper.best_epoch}"
                     print(info_str)
                     logger.info(info_str)
-
-                    if best_model_state is not None:
-                        trainer.model.load_state_dict(best_model_state)
-                        info_str = f"restord model from epoch {early_stopper.best_epoch}"
-                        print(info_str);logger.info(info_str)
-                    else:
-                        info_str = f"No best model state found to restore."
-                        print(info_str);logger.info(info_str)
-                        assert False
-
                     break
 
             alignment_metrics = {}
@@ -693,6 +685,14 @@ class ExperimentTracker:
                 analysis.run_alignment_visualization(dataloader=alignment_dataloader, model=model,
                     dir_name=dir_name, filename_extension=filename_extension)
 
+        # restore the best epoch whether or not early stopping fired — a run that
+        # uses its full epoch budget must not report last-epoch metrics while an
+        # early-stopped run reports best-epoch ones
+        if USE_EARLY_STOPPING:
+            assert best_model_state is not None, "No best model state found to restore."
+            trainer.model.load_state_dict(best_model_state)
+            info_str = f"restored model from epoch {early_stopper.best_epoch}"
+            print(info_str); logger.info(info_str)
 
         final_test_dict = self.evaluate(model=trainer.model, dataset="test", task=task)
         training_results[task]["final_test"] = final_test_dict
@@ -788,21 +788,31 @@ class ExperimentTracker:
 
         training_results = self._initialize_results_dict(epochs=experiment_config.epochs, tasks=tasks)
 
-        # One long-running MLflow run for the whole call: params are logged up
+        # One long-running MLflow run for the whole call (skipped when
+        # config.testing is set, e.g. integration tests): params are logged up
         # front and per-epoch metrics stream in live (see run_single_experiment),
         # so the UI updates during training and a crash keeps partial history.
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-        experiment_id = elu.get_or_create_experiment_id(MLFLOW_EXPERIMENT_NAME)
-        with mlflow.start_run(experiment_id=experiment_id) as run:
-            run_id = run.info.run_id
-            self._log_run_params(
-                run_type="finetune",
-                config=experiment_config,
-                tasks=tasks,
-                pretrained_from=pretrained_model_path,
-            )
-            info_str = f"MLflow run started: {run_id}"
-            logger.info(info_str); print(info_str)
+        # nullcontext keeps a single code path while disabling tracking; the
+        # `with` still guarantees the run is ended (FINISHED / FAILED on error).
+        if experiment_config.testing:
+            run_cm = contextlib.nullcontext()
+        else:
+            mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+            experiment_id = elu.get_or_create_experiment_id(MLFLOW_EXPERIMENT_NAME)
+            run_cm = mlflow.start_run(experiment_id=experiment_id)
+
+        run_id = None
+        with run_cm as run:
+            if run is not None:
+                run_id = run.info.run_id
+                self._log_run_params(
+                    run_type="finetune",
+                    config=experiment_config,
+                    tasks=tasks,
+                    pretrained_from=pretrained_model_path,
+                )
+                info_str = f"MLflow run started: {run_id}"
+                logger.info(info_str); print(info_str)
 
             for task in tasks:
                 pretrained_model = None
@@ -830,13 +840,15 @@ class ExperimentTracker:
                 config=experiment_config,
                 filename=filename,
             )
-            checkpoint_path = training_results.get(tasks[0], {}).get("model_path", "") if tasks else ""
-            mlflow.set_tag("checkpoint_path", checkpoint_path)
-            self._log_final_test_metrics(training_results=training_results, tasks=tasks)
+            if run is not None:
+                checkpoint_path = training_results.get(tasks[0], {}).get("model_path", "") if tasks else ""
+                mlflow.set_tag("checkpoint_path", checkpoint_path)
+                self._log_final_test_metrics(training_results=training_results, tasks=tasks)
 
-        training_results["mlflow_run_id"] = run_id
-        info_str = f"MLflow run: {run_id}"
-        logger.info(info_str); print(info_str)
+        if run_id is not None:
+            training_results["mlflow_run_id"] = run_id
+            info_str = f"MLflow run: {run_id}"
+            logger.info(info_str); print(info_str)
 
         return training_results
 
@@ -1001,7 +1013,8 @@ class ExperimentTracker:
         for val in tasks_vals:
             task_string += f"{val}"
         tmsp = time.strftime("%Y%m%d-%H%M%S")
-        filename = f"res/checkpoints/{tmsp}_pretrained_{task_string}.pt"
+        os.makedirs(PRETRAIN_CHECKPOINTS_DIR, exist_ok=True)
+        filename = os.path.join(PRETRAIN_CHECKPOINTS_DIR, f"{tmsp}_pretrained_{task_string}.pt")
 
         training_results = self._initialize_results_dict(epochs=config.epochs)
         train_loader_ap, val_loader_ap, \
@@ -1180,8 +1193,6 @@ class ExperimentTracker:
         logger.info(info_str)
         print(info_str)
 
-
-
         config: ViLBERTConfig = experiment_config
         #manually add the pretraining specific configs
         config.pretraining_tasks = tasks
@@ -1189,13 +1200,21 @@ class ExperimentTracker:
 
         # Open the MLflow run before training so _run_pretrain streams per-epoch
         # metrics into it live (see the log_metric block in its epoch loop).
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-        experiment_id = elu.get_or_create_experiment_id(MLFLOW_EXPERIMENT_NAME)
-        with mlflow.start_run(experiment_id=experiment_id) as run:
-            run_id = run.info.run_id
-            self._log_run_params(run_type="pretrain", config=experiment_config, tasks=["pretraining"])
-            info_str = f"MLflow run started: {run_id}"
-            logger.info(info_str); print(info_str)
+        # Skipped when config.testing is set; the `with` still ends the run.
+        if experiment_config.testing:
+            run_cm = contextlib.nullcontext()
+        else:
+            mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+            experiment_id = elu.get_or_create_experiment_id(MLFLOW_EXPERIMENT_NAME)
+            run_cm = mlflow.start_run(experiment_id=experiment_id)
+
+        run_id = None
+        with run_cm as run:
+            if run is not None:
+                run_id = run.info.run_id
+                self._log_run_params(run_type="pretrain", config=experiment_config, tasks=["pretraining"])
+                info_str = f"MLflow run started: {run_id}"
+                logger.info(info_str); print(info_str)
 
             training_results, task_string, tmsp, save_path = self._run_pretrain(config=config, train_data=train_data, val_data=val_data, run_alignment_analysis=run_alignment_analysis, run_visualizations=run_visualizations, alignment_analysis_size=alignment_analysis_size)
 
@@ -1205,11 +1224,13 @@ class ExperimentTracker:
                 filename=f"pretraining_{task_string}_{tmsp}",
             )
             training_results["model_path"] = save_path
-            mlflow.set_tag("checkpoint_path", save_path)
+            if run is not None:
+                mlflow.set_tag("checkpoint_path", save_path)
 
-        training_results["mlflow_run_id"] = run_id
-        info_str = f"MLflow run: {run_id}"
-        logger.info(info_str); print(info_str)
+        if run_id is not None:
+            training_results["mlflow_run_id"] = run_id
+            info_str = f"MLflow run: {run_id}"
+            logger.info(info_str); print(info_str)
 
         return training_results
 

@@ -9,7 +9,13 @@
 - [ ] optimize for mknn maybe
 - [ ] merge together configs and clean up
 
-## historical
+- [ ] testing: no logs!
+- [ ] ml flow integration
+- [ ] analyse the mknn optimization logs, did not finish somehow.
+- [ ] start runs only with names, maybe also a small script using a json config for running; makes process clearer;
+	- [ ] in the name i can define the run specs, also used by mlflow
+
+## old
 
 **immediate:**
 
