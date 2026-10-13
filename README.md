@@ -108,6 +108,13 @@ python src/main.py --fusion late --tasks hateful_memes upmc_food
 python src/main.py --help
 ```
 
+After finetuning, `main.py` evaluates each saved checkpoint from that invocation on
+its test set, reporting accuracy and macro-F1 (plus AUC for Hateful Memes and
+MM-IMDB). Results appear in the logs, in `<checkpoint-stem>.metrics.json` beside
+each checkpoint, and in its MLflow run as `<task>/final_test_<metric>` (e.g.
+`mm_imdb/final_test_f1_score_macro`). MM-IMDB uses a sigmoid threshold of `> 0.5`;
+its accuracy is Hamming accuracy. Training and checkpoint selection are unchanged.
+
 The sweep scripts `src/pretraining_experiments.py` and `src/finetune_experiments.py` orchestrate multi-config / multi-seed runs and work the same way internally.
 
 ### Pretraining

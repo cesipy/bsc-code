@@ -145,8 +145,11 @@ def main():
     modl = ViLBERT.load_model(pretrained_path)
     t_biattns = modl.config.text_cross_attention_layers
     v_biattns = modl.config.vision_cross_attention_layers
+    del modl
 
     paths = [pretrained_path]
+    finetuned_paths = {}
+    mlflow_run_ids = {}
     for i, task in enumerate(args.tasks):
         info_str = f"{i+1}/{len(args.tasks)}: finetuning on {task} with seed {args.seed}"
         print(info_str); logger.info(info_str)
@@ -166,7 +169,14 @@ def main():
             tasks=[task],
         )
         paths.append(res[task]["model_path"])
+        finetuned_paths[task] = res[task]["model_path"]
+        if res.get("mlflow_run_id"):
+            mlflow_run_ids[task] = res["mlflow_run_id"]
 
+    performance_metric_collection.collect_final_metrics(
+        checkpoints=finetuned_paths,
+        mlflow_run_ids=mlflow_run_ids,
+    )
 
     info_str = f"finished with paths: {paths}"
     print(info_str); logger.info(info_str)
