@@ -2,6 +2,114 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
+## checkpoints table
+
+| Model | t_biatt_id | v_biatt_id | HM AUROC | MM-IMDb F1 | UPMC-Food101 Acc | path |
+|---|---|---|---|---|---|---|
+| Baseline 1 | [] | [] | 0.6542 ± 0.0016 | 0.4825 ± 0.0084 | 0.8871 ± 0.0012 | res/checkpoints/pretrains/20251010-085859_pretrained_baseline.pt |
+| Early Fusion | [3,4,5] | [3,4,5] | 0.7226 ± 0.0034 | 0.5118 ± 0.0206 | 0.8930 ± 0.0001 | res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt |
+| Middle Fusion | [6,7,8] | [6,7,8] | 0.7497 ± 0.0090 | 0.5334 ± 0.0075 | 0.9181 ± 0.0013 | res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt |
+| **Late Fusion** | [9,10,11] | [9,10,11] | **0.7637 ± 0.0041** | **0.5448 ± 0.0120** | **0.9278 ± 0.0005** | res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt |
+| Asymmetric Fusion | [6,7,8,9] | [3,5,7,9] | 0.7245 ± 0.0018 | 0.5274 ± 0.0050 | 0.9010 ± 0.0002 | res/checkpoints/pretrains/20251014-034432_pretrained_asymmetric_fusion.pt |
+| O-HM (optuna1) | [3,6] | [6,8] | 0.7460 ± 0.0025 | 0.5339 ± 0.0081 | 0.9178 ± 0.0004 | res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt |
+| O-MM (optuna2) | [7,9,10,11] | [6,7,9,10] | 0.7401 ± 0.0050 | 0.5340 ± 0.0040 | 0.9215 ± 0.0010 | res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt |
+| Baseline 2 (full coattn) | [0..11] | [0..11] | 0.7074 ± 0.0013 | 0.5283 ± 0.0036 | 0.9094 ± 0.0010 | res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt |
+| Delayed Fusion (`custom_t3_4_5_v5_6_7`) | [3,4,5] | [5,6,7] | 0.7218 (1 seed, no ±) | – | – | res/checkpoints/pretrains/20261004-180351_pretrained_123.pt |
+
+
+## October
+
+
+additionally, test the extremes of the hypothesis:
+
+```bash
+python src/main.py --t-ids 3 4 5 --v-ids 9 10 11 \
+  --name "pt+ft_delayed_fusion_2" \
+  --num-samples 500000  --pt-epochs 7 --ft-epochs 15 \
+  --alignment-analysis-size 1024 \
+  --tasks "hateful_memes" "upmc_food" "mm_imdb"
+```
+
+started now the finetunes for three seeds for the config below.
+
+delayed fusion1 - behavior if vision has more time to develop own representation.
+```bash
+# launcher for pretraining + finetune with delayed fusion for vision.
+python src/main.py --t-ids 3 4 5 --v-ids 5 6 7 \
+  --num-samples 500000  --pt-epochs 7 --ft-epochs 15 \
+  --alignment-analysis-size 1024 \
+  --tasks "hateful_memes" "upmc_food" "mm_imdb"
+
+```
+
+
+## 21.9
+overview of the training process in the `main.py` visible in [this artefact](https://claude.ai/code/artifact/6554cd58-c5e8-4dd7-a5a9-ab54f451996f).
+
+
+## 27.06
+mknn optimization runs did not finish, were cancelled with "no space left on device" => bullshit.
+
+### pretraining losses — per config, epochs 1 and 7
+
+#### [3,4,5]
+E1:  MLM train=6.3721 test=4.5813 | AP train=0.6707 test=0.6116 acc=0.6593 | MIM train=3.1899 test=0.5157
+E7:  MLM train=2.2960 test=2.3647 | AP train=0.4497 test=0.4487 acc=0.7863 | MIM train=0.2470 test=0.1990
+
+#### [6,7,8]
+E1:  MLM train=6.3315 test=4.4483 | AP train=0.6758 test=0.6106 acc=0.6462 | MIM train=3.5433 test=1.2776
+E7:  MLM train=2.3025 test=2.3753 | AP train=0.4065 test=0.4147 acc=0.8097 | MIM train=0.2974 test=0.1993
+
+#### [9,10,11]
+E1:  MLM train=6.2601 test=4.3419 | AP train=0.6694 test=0.5644 acc=0.7057 | MIM train=4.3722 test=2.5939
+E7:  MLM train=2.1792 test=2.2649 | AP train=0.2582 test=0.2583 acc=0.8950 | MIM train=0.3440 test=0.2039
+
+### AP accuracy per epoch (all configs)
+
+epoch | [3,4,5] | [6,7,8] | [9,10,11]
+------+---------+---------+----------
+1     | 0.6593  | 0.6462  | 0.7057
+2     | 0.7242  | 0.7952  | 0.8320
+3     | 0.7327  | 0.8214  | 0.8596
+4     | 0.7690  | 0.8247  | 0.8790
+5     | 0.7428  | 0.8212  | 0.8853
+6     | 0.7903  | 0.8313  | 0.8973
+7     | 0.7863  | 0.8097  | 0.8950
+
+
+### downstream finetuning results (pretrain → finetune, 3 seeds 1568/1569/1570)
+
+#### hateful_memes (AUC)
+config    | s1568  | s1569  | s1570  | mean
+[3,4,5]   | 0.6654 | 0.6691 | 0.6838 | 0.6728
+[6,7,8]   | 0.6577 | 0.6530 | 0.6470 | 0.6526
+[9,10,11] | 0.7027 | 0.7083 | 0.7060 | 0.7057
+
+#### upmc_food (acc)
+config    | s1568  | s1569  | s1570  | mean
+[3,4,5]   | 0.8844 | 0.8868 | 0.8861 | 0.8858
+[6,7,8]   | 0.9042 | 0.9024 | 0.9003 | 0.9023
+[9,10,11] | 0.9167 | 0.9161 | 0.9164 | 0.9164
+
+#### mm_imdb (acc)
+config    | s1568  | s1569  | s1570  | mean
+[3,4,5]   | 0.9243 | 0.9244 | 0.9231 | 0.9239
+[6,7,8]   | 0.9265 | 0.9274 | 0.9269 | 0.9269
+[9,10,11] | 0.9277 | 0.9279 | 0.9282 | 0.9279
+
+=> interesting finding: late > early > middle for hateful memes!
+maybe explainable by the difficulty of hateful memes dataset in general .
+
+
+---
+
+also had a problem with mlflow today. mlflow now tracks intra-training and not inter-training. new command:
+```bash
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+problem: vscode did not properly forward, because i killed it! just reforward:D
+
 ## 18.11 maturity + dimensionality reduction
 
 **cka intermodality trajectory**

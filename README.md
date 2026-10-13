@@ -215,9 +215,12 @@ Every `run_pretrain()` and `run_finetune()` call automatically logs to **MLflow*
 - **Metrics** — per-epoch training/validation losses and accuracy; final test metrics
 - **Tags** — run type (`pretrain`/`finetune`), checkpoint path, layer indices, `pretrained_from`
 
+Metrics are logged **live, per epoch** (one long-running MLflow run per `run_pretrain`/`run_finetune` call), so you can watch curves in the UI while training and a crash still leaves partial history.
+
+Tracking goes to a SQLite store at the project root (`mlflow.db`), pinned in code (`MLFLOW_TRACKING_URI` in `experiment_tracker.py`). Launch the UI against the **same** store:
+
 ```bash
-# start the UI (tracking data lives in mlruns/ at the project root)
-mlflow ui
+mlflow ui --backend-store-uri sqlite:///mlflow.db
 # open http://localhost:5000 in a browser
 ```
 
