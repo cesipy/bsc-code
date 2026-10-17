@@ -532,8 +532,10 @@ def analyse_alignment(
                 f"svcca= {metrics_new['svcca']:4.2f}, "
                 f"procr: {metrics_add['procrustes']:4.2f}, "
                 # f"cycleknn= {metrics_new['cycle_knn']:4.2f}"
-                f"cos_sim= {metrics_add['cosine_similarity']:5.2f} "
+                # f"cos_sim= {metrics_add['cosine_similarity']:5.2f} "
                 f"mc_acs= {metrics_add['aligned_cosine_similarity']:4.2f} "
+                f"delta= {metrics_new['delta_cycle_knn']:7.4f} "
+                # f"delta= {metrics_add['delta_cycle_knn']:4.2f}"
         )
 
         # print(info_str)
@@ -555,6 +557,7 @@ def analyse_alignment(
             "rsa": metric_adds[i]["rsa"],
             "r2": metric_olds[i]["linear_r2"],
             "aligned_cosine_similarity": metric_adds[i]["aligned_cosine_similarity"],
+            "delta_cycle_knn": metric_news[i]["delta_cycle_knn"],
         }
     return return_dict
 
