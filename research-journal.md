@@ -2,7 +2,11 @@
 This file contains all kinds of results and observations during my thesis work.
 
 
+
+
+
 ## checkpoints table
+
 
 | Model | t_biatt_id | v_biatt_id | HM AUROC | MM-IMDb F1 | UPMC-Food101 Acc | path |
 |---|---|---|---|---|---|---|
@@ -14,12 +18,15 @@ This file contains all kinds of results and observations during my thesis work.
 | O-HM (optuna1) | [3,6] | [6,8] | 0.7460 ± 0.0025 | 0.5339 ± 0.0081 | 0.9178 ± 0.0004 | res/checkpoints/pretrains/20251015-081211_pretrained_optuna1.pt |
 | O-MM (optuna2) | [7,9,10,11] | [6,7,9,10] | 0.7401 ± 0.0050 | 0.5340 ± 0.0040 | 0.9215 ± 0.0010 | res/checkpoints/pretrains/20251016-062038_pretrained_optuna2.pt |
 | Baseline 2 (full coattn) | [0..11] | [0..11] | 0.7074 ± 0.0013 | 0.5283 ± 0.0036 | 0.9094 ± 0.0010 | res/checkpoints/pretrains/20251025-105249_pretrained_bl_full_coattn.pt |
-| Delayed Fusion (`custom_t3_4_5_v5_6_7`) | [3,4,5] | [5,6,7] | 0.7218 (1 seed, no ±) | – | – | res/checkpoints/pretrains/20261004-180351_pretrained_123.pt |
+| Delayed Fusion 1 (`custom_t3_4_5_v5_6_7`) | [3,4,5] | [5,6,7] | 0.7274 ± 0.0040 (3 ft seeds) | 0.5192 ± 0.0024 (3 ft seeds) | 0.9065 ± 0.0011 (3 ft seeds) | res/checkpoints/pretrains/20261004-180351_pretrained_123.pt |
+| Delayed Fusion 3 | [3,4,5] | [7,8,9] | 0.7415 (1 seed) | 0.5185 (1 seed) | 0.9225 (1 seed) | res/checkpoints/pretrains/20261013-142030_pretrained_123.pt |
+| Delayed Fusion 2 | [3,4,5] | [9,10,11] | 0.7455 (1 seed) | 0.5207 (1 seed) | 0.9261 (1 seed) | res/checkpoints/pretrains/20261012-122011_pretrained_123.pt |
+
 
 
 ## October
 
-
+### delayed fusion
 additionally, test the extremes of the hypothesis:
 
 ```bash
@@ -30,17 +37,38 @@ python src/main.py --t-ids 3 4 5 --v-ids 9 10 11 \
   --tasks "hateful_memes" "upmc_food" "mm_imdb"
 ```
 
-started now the finetunes for three seeds for the config below.
 
 delayed fusion1 - behavior if vision has more time to develop own representation.
 ```bash
-# launcher for pretraining + finetune with delayed fusion for vision.
 python src/main.py --t-ids 3 4 5 --v-ids 5 6 7 \
   --num-samples 500000  --pt-epochs 7 --ft-epochs 15 \
   --alignment-analysis-size 1024 \
   --tasks "hateful_memes" "upmc_food" "mm_imdb"
 
 ```
+
+i tested both extremes, so `--t-ids 3 4 5 --v-ids 9 10 11` and `--t-ids 9 10 11 --v-ids 3 4 5` to further control it.
+
+
+#### results
+
+
+| Model | t_biatt_id | v_biatt_id | HM AUROC | MM-IMDb F1 | UPMC-Food101 Acc | path |
+|---|---|---|---|---|---|---|
+| Early Fusion | [3,4,5] | [3,4,5] | 0.7226 ± 0.0034 | 0.5118 ± 0.0206 | 0.8930 ± 0.0001 | res/checkpoints/pretrains/20251010-234252_pretrained_early_fusion.pt |
+| Middle Fusion | [6,7,8] | [6,7,8] | 0.7497 ± 0.0090 | 0.5334 ± 0.0075 | 0.9181 ± 0.0013 | res/checkpoints/pretrains/20251011-234349_pretrained_middle_fusion.pt |
+| **Late Fusion** | [9,10,11] | [9,10,11] | **0.7637 ± 0.0041** | **0.5448 ± 0.0120** | **0.9278 ± 0.0005** | res/checkpoints/pretrains/20251013-010227_pretrained_late_fusion.pt |
+| Delayed Fusion 1 (`custom_t3_4_5_v5_6_7`) | [3,4,5] | [5,6,7] | 0.7274 ± 0.0040 (3 ft seeds) | 0.5192 ± 0.0024 (3 ft seeds) | 0.9065 ± 0.0011 (3 ft seeds) | res/checkpoints/pretrains/20261004-180351_pretrained_123.pt |
+| Delayed Fusion 2 | [3,4,5] | [9,10,11] | 0.7455 | 0.5207  | 0.9261 | res/checkpoints/pretrains/20261012-122011_pretrained_123.pt |
+| Delayed Fusion 3 | [3,4,5] | [7,8,9]   | 0.7415 | 0.5185  | 0.9225 | res/checkpoints/pretrains/20261013-142030_pretrained_123.pt |
+
+
+clear progression of the performance.
+
+### delta
+$\Delta_{\text{cycle\_knn}}(T, V) = \operatorname{cycle\_knn}(T, V) - \operatorname{cycle\_knn}(V, T)$
+- a positive delta says the text space is the more reliable one, and a negative delta says vision is.
+- from wittgenstein representation hypothesis paper (https://arxiv.org/abs/2605.09352)
 
 
 ## 21.9
