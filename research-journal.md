@@ -1,6 +1,72 @@
 # Results
 This file contains all kinds of results and observations during my thesis work.
 
+## 2026-10-23 — validated input-prefetch full-training launch
+
+The workers-0 DF2 baseline stopped cleanly at 69/69 applied updates, zero skips
+and 35,880 examples per objective. Its checkpoint and attempt-20 reference are
+preserved; [handoff](autoresearch/full-training/handoff-devicefix-continuation1.json).
+A five-minute observation had measured only 13.36% average GPU utilization and
+input-side CPU/storage waits, and measured throughput exceeded the 72-hour cap.
+
+The new `objective-loader-prefetch-v1` backend uses one worker per objective,
+four main Torch threads and prefetch two. Six worker-lifecycle tests prevent
+overlapping epoch/validation workers; 23 combined driver/wrapper tests and 13
+independent controller tests pass. Actual full 500k sampler order matches across
+worker counts. A fresh disjoint 400-train/40-validation CPU cohort passed
+engineering bounds declared before execution. Categorical fields and random
+states match exactly; continuous-image max difference is 1.91e-6, while strong
+MIM differs by one quantization level at 13 of 60,211,200 train elements.
+[Adoption review and evidence](autoresearch/full-training/prefetch-adoption-review.json).
+This is a documented numerical execution difference, not an exact trajectory
+continuation or an independent pretraining-seed repeat.
+
+The [phase-2 contract](autoresearch/full_training_prefetch_phase2_session.json)
+was activated after independent review; controller PID 1280454 and DF2 child
+1280615 launched around 10:31 UTC, initially loading inputs. Both DF2 and REV
+start from tensor-identical seed-1804 weights using this same backend. Scientific
+recipe/exposure remain seven epochs of 500k pairs; limits are now 240 hours per
+arm/21 days phase, with the unchanged 50% weekly usage/stale-120s stop. Actual
+applied-update confirmation and end-to-end speed measurements are pending at
+this entry. [Live status](autoresearch/full-training/controller-state-prefetch-phase2.json).
+
+Update 10:39 UTC: phase2 attempts 1 and 2 both applied, with finite losses and
+unchanged scaler 65,536. A durable ~3.22 GB checkpoint is published. Update
+windows took 24.84 and 22.71 seconds; attempt-2 elapsed time was 76.41 seconds,
+including the first checkpoint write. These early timings are observational
+and cache-confounded, not a full-run speed estimate.
+
+Update after the first-20 comparison: all 20 new attempts applied with finite
+losses; windows sum to 462.55 seconds. The CPU comparison reports zero
+unexpected configuration/state-structure flags, exact data identity, cursor,
+RNG, scaler, scheduler and counters. Config changes are exactly workers 0→1
+and prefetch null→2. Model and Adam tensors differ numerically; model max
+absolute difference is 1.08e-5 and loss max difference is 0.00171. These are
+execution diagnostics, not a model-quality result or equivalence claim.
+[Complete report and retained snapshots](autoresearch/full-training/backend-validation/prefetch-first20-review.md).
+Candidate windows 22–41 average 29.36 seconds versus baseline final-five
+72.72 seconds; both cache state and concurrent CPU analysis confound timing.
+The full GPU run continues past 40 applied updates; live weekly usage is 23%,
+below the 50% stop. Source/recipe remain frozen and REV is queued after full DF2.
+
+## 2026-10-23 — full-pretraining first-20 gate
+
+DF2 seed 1804 is genuinely training on the local university GPU. All first 20
+optimizer attempts applied, with finite AP/MLM/MIM losses, no AMP skips and
+unchanged scaler 65,536. Update-window time sums to 1,834.29 seconds; elapsed
+time at the twentieth log record is 1,863.56 seconds, before that checkpoint's
+write completes. The durable checkpoint and matching provenance/log prefix are
+preserved in [the baseline snapshot](autoresearch/full-training/backend-validation/baseline-first20/).
+This is an engineering gate inside the full seven-epoch run, not a completed
+scientific comparison. REV waits for verified DF2 completion.
+
+A separate five-minute observation measured 13.36% mean GPU utilization and
+input-side CPU/storage waits. CPU-only prefetch checks and a versioned driver
+are being prepared while the frozen workers-0 run continues. The
+[execution follow-up](autoresearch/full_training_prefetch_protocol.md) preserves
+the scientific recipe and proposes sufficient multi-day execution bounds.
+No throughput improvement is claimed from cache-dependent fetch tests alone.
+
 
 
 
@@ -23,6 +89,14 @@ This file contains all kinds of results and observations during my thesis work.
 | Delayed Fusion 2 | [3,4,5] | [9,10,11] | 0.7455 (1 seed) | 0.5207 (1 seed) | 0.9261 (1 seed) | res/checkpoints/pretrains/20261012-122011_pretrained_123.pt |
 
 
+
+## 21.10.2026 status review (autoresearch worktree, no experiments launched)
+
+Question: what do the logs of 2026-09-21..10-21 show, and what should be done next?
+Code revision: `autoresearch` @ da95056 + untracked `AGENTS.md`, `AUTORESEARCH.md`, `program.md`, `EXPERIMENTS.md`. Compute: none (log mining, read-only inventory, CPU-only synthetic checks by subagents).
+Outputs: [EXPERIMENTS.md](EXPERIMENTS.md) (living status board: current runs, ranked ideas, measurement problems M1-M12) and `res/experiments/2026-10-21_status_review/` (parsed runs, checkpoint table, code audit, null-calibration prototype).
+Key results: (1) pretrain-seed variance is unmeasured and the two early repeats already differ by 0.0105 HM AUROC / 0.0354 MM-IMDB F1; (2) cycle-kNN is near its chance floor (0.64 at N=1024, k=32) and its `delta` sign meaning is unsettled; (3) no chance correction exists for any metric; SVCCA is randomized and Procrustes is an uncentered distance; (4) alignment is only computed on the layer diagonal, which does not match the ordinal cross-attention pairing of delayed fusion.
+Next decision: pin the delta convention and split policy, write a session contract, then build the checkpoint-analysis driver with null calibration (see EXPERIMENTS.md, "What I would do next").
 
 ## October
 
@@ -3387,3 +3461,926 @@ Epoch 2/4, train loss: 0.5514, test loss: 0.5547,  accuracy: 0.7118
 Epoch 3/4, train loss: 0.5058, test loss: 0.5308,  accuracy: 0.7335
 Epoch 4/4, train loss: 0.4704, test loss: 0.5292,  accuracy: 0.7371
 ``` -->
+
+
+## 2026-10-21 Codex calibration pilot — preparation
+
+Objective: investigate fusion-depth alignment, directional neighborhood asymmetry and representation rank without selecting a favorite explanation from the recent logs. The manual checkout and research material remain read-only; this is a shared university GPU, with the concurrent Claude session preserved.
+
+New analysis-only evaluator, permutation calibration and guarded session runner are deployed in this worktree. Bounded CPU verification: **66 tests passed**. The owned `.venv` references existing dependency packages read-only. No checkpoint inference has completed at the time of this entry.
+
+The user raised the account stop threshold to **50% weekly usage used**, with fresh snapshots required (maximum age 120 seconds). The first execution contract permits up to six analysis trials in one hour, no training and one owned GPU job at a time. The fixed interpretation plan is [autoresearch/pilot_interpretation.md](autoresearch/pilot_interpretation.md); operational direction controls are [autoresearch/direction_convention.md](autoresearch/direction_convention.md). Runtime status lives in `autoresearch/session.json`, `autoresearch/results.jsonl` and the final handoff, with the living checklist in [todo.md](todo.md).
+
+
+## 2026-10-21 Codex pilot — six trials completed
+
+The smoke and five N=500 checkpoint evaluations all exited zero and produced immutable result/feature files on the same historical HM validation cohort. Total GPU-job wall time was about 5.5 minutes; no training ran. Two historical runner events falsely reported unavailable RAM during child teardown; preserve these events and see `autoresearch/runner_exit_race.json` for the repair and 14 passing tests.
+
+Final raw CKA: DF1 .169478, DF2 .153405, early1570 .170271, early1571 .216354, late1570 .260673. These are descriptive checkpoint-geometry values, not a fusion-performance ranking or an estimate of architecture/pretraining-seed effects. Full per-checkpoint raw/null/rank evidence and identity checks are in [autoresearch/pilot_results.md](autoresearch/pilot_results.md). The paired grids and graph-conditional cycle-null controls show metric/layer/k dependence; retain those disagreements.
+
+Next: bounded saved-checkpoint controls (2025 no-CA/early/late, DF3 and reverse fusion), plus CPU-only caption/gallery/spectrum sensitivity. No cross-era seed-variance pooling, no test-data confirmation claim and no new training. Weekly usage remained fresh at 25%, below the user's revised 50%-used stop.
+
+## 2026-10-21 21:56 UTC — fixed-model reliance and conditional controls
+
+Both HM input-shuffle runs finished without training. On the frozen 500-row
+dev_seen discovery cohort, matched DF1/DF2 AUROC was 0.7134/0.7421; three fixed
+image derangements averaged 0.6192/0.5839 and text derangements 0.4984/0.5195.
+These are functional sensitivities of two selected checkpoints, not seed-level
+architecture effects or independently trained unimodal baselines. See
+[task_reliance_summary.md](autoresearch/task_reliance_summary.md).
+
+The ten-checkpoint caption/label-conditional CKA analysis passed all 11
+predeclared caption-invariance controls. Only 161/500 rows can move under the
+caption null, so small residuals cannot establish that captions explain all
+alignment. Full draws and support are in
+[conditional_pairing_nulls.md](autoresearch/conditional_pairing_nulls.md).
+Selected-row MM/UPMC indexing now completes in under 25 seconds with versioned
+source/pair hashes; it does not hash the entire image collection. A separately
+bounded four-job task-domain inference phase follows. Shared university GPU,
+read-only manual/reference inputs, one owned GPU job, fresh usage below 50%.
+
+## 2026-10-21 22:10 UTC — cross-task replication of measurements
+
+The four bounded MM/UPMC checkpoint-only jobs all exited zero, with each
+500-row manifest and feature-cache hash verified. Final raw CKA DF1/DF2 was
+0.1695/0.1534 on HM, 0.1813/0.2291 on MM, and 0.1349/0.1705 on UPMC. The
+ordering reverses across tasks; vision participation rank and both raw cycle
+scores are higher in DF2 across all three. These are the same two pretrained
+models viewed on distinct cohorts, not independent pretrain replications.
+See [task_domain_summary.md](autoresearch/task_domain_summary.md) and figure05.
+
+At this checkpoint the ledger records 18 finished attempts, 17 evaluator exit
+zeros and one preserved parser failure, with 1139.307 GPU-job wall seconds
+(including input reads/scoring/teardown). Two old telemetry-stop labels retain
+exit zero and validated outputs; they are not erased. Weekly usage was fresh
+at 28%. The reviewer identified missing event-local states, so a further
+separate two-job inference phase is being prepared to capture actual full
+cross-attention-block inputs/outputs and reproduce prior final features.
+No training or machine changes are enabled.
+
+## 2026-10-21 22:21 UTC — event-local measurement protocol frozen
+
+The next question is whether the same checkpoints change geometry locally
+inside actual fusion blocks, rather than across mismatched ordinal backbone
+layers. New observation-only c_layers hooks capture pre/post CLS states on the
+same 500 HM rows, with whole-block semantics (attention, residual, normalization,
+feed-forward). Before launch, 12 CPU tests and real reference-bundle checks
+passed; code bytes are archived in the 84-file source snapshot. Six pre-event
+and two final feature comparisons against old caches are required runtime
+controls, independently rechecked from saved arrays. See
+[event protocol](autoresearch/event_protocol.md) and
+[source review](autoresearch/event_review.md). The two intended inference jobs
+have a new bounded contract, cumulative ceiling 22 including 18 prior attempts
+and two repair reserves; no training. Last fresh weekly reading was 28%, below
+the unchanged 50%-used stop. Local PR changes are not useful-information loss.
+
+## 2026-10-21 22:30 UTC — localize the rank change before inferring its cause
+
+Both event runs completed with zero-error pre/final cache controls. Vision PR
+post/pre is DF1 [2.055,0.917,4.581], DF2 [1.130,0.817,1.024]. In DF1 HM,
+PR26.10 before fusion event1 becomes23.92 after it and3.40 after following
+vision backbone block6. Thus the large local reduction occurs after the next
+backbone operation, with prior multimodal inputs/weights still possible causes.
+A posthoc check of all existing task curves finds layer6/layer5 vision PR
+ratios HM/MM/UPMC .130/.230/.103 for this DF1 checkpoint, versus
+1.011/1.028/1.132 for DF2. These are task views of two weights, not seed
+replication. Exact curves/source hashes: `autoresearch/posthoc_rank_localization.json`.
+
+One final predeclared local counterfactual will apply the SAME learned block6
+to full vision tokens before the preceding fusion update, compared with its
+actual output. The alternate result is not propagated into the model. This
+separates an acute contribution of that vision update from compression that
+persists with the inherited state/learned mapping, conditional on one model.
+It does not isolate attention from the full fusion block or establish loss of
+useful information. New one-job contract, no training, fresh29% weekly use.
+
+
+## 2026-10-21 overnight autoresearch closeout (2026-10-21 22:41 UTC)
+
+Completed the bounded checkpoint-first campaign; see
+[autoresearch/CAMPAIGN_REPORT.md](autoresearch/CAMPAIGN_REPORT.md),
+[todo.md](todo.md), and [final handoff](autoresearch/HANDOFF.md).
+All writes stayed in the autoresearch worktree; manual checkout/research
+material/checkpoint-data inputs were read-only. Shared university GPU:
+no training, machine changes, remote job interference, commits or pushes.
+Claude's status review and the independent second-session outputs are preserved.
+
+Evidence: ten saved-pretrain HM analyses; layer/rank/directional/null and
+caption/gallery controls; two fixed-model input-shuffle runs; DF1/DF2 geometry
+on HM/MM/UPMC; exact immediate fusion-event states; final isolated block-6
+counterfactual. Task CKA ordering reverses. The final PR reduction persists
+with actual input 23.92→3.40 and pre-second-fusion input 26.10→2.48, weakening
+an immediate-second-update-only explanation for that one checkpoint. Earlier
+fusion/joint training remain present; PR does not measure task information.
+All normal/cache/alignment controls are exact; parent PR recomputation agrees.
+
+Ledger: 21 finished attempts, 20 zero exits and one preserved/repaired parser
+failure; two early telemetry-stop labels remain annotated. GPU-job wall
+1,270.413 s, peak sampled host RSS 2,294.742 MiB; GPU idle at closeout.
+Focused checks: 100 + 7 + 20 CPU tests across scoped runs. Latest source
+archive contains 86 Python files. Latest fresh weekly usage: 30% used;
+user ceiling 50%, missing/stale >120s stops. No owned background job remains.
+Next study is matched independent-pretrain replication after validation-only
+training and measured feasibility prerequisites; it is designed, not launched.
+
+
+## 2026-10-22 training-performance and reverse-control follow-up opened
+
+User requests training speed improvements and then authorizes autonomous experiments
+in the autoresearch worktree only. The [frozen question/protocol](autoresearch/training_speed_and_reverse_protocol.md)
+separates kernel speed measurements from saved-model scientific comparisons.
+Opt-in MLM selected-position projection and cross-attention SDPA preserve dense/eager
+defaults. CPU loss/gradient tests precede performance claims. Planned follow-up:
+REV on the same MM/Food cohorts and HM donor schedules, plus a default DF2 replay.
+No new results yet; one owned university-GPU job at a time, finite resources,
+50%-used weekly cutoff and 120-second usage freshness guard.
+
+
+## 2026-10-22 — training performance, reverse fusion and late repeat
+
+Question: which speed changes preserve the existing computation, does reverse
+fusion mirror the geometry direction, and how does the newly completed late
+seed alter the repeat comparison? Competing predictions and limits were frozen
+in `autoresearch/training_speed_and_reverse_protocol.md`, then separately
+`training_batch20_protocol.md` and `late_repeat_protocol.md` before their jobs.
+
+Revision: autoresearch HEAD da95056 plus archived working source. Five-job
+phase uses source-18eb32f406bc41ad; final two jobs source-65b48ba2be002d30
+(92 Python files; only synthetic batch cap/test changed between snapshots).
+All writes in autoresearch; manual/reference inputs read-only, shared university
+GPU bounded, no training updates or remote/machine changes. Luna Max workers.
+
+Implemented opt-in selected-token MLM, SDPA retaining original scale/masks,
+worker/persistence controls and skipped FT alignment.79 CPU tests plus9 final
+boundary checks passed; DF2 all-layer replay bitwise exact. At batch20, MLM
+component12.344→2.459ms (-80.1%, incremental allocation1197.3→134.5MiB),
+attention10.546→9.124ms (-13.5%). At batch2 MLM was18.7% slower; retain both.
+No full-step/epoch speed claim. Details: `autoresearch/TRAINING_SPEED.md`.
+
+REV has highest final raw CKA on all three fixed task views, but its cycle
+sign does not reverse. HM matched finetuned AUROC DF1/DF2/REV is
+.7134/.7421/.6851; corresponding mean image-shuffle drops .0942/.1582/.0809.
+These fixed-model shifts are not causal reliability estimates. Nine geometry
+views, all12 layers, donor/row identities and saved logits independently
+checked. See `autoresearch/reverse_summary.md`.
+
+Late1571 pretraining/HM completion verified from read-only logs and checkpoints;
+logged testAUROC .7523 versus late1570 .7716, with both PT/FT seeds changing.
+New same500-row HM pretrain CKA .3293 versus .2607; early repeats .1703/.2164.
+Within-recipe shifts exceed DF1/DF2 gap, while late>early CKA/visual-rank ordering
+persists at both numeric seed labels. n=2 does not estimate population variance.
+See `autoresearch/late_repeat_summary.md` for independent CKA/rank checks and
+separate fine-tuned utility contrasts; Food/MM completion remains dated/unverified.
+
+Seven new jobs all exit0,395.647s GPU-job wall; global28 finished attempts,
+27 zero exits/one preserved old parser failure. New resources and source check:
+`autoresearch/followup_resources.json`, `verification/followup-source-check.json`.
+GPU idle, all contracts closed; last fresh weekly usage36%. Results and next
+choices: `autoresearch/FOLLOWUP_REPORT.md`, `NEXT_EXPERIMENT.md`, `HANDOFF.md`.
+Next: validate training without test access, measure full-step cost, then fix
+exposure for independent DF1/DF2 replication with REV as a named third arm if
+feasible. No unbounded training or additional GPU job is queued.
+
+Closeout 2026-10-22 08:13UTC: fresh weekly usage37%; GPU0 idle,24,147MiB free,
+no compute applications. Both synthesis statuses complete, all three new
+contracts completed, ledger accounting hash matches; final report links checked.
+
+
+## 2026-10-22 autonomous continuation — prospective setup
+
+User requested more autonomy, actualnewexperiments andfullremainingaccount
+usage. Recorded active_usage_policy.json (new100% ceiling; stale120sstop still).
+Staleoldsessiontelemetrywasreplacedwith documented liveapp-serverread; actual
+weeklyusage38%,reset27October. User informed resetdiffersfromanticipatedfewhours.
+Noauthenticationsecretsread, noresetcreditsconsumed. Existingcontractsclosed.
+
+Newprospectiveprotocol: autoresearch/autonomous_training_protocol.md. First
+measure fullAP/MLM/MIMgradient+AdamW cost onfixed20realCCtrainexamples, original
+inputpreparationtimedseparately, threebackend/MLMvariants fromsameDF2weights.
+CPUtests/sourcefreeze/finitecontractprecedelaunch. Then usemeasuredcost and
+initavailability tochooseboundedcontrolledtraining. Validation-onlytrackerpath
+withtest-accesssentinels isbeingimplemented; nolegacytestleak permitted.
+Allwritesautoresearch, shareduniversityGPUbounds andotherjobsunchanged.
+
+
+## 2026-10-22 — full-step training profiles and paired MIM plan
+
+Three bounded training profiles completed in the autoresearch worktree, using
+the same DF2 checkpoint and exact same 20-pair input schedule. Including
+warmups, eager/dense and eager/selected applied 5 of 10 optimizer attempts;
+SDPA/selected applied 6 of 10. All reported losses were finite. Mixed skipped
+updates prevent a clean successful-update or epoch-speed claim. Total GPU-job
+wall: 110.805 seconds. See [profile report](autoresearch/TRAINING_PROFILE_REPORT.md)
+and [accounting](autoresearch/training_profile_accounting.json).
+
+Before observing any fresh-model training outcomes, the next study was narrowed
+to six paired DF2 runs across three fusion/head initialization seeds. The sole
+treatment is dividing the existing masked strong image tensor by 255. Keep
+weak/strong augmentation, clipping, quantization, masks, AP/MLM inputs, and
+optimizer settings identical. Record 100 attempts, actual updates, gradient
+finiteness, scaler transitions, losses, and initial/final CC validation geometry.
+This tests an input-scale hypothesis; it does not establish that preprocessing
+caused historical rank collapse or downstream gaps. The nine-run fusion-placement
+pilot is deferred. The [prospective protocol](autoresearch/mim_preprocessing_protocol.md)
+fixes endpoints and resource bounds. Source review and real CPU preflight are
+in progress; no paired-study GPU run has launched at this entry.
+
+
+## 2026-10-22 — six paired MIM training runs completed
+
+All six predeclared DF2 jobs completed 100 joint attempts. Legacy/rescaled
+final-20 mean MIM InfoNCE losses were 5.85981/0.47584, 5.81444/0.40361, and
+5.86612/0.43893 for initialization seeds 1801–1803. Applied updates were
+97/95, 97/97, and 94/96: 288 in each condition overall. Thus the repeated loss
+effect does not establish improved AMP stability. Exact initial states/features
+and paired inputs were verified; all final parameters/features are finite.
+
+Mean final layer-11 raw CKA was 0.69722 legacy versus 0.44734 rescaled; vision
+participation rank was 2.13870 versus 6.56221. Both declined substantially from
+mean initial vision rank about 32.76. Intermediate-layer effects are mixed.
+This is a small fixed-cohort batch-2 pilot on shared pretrained backbones, not
+a downstream-performance comparison or proof of the cause of historical
+fusion effects. MIM here compares visible patches plus CLS with InfoNCE; it
+is not reconstruction accuracy.
+
+See [autonomous training report](autoresearch/AUTONOMOUS_TRAINING_REPORT.md),
+[closed contract](autoresearch/mim_training_session.json), and
+[resource accounting](autoresearch/mim_completion.json). GPU-job wall was
+851.925 seconds, artifacts 9,244,838,511 bytes, no repairs; all 99 frozen source
+files matched and the final GPU probe was idle. Quota was fresh at 47%. A
+separate, explicitly post-hoc CPU pairing-null check is being prepared under
+[its recorded plan](autoresearch/training-study/posthoc_null_plan.json); it
+does not alter these prespecified endpoints.
+
+
+### Final CPU review and closeout
+
+Independent six-run verification found no integrity issues; all 12-layer CKA
+and participation-rank values agreed with saved features to 2.5e-14. The paired
+PNG/PDF and full tables are in
+[the independent report](autoresearch/training-study/mim-input-scale-final-report.md).
+The separately declared post-hoc 200-permutation pairing null completed on CPU
+in 1.594 seconds. Final-layer unit-minus-legacy CKA remains negative after
+null-mean adjustment (mean -0.2844, observed seed range -0.4034 to -0.2127).
+This is a reference-null diagnostic, not a confidence interval or utility claim.
+All GPU contracts are closed; the final handoff and TODO are updated. Latest
+live account usage was 48% at 12:42 UTC. Next priority is independent-cohort
+and original-effective-batch replication before further fusion comparisons.
+
+
+## 2026-10-23 — induced alignment: event stages and full training
+
+The user explicitly authorized substantial autonomous GPU pretraining and
+fine-tuning lasting hours/days, with a new stop at 50% weekly account usage.
+README and active policies now state this; the manual checkout and research
+material remain read-only on shared university infrastructure.
+
+Re-read the notes, thesis, supplied papers and working manuscript:
+[material review](autoresearch/induced_alignment_material_review.md).
+Verified delayed-vision DF1/DF3/DF2 and delayed-text REV schedules, completed
+three-task results, and frozen HM image/label identities:
+[inventory](autoresearch/induced_alignment_inventory.md).
+
+Prospective question: distinguish projected cross-modal message addition,
+output LayerNorm and FFN effects on paired CKA and both-stream dimensionality.
+The [stage protocol](autoresearch/fusion_stages_protocol.md) fixes all three
+ordinal events, four schedules, pretrained/fine-tuned states, 500 exposed HM
+validation examples and a 200-permutation pairing null. The new extractor has
+five focused CPU tests; inference is pending the independent review and guarded
+operator launch. No new measurements are claimed in this entry.
+
+The next full training comparison is seed-1804 DF2 versus REV, 500k Conceptual
+Captions pairs for seven epochs, batch 20/accumulation 26. It will retain the
+current tracker scheduler/tail conventions in both arms, enable the already
+validated selected-token MLM optimization in both, and use eager attention.
+See the [independent design review](autoresearch/full_training_design_review.md)
+and [execution outline](autoresearch/full_recipe_training_outline.md). This
+is a controlled new pair, not a verified exact replay of historical training.
+Resumable checkpoints, frozen inputs, CPU tests and independent review precede
+launch; actual run IDs/status belong in operator records and the handoff.
+
+### Completed stage measurements — 2026-10-23
+
+All eight extractions have now completed: 462.141 seconds of GPU-job wall and
+about 403 MB of output. The [full table and definitions](autoresearch/fusion-stages-analysis/fusion_stage_summary.md)
+and separate pretrained/fine-tuned figures are linked from README. Six extractor
+and ten analysis CPU tests pass; historical DF1 raw-feature CKA/PR replay is exact.
+
+In these saved checkpoints, corrected CKA increases across the first full block
+in all eight cases. At the second insertion it decreases in six delayed-vision
+states and increases slightly in both delayed-text states. The FFN reduces
+corrected CKA and text participation ratio in all 24 events; LayerNorm changes
+corrected CKA by at most 0.002735. This localizes changes within the block but
+does not identify a causal effect on downstream utility. Metrics use row-normalized,
+centered features; historical raw-feature conventions can give different signs.
+All events use one exposed 500-example cohort and one pretraining seed per
+architecture. Fine-tuned descendants are not independent pretraining replications.
+
+The seed-1804 matched full-pretraining pair is staged, with actual launch and
+ongoing stop/queue state recorded in
+[controller-state.json](autoresearch/full-training/controller-state.json).
+
+### Full-pretraining launch failure and repair — 2026-10-23
+
+The initial `full-training-df2-seed1804` process stopped at 02:17 UTC before
+model initialization or any optimizer update. The CUDA memory guard required
+an explicit device index; the command supplied `cuda` instead of `cuda:0`.
+The stopped session, command, logs and failure result are preserved in
+[the failure handoff](autoresearch/full-training/preupdate-failure-handoff.json).
+No full-pretraining checkpoint or trained model resulted from that attempt.
+
+At the user's 07:57 UTC status check the GPU was still idle. The single reserved
+pre-update launch repair is now authorized: a new DF2 repair run followed by the
+still-unlaunched REV arm, both using `cuda:0`, with the scientific recipe and
+initialization unchanged. This consumes the repair allowance; it does not
+discard or overwrite the original failure. Actual runtime state and applied
+updates must be verified before reporting that training is running.
+
+### Normalization sensitivity follow-up — 2026-10-23
+
+An independently recomputed post-hoc analysis compared raw-feature-centered
+and row-L2-normalized-then-centered CKA/PR over all 24 checkpoint/event pairs.
+Observed and null-corrected CKA and text PR decrease from post-LN to the final
+full-block output in 24/24 pairs under both conventions; vision PR decreases in
+23/24. The PRE-to-full corrected-CKA change reverses sign between conventions
+in four pairs, and the residual-sum-to-post-LN PR change reverses sign in
+15/24 pairs for each stream. The full report and independent verification are
+[here](autoresearch/fusion-stage-normalization/fusion_stage_normalization_sensitivity.md)
+and [here](autoresearch/fusion-stage-normalization/independent_review.md); the
+[sign-flip figure](autoresearch/fusion-stage-normalization/normalization_sign_flip_counts.png)
+shows the convention differences. These are descriptive state comparisons on
+the exposed 500-row `dev_seen` cohort, not independent seed replicates or
+evidence for a general LayerNorm effect, causal schedule effect, or downstream
+utility. The post-LN-to-full transition includes the remaining full-block path.
+
+### Functional message-gate follow-up — 2026-10-23
+
+After the user questioned the value of repeating historical architectures,
+seed1804DF2 pretraining was intentionally stopped and checkpointed at161applied
+updates; REV never launched. This is a priority change, not training instability.
+The replacement study uses existing DF1/DF2 HatefulMemes fine-tunes: second
+ordinal cross-attention message attenuation, allsevenfixedconditions, same500
+exposed dev_seen examples, fixed weights and task head. Both full runs completed
+with exact historical logits/restoration and all controls passing;301.074seconds
+GPU-job wall. Primary half text→vision BCE deltas +.00957 and+.02709 coexist
+with increased local CKA and nearly unchanged AUROC. Do not call this lost
+information or rank mediation. Allconditions and local/finalgeometry are in
+[the report](autoresearch/gate-analysis/outputdrafts/full500/gate-analysis.md)
+and [figure](autoresearch/gate-analysis/outputdrafts/full500/gate-analysis.png);
+[completion](autoresearch/gate-full/completion.json) records provenance/resources.
+The fixed grouped probes were inconclusive; the matched-caption diagnostic and
+post-hoc calibration are sensitivity checks. See[STATUS.md](STATUS.md) for current
+review and nextdecision, not this dated journal entry.
+
+
+## 2026-10-23 — four-checkpoint existing-model gate study complete
+
+The full N=500 cross-attention message-gate study is complete for the existing
+DF1, DF3, DF2, and REV Hateful Memes fine-tunes. All seven conditions per model
+(28 condition rows total) passed the declared controls. This was inference only;
+no new weights were trained. Combined GPU-job wall was 677.106 seconds.
+
+The [all-condition report](autoresearch/gate-analysis/outputdrafts/all-four-models/gate-analysis.md)
+and [CSV](autoresearch/gate-analysis/outputdrafts/all-four-models/gate-analysis.csv),
+[four-model directional table](autoresearch/gate-extension/analysis/directional-response-table.md),
+[shared-baseline-temperature diagnostic](autoresearch/gate-extension/analysis/temperature/four-checkpoint-crossfit/report.md),
+compact [PNG](autoresearch/gate-extension/figures-v2/four_model_cross_attention_gates.png)
+and [PDF](autoresearch/gate-extension/figures-v2/four_model_cross_attention_gates.pdf),
+and [independent four-model review](autoresearch/workshop/four_model_findings.md)
+are available. The review describes a score-scale-sensitive, checkpoint-conditional
+response on the exposed cohort; these four fixed models are not independent-seed
+replications and the contrasts do not isolate causal architecture effects.
+
+Next, the [first/third-event package](autoresearch/event-gate/protocol.md) is
+prepared pending root review and is not running. The [locked-809 re-evaluation](autoresearch/locked-reeval/protocol-feasibility.md)
+remains CPU-only feasibility preparation with no predictions or GPU job; neither
+follow-up is running. The current user instruction removes the 50% usage stop
+and makes usage polling optional. Shared university infrastructure boundaries
+remain in force.
+
+
+## 2026-10-23 14:58 UTC — first/third-event gate phase complete
+
+Both N=500 event-local capture jobs for the existing DF1 and DF2 Hateful Memes
+fine-tunes completed with all declared controls passing. The jobs used 317.537
+seconds of GPU-job wall and trained no weights. The session is marked completed;
+its activation-time execution snapshot remains preserved. The [CPU analysis
+record](autoresearch/event-gate/analysis/execution-record.md) and
+[independent verification](autoresearch/workshop/event_result_verification/report.md)
+record exact baseline/restoration controls and independently matching task and
+primary geometry readouts.
+
+The predeclared event-0 row-L2 CKA G0 values are +0.000617109 for DF1 and
++0.120365300 for DF2, contradicting the exploratory negative-direction
+prediction. Raw-centered CKA changes sign relative to row-L2 CKA for DF1 event
+0 and DF2 event 2. All six intervention raw-BCE changes are positive; raw
+AUROC changes are small and mixed, and no equivalence test was run. The
+[event-local PNG](autoresearch/event-gate-figures/outputs-v3/event_gate_local_response.png)
+and [PDF](autoresearch/event-gate-figures/outputs-v3/event_gate_local_response.pdf)
+show all six fixed model/event cells. The [post-hoc local-dose report](autoresearch/event-local-dose-diagnostic/report.md)
+describes 30 CPU-only local residual reconstructions; these do not run
+downstream layers or establish a preferred dose. The [completed session
+record](autoresearch/event-gate/session.json) and preserved
+[activation snapshot](autoresearch/event-gate/session-active-execution-snapshot.json)
+retain provenance.
+
+The [locked-809 re-evaluation](autoresearch/locked-reeval/protocol-feasibility.md)
+remains CPU implementation/feasibility work. It has no predictions and no GPU
+job is active.
+
+
+## 2026-10-23 15:22 UTC — locked-809 serial queue activated
+
+The reviewed locked-809 queue is active for existing checkpoints, with no new
+training. Its fixed order is DF1 → DF3 → DF2 → REV GPU captures followed by
+four CPU analyses. At 15:22 UTC, controller PID 1456905 owned the queue and
+DF1 GPU worker PID 1456913 was active, with about 2.4 GB GPU memory observed.
+No interim 809 outcome is reported while captures remain active. The
+[queue ownership record](autoresearch/locked-reeval/queue-run/ownership.json),
+[protocol](autoresearch/locked-reeval/protocol-feasibility.md), and
+[engineering review](autoresearch/workshop/locked_reeval_engineering_review.md)
+record the reviewed execution plan and ownership boundary.
+
+
+## 2026-10-23 15:42:53 UTC — locked-809 captures closed; CPU repair pending
+
+The DF1, DF3, DF2, and REV captures closed successfully for the fixed locked-809
+queue, totaling 1,277.401 seconds of GPU-job wall and 296,464,424 capture bytes.
+The first CPU analysis queue failed before computing any metrics because its
+JSON dictionary-order validation assumed insertion order after serialization.
+A versioned CPU-only reader repair is being prepared against the already closed
+captures; no GPU rerun or new training is planned. No locked-809 outcome is
+reported until repaired analysis completes. See [queue ownership](autoresearch/locked-reeval/queue-run/ownership.json),
+[capture completion record](autoresearch/locked-reeval/capture-completion.json),
+[protocol](autoresearch/locked-reeval/protocol-feasibility.md), and
+[engineering review](autoresearch/workshop/locked_reeval_engineering_review.md).
+
+
+## 2026-10-23 16:06 UTC — locked-809 analysis repair and verification complete
+
+The four locked N=809 analyses completed for DF1, DF3, DF2, and REV from the
+already closed captures. Capture time was 1,277.401 seconds of GPU-job wall for
+296,464,424 bytes. The initial CPU reader stopped before scoring on a serialized
+JSON key-order assumption; the reviewed v2 CPU-only repair processed the same
+saved captures without new model forwards, GPU work, or training. All 28 fixed
+conditions are displayed in the [condition table](autoresearch/locked-reeval-figures/outputs-v3/locked_reeval_all_conditions.md)
+and [CSV](autoresearch/locked-reeval-figures/outputs-v3/locked_reeval_all_conditions.csv),
+with the [primary four-checkpoint comparison](autoresearch/locked-reeval-figures/outputs-v3/locked_reeval_primary_comparison.md)
+and [CSV](autoresearch/locked-reeval-figures/outputs-v3/locked_reeval_primary_comparison.csv),
+[PNG](autoresearch/locked-reeval-figures/outputs-v3/locked_reeval_primary_comparison.png),
+[PDF](autoresearch/locked-reeval-figures/outputs-v3/locked_reeval_primary_comparison.pdf),
+and [source-hash manifest](autoresearch/locked-reeval-figures/outputs-v3/locked_reeval_source_hashes.json).
+The original v1 display bundle and exact driver snapshot remain under
+[the v1 snapshot directory](autoresearch/locked-reeval-figures/snapshots/v1).
+
+Independent CPU recomputation matched all 28 raw BCE/AUROC, per-class,
+frozen-temperature, and component-resampling outputs exactly. Primary event-1
+raw CKA matched exactly; row-L2 CKA differed by at most 1.31e-9, below the
+2e-6 tolerance. The [verification report](autoresearch/workshop/locked_reeval_verification/report.md)
+and [full numeric comparison](autoresearch/workshop/locked_reeval_verification/analysis-comparison-full.json)
+contain the independent calculations. Primary alpha=0.5/vision text-to-vision
+raw-BCE changes are +0.004136 (DF1), +0.006835 (DF3), +0.022083 (DF2), and
+-0.001904 (REV). As a secondary directional sensitivity, DF2 alpha=0.5/text
+(vision-to-text) raw AUROC changes from -0.010754 at N=500 to +0.006218 at
+N=809. These are different dev_seen and historically exposed test_seen rows;
+the reversal does not support a population comparison. The fixed checkpoints
+are not independent-seed replications. Figure whiskers show only the N=809
+raw-metric 2.5–97.5% component-resampling ranges, conditional on the fixed
+cohort, component plan, and checkpoint, not seed/population/equivalence
+intervals. The repair [batch record](autoresearch/locked-reeval-cpu-repair/batch-completion-v2.json)
+and [capture completion](autoresearch/locked-reeval/capture-completion.json)
+retain execution provenance.
+
+
+## 2026-10-23 16:41 UTC — full-dose v3 serial inference underway
+
+The reviewed v3 full-forward dose phase is running on the four existing
+Hateful Memes fine-tunes; this is inference with no new training. DF1 completed
+all seven fixed conditions and six clean restoration passes with its model,
+source and canonical parity controls passing. DF2 is the active capture, with
+early seeds 1570 and 1571 to follow serially. No v3 outcome values are reported
+while the batch remains open. The rejected v1 startup stopped before Torch
+import because its job omitted the required model identifier; v2 stopped
+before model loading because its loader received the wrong frozen input pins.
+Both earlier packages remain preserved. See the [protocol](autoresearch/full-dose-seed-study-v3/protocol.md),
+[session](autoresearch/full-dose-seed-study-v3/session.json), and four
+[job contracts](autoresearch/full-dose-seed-study-v3/jobs/).
+
+
+## 2026-10-23 16:53:55 UTC — full-dose v3 captures closed
+
+The four serial full-forward dose capture jobs for DF1, DF2, early seed 1570 and
+early seed 1571 closed successfully. All seven conditions and declared capture
+controls passed. The captures used 1,126.838 seconds of GPU-job wall and
+produced 1,279,184,864 bytes. This is inference on existing HM fine-tunes, with
+no new training. Production CPU analysis and independent capture verification
+are pending; no outcome values are reported here. The [capture-completion
+record](autoresearch/full-dose-seed-study-v3/capture-completion.json),
+[protocol](autoresearch/full-dose-seed-study-v3/protocol.md),
+[session](autoresearch/full-dose-seed-study-v3/session.json), and four
+[job contracts](autoresearch/full-dose-seed-study-v3/jobs/) retain execution
+provenance. The failed v1 and v2 startup packages remain preserved.
+
+
+## 2026-10-23 17:01 UTC — full-dose v3 CPU analysis underway
+
+Production CPU analysis for the four closed full-dose captures is now running in
+its fixed output directory. Independent capture-only verification has completed;
+the comparison of production analysis with that verification remains pending.
+No outcome values are reported until that comparison is ready. No GPU job is
+active for this phase. The [analysis target](autoresearch/full-dose-seed-study-v3/results/analysis/full-dose-seed-robustness-20261023/),
+[capture completion](autoresearch/full-dose-seed-study-v3/capture-completion.json),
+[protocol](autoresearch/full-dose-seed-study-v3/protocol.md), and
+[session](autoresearch/full-dose-seed-study-v3/session.json) preserve the
+execution boundary and provenance.
+
+
+## 2026-10-23 17:06 UTC — full-dose v3 analysis and display verified
+
+Production CPU analysis for the four closed v3 captures and independent
+comparison are complete. The comparison passed all 28 raw/OOF condition
+metrics, 20 fold temperatures, and eight primary CKA readouts; the maximum
+row-L2 CKA difference was 4.65e-9. Analysis JSON SHA-256 is
+89ea1962a3f12bf8dcb62f66cd579b31ec13637e80f56b360473761357cd2388. The
+publication display retains all four checkpoint facets and every condition
+and event/state source row. The plotted values match the production CSVs, all
+source/input hashes validate, and the three retained source tables are
+byte-identical copies. The [dose curves PNG](autoresearch/full-dose-figures/outputs-v1/full_dose_curves.png)
+and [PDF](autoresearch/full-dose-figures/outputs-v1/full_dose_curves.pdf),
+[bias-control table](autoresearch/full-dose-figures/outputs-v1/bias-control-values.md)
+and [CSV](autoresearch/full-dose-figures/outputs-v1/bias-control-values.csv),
+[bias-control figure PNG](autoresearch/full-dose-figures/outputs-v1/bias_control_points.png)
+and [PDF](autoresearch/full-dose-figures/outputs-v1/bias_control_points.pdf),
+[all condition rows](autoresearch/full-dose-figures/outputs-v1/all-condition-summary.csv),
+[all event/state geometry](autoresearch/full-dose-figures/outputs-v1/all-geometry-states.csv),
+[event-local gains](autoresearch/full-dose-figures/outputs-v1/all-event-geometry-gains.csv),
+[plotted values](autoresearch/full-dose-figures/outputs-v1/plot-values.csv), and
+[source/input hash manifest](autoresearch/full-dose-figures/outputs-v1/source-hashes.json)
+provide the display bundle. This is conditional analysis of the previously
+exposed N=500 dev_seen cohort and existing fine-tunes; no new weights were
+trained.
+
+
+## 2026-10-23 17:28 UTC — nested-C positive-control follow-up complete
+
+The nested-regularization and final text+vision CLS positive-control probe
+completed on the fixed 500-row exposed dev_seen cohort, with 418 connected
+components and the original five-fold map. The CPU-only run elapsed 58.246
+seconds and peaked at 260.020 MiB RSS; it loaded no checkpoint and used no GPU
+or training.
+The final concatenated CLS probes have nested OOF AUROCs 0.697252 (DF1) and
+0.749020 (DF2), supporting late joint label accessibility in this cohort. The
+eight earlier event cells remain weak and mixed; DF2 vision BCE is still above
+the labels-only prior. The earlier fixed-C=1 results remain frozen and separate.
+This is not evidence of information retention.
+
+Independent CPU verification checked all 13 score cells and 6,500 ordered
+scores against the pinned cohort and folds, reproduced all score metrics, and
+rederived the ten feature-cell PR pairs. It also checked the 50 recorded nested
+selection groups against their six candidate means and the predeclared tie
+rule. Maximum metric differences were zero for BCE and accuracy and 1.11e-16
+for AUROC; both PR differences were zero. See the [results summary](autoresearch/probe-positive-control/display/results-summary.md)
+and [independent verification](autoresearch/workshop/probe-positive-control-verification/README.md).
+
+At the time of this 17:28 entry, the next pairing phase remained inactive while
+its sources, tests, preflight, and review were prepared; no GPU session or job
+had launched.
+
+
+## 2026-10-23 18:03 UTC — message-pairing v2 activated
+
+The v1 message-pairing startup stopped before model loading or a forward pass
+because its runner could not import `event_gate_common`; no scientific outcome
+was produced. The independently reviewed v2 package was activated at
+2026-10-23 17:59:50 UTC for serial, inference-only capture on the existing DF1,
+DF2, early1570 and early1571 Hateful Memes fine-tunes. The design keeps all five
+fixed donor maps separate and includes self-replay, no-message and clean
+restoration controls. No new weights or training are involved. Operator
+telemetry is pending; this entry reports no capture outcomes. See the [v2
+protocol](autoresearch/message-pairing-study-v2/protocol.md), [session](autoresearch/message-pairing-study-v2/session.json),
+[activation record](autoresearch/message-pairing-study-v2/root-activation.json),
+[four job contracts](autoresearch/message-pairing-study-v2/jobs/), the
+[independent 13-test review](autoresearch/workshop/message-pairing-v2-independent-review.md),
+and the [prepared capture-verification CLI](autoresearch/workshop/message-pairing-verification/README.md).
+
+
+## 2026-10-23 18:06 UTC — message-pairing v2 queue halted
+
+The first v2 DF1 attempt failed after capture during the final inherited-pin
+recheck: `NameError: V3_INPUT_PINS_PATH` at
+`autoresearch/message-pairing-study-v2/run_message_pairing.py:1239`. The runner
+wrote no result summary or runner metrics. Its saved archives and cache remain
+unaccepted and are not being interpreted. The remaining serial queue is halted,
+no GPU is active, and the v2 phase is incomplete while root reviews a minimal
+repair. The prepared independent verifier must not run until root gives a new
+all-captures-closed GO. No source, protocol, or frozen pin was changed for this
+failure note.
+
+
+## 2026-10-23 18:26 UTC — message-pairing v3 active; first capture complete
+
+The v2 late pin-check failure remains a preserved engineering failure: it
+produced no accepted result summary or runner metrics, and its saved archives
+remain uninterpreted. Root activated the independently reviewed v3 package at
+2026-10-23 18:19:00.747530 UTC for inference-only captures from the four
+existing Hateful Memes fine-tunes. The fixed study keeps the five donor maps
+separate and retains self-replay, no-message and restoration controls; no new
+weights are being trained. The v3 package passed 15 tests and pyflakes before
+activation.
+
+DF1 has completed with exit 0 after 295.104 seconds of GPU-job wall and all
+required controls passed. The operator reports moving to DF2 in the serial
+queue; the remaining captures are not yet reported complete. No outcome scores
+are included here. The v3 source-only independent-verifier preflight passed
+without opening captures, and its six synthetic CPU tests pass. See the [v3
+protocol](autoresearch/message-pairing-study-v3/protocol.md), [active
+session](autoresearch/message-pairing-study-v3/session.json), [root activation
+record](autoresearch/message-pairing-study-v3/root-activation.json), [job
+contracts](autoresearch/message-pairing-study-v3/jobs/), and [v3 verifier
+preflight and CLI](autoresearch/workshop/message-pairing-verification/README-v3.md).
+The original [v2 verifier preparation](autoresearch/workshop/message-pairing-verification/README.md)
+and its pin manifest remain intact.
+
+
+## 2026-10-23 — message-pairing v3 analysis and verification complete
+
+All four fixed-checkpoint captures (DF1, DF2, early1570, early1571), the
+production CPU analysis and the independent numerical comparison are complete.
+The final corrected [display](autoresearch/message-pairing-figures/outputs/message-pairing-v3-20261023-label-correction/results-summary.md),
+[production report](autoresearch/message-pairing-study-v3/results/analysis/message-pairing-20261023/report.md)
+and [independent comparison](autoresearch/workshop/message-pairing-verification/results/comparison-v3-production-20261023/report.md)
+are retained.
+
+Raw BCE and AUROC are direct scores over the exposed N=500 rows for each fixed
+checkpoint. OOF denotes the separate shared identity-temperature fit across
+folds only; it is not model retraining or independent held-out evaluation.
+Five donor maps are not independent seeds. This acute complete-message swap is
+conditional on these rows and checkpoints and does not isolate a text-only
+semantic effect or establish population generalization. See
+[STATUS.md](STATUS.md) for the current interpretation and operational state.
+
+The next planned comparison is six serial paired-versus-shuffled HM
+full-backbone fine-tunes from the same DF1 PRETRAIN parent, seeds 41001–41003,
+ten epochs per arm and no new pretraining. The sealed split contains 5,856
+training, 656 inner-validation and 1,591 locked-holdout rows. Final driver and
+job-contract review remains pending; training has not started. The declared
+[protocol](autoresearch/paired-message-training/PROTOCOL.md) records the design.
+
+
+## 2026-10-23 19:25:15 UTC — paired-versus-shuffled HM fine-tuning activated
+
+After final driver and job-contract review, root activated the six-run serial
+queue. The first arm, `s41001-paired`, is running in initialization; no training
+run has completed and there are no training outcomes yet. The comparison keeps
+its declared design: three paired seed comparisons (41001–41003), ten epochs
+per arm, the same DF1 PRETRAIN parent, no new pretraining, and 5,856 training /
+656 inner-validation / 1,591 locked-holdout rows. The holdout remains sealed.
+See [STATUS.md](STATUS.md) for the current process state and the
+[protocol](autoresearch/paired-message-training/PROTOCOL.md) for the frozen
+study design.
+
+## 2026-10-23 19:53 UTC — first fine-tune complete; comparison still underway
+
+`s41001-paired` closed successfully after ten epochs and 100 applied updates
+in 1,073.797 seconds. The fixed inner-validation AUROC rule selected epoch 7
+(0.841443); this is not a held-out result. `s41001-shuffled` is running and
+has completed four epochs. Root independently compared the complete saved
+run specifications after excluding only run ID and arm: initialization, head,
+data order, augmentations, source pins and recipe match exactly.
+
+The final holdout is still sealed. The separate evaluator and independent
+checker are in CPU review; source-map and mixed-precision integrity fixes are
+being tested before any final scoring. The six-run training queue is unchanged.
+See [STATUS.md](STATUS.md) and the [prospective prior-art/claim comparison](autoresearch/workshop/paired-training-prior-art.md).
+
+## 2026-10-23 20:04 UTC — first matched seed pair completed
+
+Both seed-41001 arms closed with exit 0 after ten epochs and 100 updates.
+The paired run selected epoch 7; the shuffled run selected epoch 9. Their
+job wall times were 1,073.797 and 1,146.119 seconds. The queue started
+`s41002-paired` after fresh resource and source checks. No holdout scoring
+has occurred. Validation selection values are not the final comparison.
+
+Additional work is separate from training: CPU-only source/precision review
+of the held-out evaluator, an independent metric checker, the exact CKA
+row-permutation baseline diagnostic on existing features, and a fixed-caption
+message control. The latter uses all 79 repeated-caption groups (161 rows)
+without label-based selection; its GPU runner is being prepared, not queued.
+
+
+## 2026-10-23 20:34 UTC — CKA reference robustness and training progress
+
+Question: do the acute-intervention CKA directions depend on the finite-sample
+unrestricted row-permutation reference? A CPU scan of all 60 saved archives
+and 300 rows reproduced 240 shared stage rows under both conventions. Nine
+tests pass, including exhaustive permutations for N=2–6. The scan took 75.2 s
+and peaked at 748 MiB, with no GPU or checkpoint access.
+
+Reference scores range from .0152 to .0492 for raw CKA and .0155 to .0495 for
+row-L2 CKA. The descriptive adjustment changes DF1's small half-dose raw local
+gain contrast from −.002122 to +.004992. All 20 donor-map contrasts remain
+negative under both conventions, and all eight adjusted dose curves remain
+nonmonotonic. Keep both conventions and the full curves. This is not an
+unbiased CKA correction, inference, semantic correspondence test or a
+universal relation between alignment and usefulness.
+
+[Findings](autoresearch/cka-null-diagnostic/FINDINGS.md),
+[adjusted gains](autoresearch/cka-null-diagnostic/derived-v1/adjusted_local_gains.csv),
+[reviewed PNG](autoresearch/cka-null-figures/full-dose-alpha-local-gain-contrasts.png),
+[PDF](autoresearch/cka-null-figures/full-dose-alpha-local-gain-contrasts.pdf).
+The separate [CSV arithmetic and hash review](autoresearch/workshop/cka-null-independent-review.md)
+passed with maximum discrepancy below 1.5e-12. Original results-v1 is frozen.
+
+Three of six matched fine-tunes have closed. Seed 41002's shuffled arm reached
+epoch 6/10 and 60 updates as of 20:33 UTC. Its process was the only GPU process,
+using about 9,950 MiB of device memory. There is no held-out arm comparison.
+The scientific evaluator is frozen at source hash 10573a9c… with independent
+approval and 18 passing CPU tests; the separate verifier has 14 passing tests.
+The inactive launch package passed three CPU tests, including the actual
+optional-adapter dummy lifecycle, and independent launch review. Root will
+activate the held-out analysis after all six runs close. The 50% usage cutoff
+has been removed; university resource and read-only workspace boundaries remain.
+
+
+## 2026-10-23 21:53 UTC — all six controlled fine-tunes complete; held-out scoring in progress
+
+Question: does recipient-to-message assignment during adaptation affect native
+held-out AUROC under a matched fixed recipe? All six arms completed ten epochs
+and100 applied updates with successful process closure. Selected epochs for
+paired/shuffled are7/9(seed41001),8/8(seed41002),9/7(seed41003). Combined GPU-job
+wall is6685.208s (about1.86h); no new pretraining occurred. Root independently
+matched all three saved pair specifications except arm/run ID and verified
+source/checkpoint hashes. These are execution facts, not held-out findings.
+
+Root separately authorized final evaluation after all six closures. First launch
+failed before model scoring at the default Python recursion limit during donor
+map construction. Preserve that failure. A process-local source-pinned wrapper
+passed seven tests; all five full-size maps passed independent guards, with
+exact smaller-fixture equality and no change to the frozen scientific code.
+The replacement GPU evaluator is active, PID1664541/startticks3044933575,
+tool5625; 1/6 checkpoint captures are complete at this snapshot.
+Task scores remain uninterpreted until the independent checker saves its own
+derivation before production comparison.
+
+[Training closure/source review](autoresearch/paired-message-evaluation/execution/root-review.json),
+[runtime repair activation](autoresearch/paired-message-evaluation/execution-recursion-r1/root-activation.json),
+[prospective methods](autoresearch/workshop/manuscript/methods.md),
+[claim boundaries](autoresearch/workshop/manuscript/claim-boundaries.md).
+The separate caption-matched control remains unlaunched.
+
+
+## 2026-10-23 21:57 UTC — optimization audit (no held-out scores)
+
+The six completed training traces have smooth decreasing weighted BCE. An
+independent CPU parser reproduced all60nativeinnerAUROC values, derivedraw
+unweighted innerBCE, checkedall23sourcepins, matchedseedpairfingerprints,
+100updates/run and learning-rate sequence. Selection-onlypaired−shuffled
+AUROC is−.001842,−.004302,+.003009 acrossseeds41001–41003. This mixedinner
+pattern is not the primaryheldoutresult. TrainBCE usespositiveweight3764/2092
+andtreatedtrainingpath; innerBCE israw/unweighted/native, so theirmagnitudes
+andgap do notisolate generalization. Rootvisuallyreviewedall6×10epochcurves.
+[Curves and audit](autoresearch/paired-training-optimization/README.md).
+HeldoutGPUevaluationcontinues; independentverificationremainspending.
+
+
+## 2026-10-24 — verified paired-training holdout and ongoing supporting controls
+
+The six new full-backbone fine-tunes (three matched seed pairs, one DF1 pretrained
+parent) and all eight held-out conditions are complete. Independent R3 numerical
+verification passed, with derivation saved before production comparison. Native
+paired-minus-shuffled AUROC differences are -0.000058, +0.003427 and +0.003280;
+every conditional component-bootstrap interval includes zero. This is inconclusive,
+not equivalence. Shuffled-trained models have larger native event-local CKA gains
+under both conventions in all three pairs and smaller AUROC penalties on every
+one of the five fixed donor maps per pair. Maps are correlated and the pattern
+is descriptive. See [scientific assessment](autoresearch/workshop/paired-training-outcome-assessment.md)
+and [root acceptance](autoresearch/workshop/paired-training-verification/root-result-acceptance.json).
+
+Caption-control v2 failed before Torch/inference on a second metadata-envelope
+error; all three remaining jobs stopped. Preserve both failed versions. Full
+four-model CPU admission and independent schema audit are required before v3.
+The figure reader and adaptation diagnostic also exposed schema/plumbing errors;
+partial outputs are not accepted completed results. Their fixes must preserve
+numerical algorithms and provenance. [STATUS.md](STATUS.md) is the dated overview.
+
+## 2026-10-24 — same-caption whole-message control verified
+
+Four historical checkpoints completed the repaired V4 five-pass inference
+capture, using 560.81 seconds of GPU-job wall. The label-blind same-caption
+map covers 79 repeated-caption groups / 161 affected rows; 339 singleton
+controls retain exact array parity. Event-input text, masks and projected text
+K/V had observed maximum differences of zero across each caption group.
+The primary equal-group raw-BCE changes are DF1 +.001116, DF2 +.027622,
+early1570 −.000286 and early1571 +.022093. Affected-row AUROC changes are
+.000000, −.019290, +.000154 and −.011574, respectively. Existing five-fold
+temperatures were applied unchanged. The four models and all earlier maps
+on the same affected rows remain separate; no pooled inference or unique
+text-contribution subtraction is justified.
+
+The independent derivation was durably saved before production analysis.
+All 924 numerical comparisons and all five CSVs passed, maximum discrepancy
+2.23e-16. Root accepted the readouts. See
+[findings](autoresearch/workshop/caption-query-control-findings.md),
+[all readouts](autoresearch/caption-query-analysis/results/caption-query-control-v4-sealed-20261024/report.md),
+[figure](autoresearch/caption-query-figures/outputs/accepted-comparison-v2/same_caption_whole_message_reassignment.png),
+and [acceptance](autoresearch/workshop/caption-query-control-v4-root-result-acceptance.json).
+Earlier V1/V2 metadata and V3 keyword-hook failures remain preserved.
+
+The complementary recipient-query assay passed independent source review and
+was launched under a new coordinator session. It stopped before checkpoint
+construction/cohort inference on a CUDA UUID representation mismatch: Torch
+returns the same UUID without `GPU-`. The failed attempt is preserved; a
+separate strict normalization repair is being prepared and reviewed. This
+changes no scientific endpoint, resource bound or prior capture. This assay
+uses the six newly fine-tuned models and N1591; the same-caption control uses
+different historical models and N500, so the studies cannot be causally merged.
+
+
+## 2026-10-24 — paired-training CKA reference derivative
+
+A separately disclosed post-hoc CPU diagnostic applied the existing exact
+unrestricted-row-permutation CKA reference to all 48 closed conditions, both
+stages and both conventions (192 rows). The native shuffled-over-paired local
+gain ordering persists for all three seed pairs under both conventions. All
+192 observed scores reproduce accepted geometry; a separate output-only audit
+checked reference/index/gain/contrast arithmetic. The underlying accepted pure
+metric was reused; raw participation ratios were not independently reconstructed
+from features by that output audit. Runtime: 59.397 seconds, 144 MiB peak RSS,
+no GPU. This is descriptive metric context, not an unbiased correction or a
+semantic/null hypothesis test. The native AUROC primary remains inconclusive.
+See [findings](autoresearch/paired-cka-reference/FINDINGS.md),
+[root acceptance](autoresearch/paired-cka-reference/review/root-acceptance.json),
+and [updated working draft](autoresearch/workshop/manuscript/working-paper-verified-luna-v2.md).
+The recipient-query GPU study continues: first model's complete capture and
+controls passed; five models remain. A label-preserving reference is now in
+preparation to retain class-related geometry; no numerical result exists yet.
+
+
+## 2026-10-24 12:02 UTC — label-preserving CKA reference
+
+Post-hoc CPU analysis of all 48 closed paired-training conditions completed in
+88.738 seconds. All 960 previous scalar values matched exactly; five synthetic
+tests and a separate 47-check output algebra/provenance audit passed. Native
+shuffled-over-paired CKA gain ordering persists for all three seed pairs under
+raw and row-L2 conventions. This specific reference does not identify semantic
+alignment or explain the pattern by label geometry. The AUROC primary remains
+inconclusive. [Full table](autoresearch/label-conditioned-cka/FINDINGS.md),
+[root acceptance](autoresearch/label-conditioned-cka/review/root-acceptance.json),
+and [working draft v3](autoresearch/workshop/manuscript/working-paper-verified-luna-v3.md).
+The separate six-model recipient-query GPU inference remains live; no new
+pretraining or fine-tuning launched in this batch.
+
+
+## 2026-10-24 12:09 UTC — no-message figure and post-capture preparation
+
+Luna rendered the six-model no-message diagnostic from accepted sources only.
+Root visually reviewed PNG and independently checked all 126 table cells
+against accepted geometry and the saved independent metric snapshot; all exact.
+[Figure](autoresearch/no-message-figures/outputs/no_message_comparison.png),
+[table](autoresearch/no-message-figures/outputs/no_message_comparison_values.csv),
+[review](autoresearch/no-message-figures/root-review.json). Working draft v4
+adds the figure without changing prior results or claims. No fitting/inference
+was performed for this rendering. The separate recipient-query GPU process
+remains live. Post-capture closure instructions and an interpretation plan
+were prepared before reading new scientific outcomes.
+
+
+## 2026-10-24 12:44 UTC — crossed-state analysis and automatic post-capture verification
+
+The all-48-condition crossed-state CPU analysis completed in 136.499 seconds,
+with all 192 observed CKA reference values exactly reproduced. Independent
+feature-Gram reconstruction of all 384 values is pending; no new finding is
+accepted yet. The recipient-query renderer passed seven synthetic tests and
+root's 1,254-cell routing check. Its synthetic plots remain watermarked.
+
+Root reviewed and launched the single-use post-capture watcher (handle 30045).
+It can seal and independently verify the existing capture after successful
+terminal evidence, with finite CPU bounds; it cannot control or restart GPUs.
+Eight tests passed, including actual owned CPU timeout cleanup. Details and
+ownership proofs are in autoresearch/recipient-postcapture-watcher/. The GPU
+run remains active; no real recipient-query outcome has been interpreted.
+
+
+## 2026-10-24 13:01 UTC — crossed-state result accepted and rendered
+
+Independent feature-Gram reconstruction reproduced all384 CKA values from all48
+closed conditions (maximum error1.61e-15), with480 algebra terms and all control/
+state-invariance checks passing. Snapshot persisted before production comparison.
+Root accepted the descriptive analysis and visually/numerically reviewed the
+six-model four-state figure (126 exact sidecar values). The three paired seed
+contrasts show shuffled-over-paired ordering for text-post/pre-vision and joint
+gain, but paired-over-shuffled ordering for pre-text/vision-post, under both
+conventions. This is state-comparison-dependent geometry, not functional or
+semantic modality importance. The native-AUROC primary remains inconclusive.
+
+[Figure](autoresearch/crossed-state-figures/crossed-state-identity.png),
+[matched contrasts](autoresearch/crossed-state-figures/NARRATIVE.md),
+[independent audit](autoresearch/crossed-state-geometry/independent-check/independent-output-audit.json),
+[working draft v5](autoresearch/workshop/manuscript/working-paper-verified-luna-v5.md).
+GPU capture remains active at3/6; the reviewed watcher owns its eventual closure
+and independent verification. No new GPU training or inference was launched in
+this batch beyond that existing run.
+
+## 2026-10-24 — user narrows scope to assay closure and stop
+
+Continue only the already-running recipient-query capture, its reviewed closure/watcher, independent verification and rendering. Then finalize root `PLAIN_SUMMARY.md` and the two three-sentence proposals in `autoresearch/REQUESTED_PROPOSALS.md`, and stop awaiting the user; no further training decisions or experiment activation. The proposals are inactive documents only. Read-only Luna Max manuscript review found v6 recipe facts consistent, all nine v5 tables preserved, and all local links valid; primary remains inconclusive. Existing GPU tool handle 40106 and watcher 30045 were confirmed live, with four of six model control sets completed at the latest log check; scientific outcomes remain unread.
